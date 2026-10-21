@@ -14,7 +14,12 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .km-cap { width:min(1000px,calc(100vw - 48px)); bottom:24px; }
 .km-panel { background:linear-gradient(120deg,rgba(10,29,34,.97),rgba(17,29,31,.94)); border:1px solid #bb9d675c; border-top:2px solid #bda169; padding:23px 30px 19px; border-radius:8px; box-shadow:0 18px 80px #0008; max-height:53vh; backdrop-filter:blur(16px); }
 .km-speaker { margin-bottom:10px; color:#e5c68a; font-size:16px; }
-.km-speaker small { color:#acc6c4; font-size:11px; font-family:var(--gothic); letter-spacing:0; margin-left:8px; }
+.km-speaker small { display:block; color:#acc6c4; font:12px/1.7 var(--gothic); letter-spacing:0; margin-top:6px; }
+.km-speaker-identity { min-width:0; }
+.km-speaker-name { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.km-speaker-name b { font-size:20px; font-weight:500; line-height:1.5; }
+.km-speaker-portrait { gap:18px; padding-bottom:12px; border-bottom:1px solid #a78e6038; }
+.km-speaker-portrait .km-portrait { width:88px; height:88px; }
 .km-text { font-size:19px; line-height:1.85; letter-spacing:.045em; min-height:2em; }
 .km-nav { margin-top:18px; gap:12px; flex-wrap:wrap; }
 .km-btn { background:#173139; border:1px solid #82998e88; color:#f0e7d5; padding:12px 20px; border-radius:5px; font-family:var(--gothic); font-size:14px; transition:background .2s,border-color .2s,transform .2s; }
@@ -161,7 +166,10 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .km-intro-people strong,.km-intro-people small { display:block; margin-top:10px; }
 .km-intro-people strong { font-size:22px; font-weight:500; }
 .km-intro-people small { font:11px var(--gothic); }
-.km-portrait { width:92px; height:110px; flex-shrink:0; }
+.km-portrait { display:inline-block; width:112px; height:112px; flex-shrink:0; background-color:#152e33; background-image:url('../assets/character-atlas.png'); background-size:400% 200%; background-repeat:no-repeat; border:1px solid #b39b6b80; border-radius:8px 8px 3px 3px; box-shadow:0 5px 18px #0004; vertical-align:middle; }
+.km-portrait-hai,.km-portrait-ryo,.km-portrait-kai { border-color:#7fb9ac99; }
+.km-portrait-u,.km-portrait-zo,.km-portrait-haku,.km-portrait-sou,.km-portrait-chin { border-color:#bb877099; }
+.km-intro-people button:hover .km-portrait,.km-intro-people button:focus-visible .km-portrait { outline:2px solid #e6cc8b; outline-offset:3px; }
 .km-relation-arrow { font-size:30px; color:#c6b389; text-align:center; }
 .km-relation-arrow small { display:block; font:10px var(--gothic); }
 .km-map-caption { text-align:center; font-size:20px; letter-spacing:.12em; }
@@ -172,6 +180,7 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .km-person-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .km-person-card { display:flex; gap:18px; padding:22px 18px; background:#17353a; border:1px solid #54797166; border-radius:6px; }
 .km-person-card.so { border-color:#ad796155; }
+.km-person-card>div { min-width:0; }
 .km-person-card h4 { font-size:25px; font-weight:500; margin:2px 0 12px; }
 .km-person-card rt { font:10px var(--gothic); color:#b5bfb2; }
 .km-person-card b { color:#d4bc88; font:12px var(--gothic); }
@@ -202,6 +211,8 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .km-projection .km-opt,.km-projection .km-yaku { font-size:22px; }
 .km-projection .km-paper-text { font-size:25px; }
 .km-projection .km-intro-copy>p { font-size:22px; }
+.km-projection .km-speaker-name b { font-size:24px; }
+.km-projection .km-speaker-portrait .km-portrait { width:100px; height:100px; }
 @media (max-width:900px) {
   .km-intro-layout { flex:none; grid-template-columns:1fr; overflow:visible; }
   .km-intro-visual { min-height:280px; }
@@ -257,8 +268,13 @@ button:disabled { opacity:.4; cursor:not-allowed; }
   #km-intro-person { padding:0 15px; }
   .km-person-card { min-width:0; gap:12px; padding:18px 14px; }
   .km-person-card>div { min-width:0; overflow-wrap:anywhere; }
-  .km-person-card .km-portrait { width:70px; height:90px; }
-  .km-intro-people .km-portrait { width:75px; }
+  .km-person-card .km-portrait { width:80px; height:80px; }
+  .km-intro-people .km-portrait { width:72px; height:72px; }
+  .km-speaker-portrait { gap:12px; padding-bottom:10px; }
+  .km-speaker-portrait .km-portrait,.km-projection .km-speaker-portrait .km-portrait { width:64px; height:64px; }
+  .km-speaker-name { gap:7px; }
+  .km-speaker-name b { font-size:17px; }
+  .km-speaker small { font-size:11px; margin-top:4px; }
   .km-map-caption { font-size:16px; }
   .km-projection .km-text,.km-projection .km-ask-q { font-size:22px; }
   .km-projection .km-opt { font-size:18px; }

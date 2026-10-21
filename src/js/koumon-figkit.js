@@ -647,8 +647,12 @@ function buildHead(R,P,q){
   const emesh=new THREE.Mesh(mergeGeoms(R,eg),em);grp.add(emesh);
   const hq=q==="low"?.004:q==="medium"?.003:.0024;
   if(P.beard==="long"){const B=beardSDF(P);const hc=lin(P.hairC||0xd8d3ca);
-    const bp=cachePoly("beard|"+q+"|"+(P.beardLen||.13)+"|"+(P.beardW||1)+"|"+(P.whiskers3||1),()=>{const pl=polygonize(B.f,[-.08,-.25,.0],[.08,.065,.125],hq,{levels:3,lip:1.4,seedS:2});
-      const ao=bakeAO(pl,(x,y,z)=>mn(B.f(x,y,z),H.F.f(x,y,z)),.004,3,1.2);paint(pl,(x,y,z)=>mulc(hc,.86+.14*N2(x*300,y*80,z*300)-.10*sstep(-.11,-.2,y)),ao,.35);return pl;});
+    // 色・白髪・顔との接触陰影も焼き込むので、寸法だけで他人物と共有しない。
+    const bp=cachePoly("beard|"+q+"|"+JSON.stringify(P),()=>{const pl=polygonize(B.f,[-.08,-.25,.0],[.08,.065,.125],hq,{levels:3,lip:1.4,seedS:2});
+      const ao=bakeAO(pl,(x,y,z)=>mn(B.f(x,y,z),H.F.f(x,y,z)),.004,3,1.2);paint(pl,(x,y,z)=>{
+        const strand=sstep(.55,.92,.5+.5*Math.sin(x*740+N2(x*70,y*25,z*65)*3));
+        const c=mixc(hc,lin(0xb0aaa2),strand*(P.hairGrey||0));
+        return mulc(c,.86+.14*N2(x*300,y*80,z*300)-.10*sstep(-.11,-.2,y));},ao,.35);return pl;});
     const bm=new THREE.Mesh(R.add(toGeom(bp)),R.add(new THREE.MeshStandardMaterial({vertexColors:true,roughness:.62,metalness:0})));bm.castShadow=true;bm.receiveShadow=true;grp.add(bm);}
   if(P.eboshi){const E=eboshiSDF(P);
     const ep=cachePoly("eboshi|"+q+"|"+(P.eboH||.27),()=>{const pl=polygonize(E.f,[-.10,0,-.13],[.10,.44,.12],q==="low"?.007:.0045,{levels:3,lip:1.4,seedS:2});
@@ -779,7 +783,7 @@ function hairMesh(R,P,q){
       const a=Math.atan2(x,z+.04);d+=.00025*Math.sin(a*60+N1(x*40,y*40,z*40)*2);
       return d;},bs:[0,.03,0,.2]};
   const h=q==="low"?.0045:q==="medium"?.0034:.0028;
-  const key="hair|"+(P.seed||0)+"|"+th+"|"+tk+"|"+q;
+  const key="hair|"+JSON.stringify(P)+"|"+q;
   const poly=cachePoly(key,()=>{const pl=polygonize(F.f,[-.115,-.13,-.135],[.115,.2,.13],h,{levels:3,lip:1.3,seedS:3});
     const hc=lin(P.hairC||0x17130f);
     paint(pl,(x,y,z)=>{const a=Math.atan2(x,z+.04);const st=.92+.045*Math.sin(a*150+N2(x*60,y*30,z*60)*3)+.025*N1(x*120,y*120,z*120);const grey=P.hairGrey||0;

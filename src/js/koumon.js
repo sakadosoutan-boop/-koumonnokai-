@@ -144,8 +144,13 @@
   function speakerHTML(id) {
     var c = who(id);
     if (!c) return '<div class="km-speaker narr">　</div>';
-    var p = window.KoumonClassroom && window.KoumonClassroom.people[id];
-    return '<div class="km-speaker"><span class="km-seal km-' + c.side + '">' + esc(c.seal) + '</span><b>' + esc(c.name) + '</b>' + (p ? '<small>' + esc(p[0] + ' · ' + p[3]) + '</small>' : '') + '</div>';
+    var identity = id === 'you' ? (st && st.ch === 'c8' ? 'u' : 'hai') : id === 'ko' ? 'hai' : id;
+    var classroom = window.KoumonClassroom;
+    var p = classroom && classroom.people[identity];
+    var portrait = classroom && classroom.portraitHTML ? classroom.portraitHTML(identity) : '';
+    return '<div class="km-speaker' + (portrait ? ' km-speaker-portrait' : '') + '">' + portrait +
+      '<span class="km-speaker-identity"><span class="km-speaker-name"><span class="km-seal km-' + c.side + '">' + esc(c.seal) + '</span><b>' + esc(c.name) + '</b></span>' +
+      (p ? '<small>' + esc(p[0] + ' · ' + p[3]) + '</small>' : '') + '</span></div>';
   }
   function reduced() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
 

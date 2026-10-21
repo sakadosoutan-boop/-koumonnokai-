@@ -21,7 +21,7 @@
     {tag:'仲介',title:'夜の使者が、人のつながりを動かす。',body:'項伯は親しい張良を助けようと、劉邦の陣を訪れた。張良は劉邦に危機を伝え、劉邦は項伯を通じて、項羽へ弁明する。',point:'項伯 → 張良 → 劉邦。敵味方の線を越える関係がある。',source:'項羽本紀「項伯乃夜馳之沛公軍」以下',map:'people'},
     {tag:'翌朝',title:'百余騎で、鴻門の宴へ。',body:'劉邦は翌朝、百騎あまりを従えて項羽に会い、謝罪する。かつての共闘相手に、どんな言葉をかけるのか。ここから本文を読んでいこう。',point:'言葉と人物の動きが、劉邦の運命を左右する。',source:'項羽本紀「沛公旦日従百余騎来見項王」',map:'hongmen'}
   ];
-  var panel, index=0, auto=false, timer=null, callbacks, portraitSerial=0;
+  var panel, index=0, auto=false, timer=null, callbacks;
   var answers={promise:null,force:null};
   function homeHTML(meta, is3D) {
     return '<div class="km-home"><div class="km-home-art" aria-hidden="true"></div><div class="km-home-shade"></div><div class="km-home-content">' +
@@ -33,21 +33,22 @@
       '<div class="km-home-footer"><span>' + (meta.classroom?'授業モード · 時間制限なし':'挑戦モード · 命と決断') + '</span><button data-km="settings">表示・授業設定</button><span>' + (is3D?'3Dの舞台':'影絵の舞台') + '</span></div>' +
       '<p class="km-art-note">表紙・舞台は学習のためのイメージ表現です。</p></div></div>';
   }
-  function face(id) {
-    var p=people[id], beard=id==='zo'?'M38 53 Q50 92 62 53 L57 84 L48 96 L43 81 Z':id==='hai'?'M37 53 Q50 80 63 53 L59 72 L49 84 L41 69 Z':'M40 56 Q50 64 60 56 L54 68 L47 70 Z';
-    var gradient='km-portrait-'+(++portraitSerial), old=id==='zo', warrior=id==='u'||id==='kai'||id==='sou';
-    var robe={hai:'#3b706c',ryo:'#62858b',u:'#944d40',zo:'#8d7954',haku:'#6c627e',kai:'#324f54',sou:'#784d36',chin:'#586177'}[id];
-    return '<svg class="km-portrait" viewBox="0 0 100 120" aria-hidden="true"><defs><linearGradient id="'+gradient+'" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e3c99f"/><stop offset="1" stop-color="#9e795b"/></linearGradient></defs><path fill="'+robe+'" d="M8 120 L16 86 Q25 76 39 74 L61 74 Q77 76 86 88 L94 120Z"/>'+(warrior?'<path d="M19 92H38M16 102H42M13 112H44M62 92H81M59 102H84M56 112H87" stroke="#c7b286" stroke-width="2" opacity=".7"/>':'')+'<path fill="#dec9a6" d="M37 69 L40 82 L51 94 L63 80 L62 66"/><ellipse cx="50" cy="43" rx="'+(warrior?23:20)+'" ry="29" fill="url(#'+gradient+')"/><path fill="'+(old?'#b6b3a4':'#252b2c')+'" d="M28 40 L29 22 Q32 8 50 9 Q70 9 72 27 L70 43 L65 28 Q49 34 34 27Z"/><path fill="#252b2c" d="M33 20 L34 8 L64 8 L67 20Z M42 7 L44 0 L58 0 L60 7Z"/>'+(id==='u'?'<path d="M31 19H68M37 8L43 20M62 8L56 20" stroke="#d6ba7d" stroke-width="3"/>':'')+'<path d="M35 40L44 39 M56 39L65 40 M50 42L47 53L53 54" fill="none" stroke="#4b3b30" stroke-width="2"/><path fill="'+(old?'#c9c4b7':'#302d2a')+'" d="'+(id==='ryo'||id==='sou'?'M43 59Q50 62 57 59':beard)+'"/><path d="M37 78 L52 99 L67 78 M52 99 L46 120" fill="none" stroke="#d4c39d" stroke-width="3"/></svg>';
+  // 4列×2行の人物画。セルは正方形のまま切り出し、氏名は隣の本文で示す。
+  var portraitOrder = ['hai','u','ryo','zo','haku','kai','sou','chin'];
+  function portraitHTML(id) {
+    var at=portraitOrder.indexOf(id);
+    if(at<0)return '';
+    return '<span class="km-portrait km-portrait-'+id+'" aria-hidden="true" style="background-position:'+((at%4)*100/3)+'% '+(Math.floor(at/4)*100)+'%"></span>';
   }
   function personHTML(id) {
-    var p=people[id];return '<article class="km-person-card '+p[5]+'">'+face(id)+'<div><span class="km-evidence-label">人物ガイド</span><h4><ruby>'+p[0]+'<rt>'+p[1]+'</rt></ruby></h4><b>'+p[2]+'</b><p>'+p[3]+'</p><small>'+p[4]+'</small></div></article>';
+    var p=people[id];return '<article class="km-person-card '+p[5]+'">'+portraitHTML(id)+'<div><span class="km-evidence-label">人物ガイド</span><h4><ruby>'+p[0]+'<rt>'+p[1]+'</rt></ruby></h4><b>'+p[2]+'</b><p>'+p[3]+'</p><small>'+p[4]+'</small></div></article>';
   }
   function charactersHTML() {
     return '<h3>同じ人に、いくつもの呼び名。</h3><p class="km-m-lead">本文の呼称を確かめよう。人物画と衣の色は、見分けるためのイメージです。</p><div class="km-relation"><span>張良が、劉邦に助言する。</span><b>張良と項伯には、以前からの交友がある。</b><span>項伯は項羽の叔父。范増は項羽に進言する。</span></div><div class="km-person-grid">'+Object.keys(people).map(personHTML).join('')+'</div>';
   }
   function mapSVG(s) {
     var a=s.map, routes=['routes','arrival','tension','hongmen'].indexOf(a)>=0;
-    if(a==='people') return '<div class="km-intro-people">'+['haku','ryo','hai'].map(function(id,i){return (i?'<span class="km-relation-arrow">→<small>'+(i===1?'知らせる':'伝える')+'</small></span>':'')+'<button data-person="'+id+'">'+face(id)+'<strong>'+people[id][0]+'</strong><small>'+people[id][2]+'</small></button>';}).join('')+'</div><p class="km-map-caption">旧交が、陣営をつなぐ。</p>';
+    if(a==='people') return '<div class="km-intro-people">'+['haku','ryo','hai'].map(function(id,i){return (i?'<span class="km-relation-arrow">→<small>'+(i===1?'知らせる':'伝える')+'</small></span>':'')+'<button data-person="'+id+'">'+portraitHTML(id)+'<strong>'+people[id][0]+'</strong><small>'+people[id][2]+'</small></button>';}).join('')+'</div><p class="km-map-caption">旧交が、陣営をつなぐ。</p>';
     return '<svg class="km-intro-map '+a+'" viewBox="0 0 800 470" role="group" aria-label="劉邦と項羽の動きを示す模式図。西に関中、東に楚、北に鉅鹿。人物名を押すと紹介が開きます。">'+
       '<defs><pattern id="map-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#b49b73" opacity=".12"/></pattern><marker id="arrow-han" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10" fill="#7cc8be"/></marker><marker id="arrow-so" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10" fill="#dc8b76"/></marker></defs>' +
       '<rect width="800" height="470" fill="url(#map-grid)"/><path class="km-land" d="M35 230 Q95 120 190 150L270 110L380 145L490 95L650 110L750 190L715 350L615 390L450 365L340 405L200 360L80 345Z"/>'+
@@ -109,5 +110,5 @@
     var K=window.KOUMON;
     return K.aiPrompt+'\n\n【資料：引用はこの範囲から】\n'+ids.filter(function(id){return K.genbun[id];}).map(function(id){var g=K.genbun[id];return '['+id+'] '+g.src+'「'+g.title+'」\n原文：'+g.hakubun+'\n書き下し（学習用）：'+g.yomi;}).join('\n\n');
   }
-  window.KoumonClassroom={homeHTML:homeHTML,charactersHTML:charactersHTML,people:people,open:open,hide:hide,buildPrompt:buildPrompt,scenes:scenes};
+  window.KoumonClassroom={homeHTML:homeHTML,charactersHTML:charactersHTML,people:people,portraitHTML:portraitHTML,open:open,hide:hide,buildPrompt:buildPrompt,scenes:scenes};
 })();

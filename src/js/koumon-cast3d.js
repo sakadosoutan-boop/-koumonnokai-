@@ -166,19 +166,20 @@
   }
   /* robe: 表衣 / trim: 縁 / inner: 中衣（襟元の白）/ belt: 大帯 / pei: 佩玉 / cap: 冠 / armor: 'lacq'|'iron' / lace: 綴じ紐の色 */
   var CAST = {
-    hai:  { h: 1.75, robe: 0x3b706c, trim: 0x203b39, inner: 0xe8dcc4, belt: 0x1a0e0c, pei: 1, cap: 'liushi', sword: 1,
-            head: headP({ seed: 301, age: 51, thin: .32, smile: .18, nose: 1.16, browK: 1.22, cran: [1, 1.05, 1.02], jaw: 1.02, beard: 'long', beardLen: .17, beardW: 1.45, whiskers3: 1.25, hairC: 0x16120f, hairGrey: .14, hairGloss: .55, wrinkles: .7, browDrop: .004, eyeOpenU: .0046, skin: 0xc29772 }) },
-    ko:   { h: 1.75, robe: 0x140e10, trim: 0x8a2418, inner: 0xe8dcc4, belt: 0xa8842a, pei: 1, cap: 'mian',
-            head: headP({ seed: 301, age: 56, thin: .38, smile: .28, nose: 1.16, browK: 1.22, cran: [1, 1.05, 1.02], jaw: 1.02, beard: 'long', beardLen: .19, beardW: 1.45, whiskers3: 1.25, hairC: 0x2a2420, hairGrey: .55, wrinkles: .95, skin: 0xc29772 }) },
-    ryo:  { h: 1.68, robe: 0x62858b, trim: 0x294348, inner: 0xf0e8d8, belt: 0x22262c, pei: 1, cap: 'jinxian',
-            head: headP({ seed: 302, age: 28, thin: 0, smile: .2, jaw: .88, nose: .93, browK: .82, beard: 'none', wrinkles: 0, eyeOpenU: .0056, lipUvol: .0017, lipLvol: .0022, skin: 0xd6b08e, skinRed: 0xc8907a, hairC: 0x0e0c0a, hairGloss: .6 }) },
+    // 顔・体格の差は識別のための造形解釈。表情を固定した笑顔にせず、台詞の余地を残す。
+    hai:  { h: 1.75, build: 1.04, robe: 0x3b706c, trim: 0x203b39, inner: 0xe8dcc4, belt: 0x1a0e0c, pei: 1, cap: 'liushi', sword: 1,
+            head: headP({ seed: 301, age: 51, thin: .32, smile: .06, nose: 1.18, browK: 1.22, cran: [1, 1.05, 1.02], jaw: 1.06, neckR: 1.02, beard: 'long', beardLen: .17, beardW: 1.45, whiskers3: 1.25, hairC: 0x16120f, hairGrey: .22, hairGloss: .4, rough: .68, wrinkles: .7, browDrop: .004, eyeOpenU: .0046, skin: 0xc29772 }) },
+    ko:   { h: 1.75, build: 1.04, robe: 0x140e10, trim: 0x8a2418, inner: 0xe8dcc4, belt: 0xa8842a, pei: 1, cap: 'mian',
+            head: headP({ seed: 301, age: 56, thin: .38, smile: .1, nose: 1.18, browK: 1.22, cran: [1, 1.05, 1.02], jaw: 1.06, neckR: 1.02, beard: 'long', beardLen: .19, beardW: 1.45, whiskers3: 1.25, hairC: 0x2a2420, hairGrey: .55, hairGloss: .35, rough: .72, wrinkles: .95, skin: 0xc29772 }) },
+    ryo:  { h: 1.68, build: .92, robe: 0x62858b, trim: 0x294348, inner: 0xf0e8d8, belt: 0x22262c, pei: 1, cap: 'jinxian',
+            head: headP({ seed: 302, age: 28, thin: .12, smile: .03, cran: [.96, 1.04, .98], jaw: .88, neckR: .94, nose: .93, browK: .82, beard: 'none', wrinkles: .1, eyeOpenU: .0056, lipUvol: .0017, lipLvol: .0022, skin: 0xd6b08e, skinRed: 0xc8907a, hairC: 0x0e0c0a, hairGloss: .45, rough: .6 }) },
     kai:  { h: 1.85, build: 1.22, robe: 0x324f54, trim: 0x172a2e, armor: 'iron', lace: 0x47727a, cap: 'kabuto', shield: 1, sword: 1, legs: 0x2a2018,
             head: headP({ seed: 303, age: 38, thin: 0, smile: -.05, jaw: 1.2, browK: 1.38, nose: 1.12, browDrop: .014, beard: 'long', beardLen: .11, hairC: 0x0e0c0a, wrinkles: .55, skin: 0xb08262, skinRed: 0xa86a52 }) },
     u:    { h: 1.9, build: 1.2, robe: 0x944d40, trim: 0xb08a2e, armor: 'lacq', lace: 0xa4533f, gold: 1, cap: 'bawang', cape: 0x8a1410, sword: 1, legs: 0x1a1414,
-            head: headP({ seed: 304, age: 27, thin: .05, smile: -.1, jaw: 1.14, browK: 1.32, nose: 1.06, eyeTilt: -.015, browDrop: .006, beard: 'long', beardLen: .05, hairC: 0x0a0808,
-              doublePupil: true, irisR: .2, iris: [34, 22, 16], beardW: 1.3, whiskers3: 1.5, wrinkles: .2, eyeOpenU: .0062, skin: 0xbf9272 }) },
-    zo:   { h: 1.64, robe: 0x8d7954, trim: 0x3e3424, inner: 0xe0d6c0, belt: 0x241c14, pei: 0, jue: 1, cap: 'jinxian',
-            head: headP({ seed: 305, age: 74, thin: .88, smile: -.1, hairC: 0xdcd6cc, beard: 'long', beardLen: .19, wrinkles: 1.4, spots: 10, browDrop: .016, nose: 1.08, iris: [62, 44, 32], hood: 1.25, hairThick: .005, topknot: .026 }) },
+            head: headP({ seed: 304, age: 27, thin: .05, smile: -.06, cran: [1.05, 1, 1.03], jaw: 1.17, neckR: 1.12, browK: 1.32, nose: 1.06, eyeTilt: -.015, browDrop: .006, beard: 'long', beardLen: .05, hairC: 0x0a0808,
+              doublePupil: true, irisR: .2, iris: [34, 22, 16], beardW: 1.3, whiskers3: 1.5, wrinkles: .2, eyeOpenU: .0062, rough: .64, skin: 0xbf9272 }) },
+    zo:   { h: 1.64, build: .94, restLean: .055, robe: 0x8d7954, trim: 0x3e3424, inner: 0xe0d6c0, belt: 0x241c14, pei: 0, jue: 1, cap: 'jinxian',
+            head: headP({ seed: 305, age: 74, thin: .88, smile: -.08, cran: [.96, 1.08, .97], jaw: .94, neckR: .94, hairC: 0xdcd6cc, beard: 'long', beardLen: .19, beardW: .88, wrinkles: 1.4, spots: 10, browDrop: .011, nose: 1.08, iris: [62, 44, 32], hood: 1.25, eyeOpenU: .0044, hairThick: .005, topknot: .026, hairGloss: .22, rough: .78 }) },
     haku: { h: 1.73, robe: 0x6c627e, trim: 0x302a40, inner: 0xe0d6c0, belt: 0x10141e, pei: 1, cap: 'jinxian', sword: 1,
             head: headP({ seed: 306, age: 50, thin: .4, smile: .15, beard: 'long', beardLen: .12, hairC: 0x1e1a16, hairGrey: .2, wrinkles: .7, nose: 1.03 }) },
     sou:  { h: 1.78, robe: 0x784d36, trim: 0x8a6a2a, armor: 'iron', lace: 0x896844, cap: 'kabuto', sword: 1, legs: 0x2a2018,
@@ -700,7 +701,7 @@
       chest.add(bandOnTorso([[.058, .222], [.04, .18], [.0, .12]], .012, s, b, c.inner || 0xe8dcc4, .011));
       chest.add(bandOnTorso([[-.05, .225], [-.03, .19], [-.005, .15]], .03, s, b, c.trim, .005));
       var beltG = new THREE.CylinderGeometry(1, 1, .065 * s, 40, 1, true), bpp = beltG.attributes.position;
-      for (var i = 0; i < bpp.count; i++) { var a = Math.atan2(bpp.getX(i), bpp.getZ(i)), wd = torsoAt(-.27); bpp.setX(i, sexp(Math.sin(a), 2.6) * (wd[0] + .008) * s); bpp.setZ(i, sexp(Math.cos(a), 2.4) * (wd[1] + .008) * s); }
+      for (var i = 0; i < bpp.count; i++) { var a = Math.atan2(bpp.getX(i), bpp.getZ(i)), wd = torsoAt(-.27); bpp.setX(i, sexp(Math.sin(a), 2.6) * (wd[0] * (1 + (b - 1) * .5) + .008) * s); bpp.setZ(i, sexp(Math.cos(a), 2.4) * (wd[1] * (1 + (b - 1) * .4) + .008) * s); }
       beltG.computeVertexNormals();
       var belt = mesh(beltG, std(c.belt || 0x161010, .7, 0, { side: THREE.DoubleSide })); belt.position.y = -.27 * s; chest.add(belt);
       [.03, -.02].forEach(function (x, k) { var tail = mesh(new THREE.BoxGeometry(.045 * s, (.42 - k * .06) * s, .006), std(c.belt || 0x161010, .8)); tail.position.set(x * s, (-.5 + k * .03) * s, frontZ(x, -.27, b) * s + .012); tail.rotation.z = k ? .05 : -.04; chest.add(tail); });
@@ -848,6 +849,7 @@
       body.rotation.set(0, 0, 0); body.position.set(0, 0, 0);
       spine.rotation.set(0, 0, 0); neck.rotation.set(0, 0, 0); headPiv.rotation.set(0, 0, 0);
       var seated = pose === 'sit' || pose === 'raise', kneel = pose === 'kneel';
+      if (pose === 'stand' || seated || kneel) spine.rotation.x = c.restLean || 0;
       skirtStand.visible = !seated && !kneel;
       skirtSit.visible = seated; skirtKneel.visible = kneel;
       if (skirtPlates) { skirtPlates.visible = true; skirtPlates.position.y = seated ? .02 * s : kneel ? .0 : 0; skirtPlates.scale.y = seated ? .55 : kneel ? .8 : 1; }
