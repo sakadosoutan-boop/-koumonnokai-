@@ -5,8 +5,12 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test tests/*.test.cjs",
     "build": "node tools/build.mjs",
     "worksheet": "python3 tools/worksheet.py"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "jsdom": "26.1.0"
+  }
 }

@@ -616,7 +616,7 @@
     stageId: '', lightId: '', stage: null, cast: {}, figs: {}, anim: [], embers: [], parts: null,
     cam: { pos: new V3(), tgt: new V3() }, from: null, to: null, tStart: 0, tDur: 1.7, drift: 0,
     shake: 0, flash: 0, flashC: '255,255,255', pulse: 0, labels: {}, bubble: null, reduced: false, onFrame: null,
-    keyLight: null, hemi: null, fx: null, horse: null, rider: null, travel: 0, building: false
+    keyLight: null, hemi: null, faceFill: null, framingObserver: null, fx: null, horse: null, rider: null, travel: 0, building: false
   };
 
   function supported() {
@@ -639,11 +639,22 @@
     S.renderer.shadowMap.enabled = Q !== 'low';
     S.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     S.camera = new THREE.PerspectiveCamera(38, 1, .05, 600);
+    // 発言者の顔を灯火だけに頼らず読めるよう、弱い補助光をカメラと共に動かす。
+    S.faceFill = new THREE.DirectionalLight(0xffead2, .55);
+    S.faceFill.position.set(-1.5, 2, 2);
+    S.faceFill.target.position.set(0, 0, -3);
+    S.camera.add(S.faceFill, S.faceFill.target);
     // 場面の暗転・閃光を描く板（カメラの前）
     var fxM = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthTest: false, depthWrite: false });
     S.fx = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), fxM); S.fx.position.z = -.2; S.fx.renderOrder = 999;
     S.camera.add(S.fx);
     resize();
+    if (S.framingObserver) S.framingObserver.disconnect();
+    var panel = canvas.parentNode.querySelector('.km-panel');
+    if (panel && window.ResizeObserver) {
+      S.framingObserver = new ResizeObserver(frameAbovePanel);
+      S.framingObserver.observe(panel);
+    }
     return true;
   }
   function resize() {
@@ -656,7 +667,17 @@
     S.camera.aspect = S.cw / S.ch;
     // 縦長の画面では画角を広げて、人物が切れないようにする
     S.camera.fov = S.cw / S.ch < 1 ? 54 : 38;
-    S.camera.updateProjectionMatrix();
+    frameAbovePanel();
+  }
+
+  function frameAbovePanel() {
+    if (!S.camera || !S.cv) return;
+    var panel = S.cv.parentNode.querySelector('.km-panel');
+    var r = S.cv.getBoundingClientRect(), p = panel && panel.getBoundingClientRect();
+    // 注視点を、本文より上に残る領域の中央へ置く。DOM計測はサイズ変更時のみ。
+    var visible = p && p.height && p.top > r.top ? Math.min(r.height, p.top - r.top) : r.height;
+    var shift = Math.min(.22, Math.max(0, (1 - visible / Math.max(1, r.height)) / 2));
+    S.camera.setViewOffset(S.cw, S.ch, 0, S.ch * shift, S.cw, S.ch);
   }
 
   /* ---------- 空 ---------- */
@@ -681,6 +702,7 @@
   function applyLight(sc, L, indoor) {
     sc.fog = new THREE.FogExp2(col(L.fog[0]), L.fog[1]);
     S.renderer.toneMappingExposure = L.exp;
+    S.faceFill.intensity = indoor ? .7 : .45;
     var hemi = new THREE.HemisphereLight(col(L.hemi[0]), col(L.hemi[1]), L.hemi[2]); sc.add(hemi);
     var key = new THREE.DirectionalLight(col(L.sun[0]), L.sun[1]);
     key.position.set(L.sun[2][0], L.sun[2][1], L.sun[2][2]);
@@ -785,6 +807,8 @@
     if (S.scene) {
       Object.keys(FIGCACHE).forEach(function (k) { var f = FIGCACHE[k]; if (f && f.parent) f.parent.remove(f); });
       if (S.horse && S.horse.parent) S.horse.parent.remove(S.horse);
+      // カメラに付けた暗転板と補助光は、次の舞台でも使う。
+      S.scene.remove(S.camera);
       disposeScene(S.scene);
     }
     var sc = new THREE.Scene();
@@ -953,8 +977,7 @@
       if (f.userData.rig && f.userData.home && f === S.cast.hai && st === STAGES.feast) dir = new V3(.35, 0, 1).normalize(); // 背を向けた沛公は肩越しに
       pos = h.clone().add(dir.multiplyScalar(dist)); pos.y = h.y + .08;
       tgt = h.clone(); tgt.y -= .1;
-      // 縦長の画面では下に本文パネルが重なるので、顔が画面の上寄りに来るよう注視点を下げる
-      if (S.cw / S.ch < 1) { tgt.y = h.y - .42; pos.y = h.y - .02; }
+      // 本文を避ける上下配置は frameAbovePanel に任せ、縦長でも二重に上へ寄せない。
     }
     S.from = { pos: S.cam.pos.clone(), tgt: S.cam.tgt.clone() };
     S.to = { pos: pos, tgt: tgt, id: f ? target : null };

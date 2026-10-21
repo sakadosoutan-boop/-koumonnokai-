@@ -18,10 +18,13 @@
   var meta = null, st = null;
   var $root = null, el = {};
   var mode = '', typing = null, cur = null, onExit = null, timerId = null, cardTimer = null, standalone = false;
+  var clockState = null, modalFocus = null, modalStack = [], sceneEpoch = 0;
+  var aiSources = ['g02', 'g08', 'g09', 'g10'];
 
   /* ============================ 記録 ============================ */
   function blankMeta() {
-    return { v: 1, save: null, endings: {}, gen: {}, cleared: {}, sound: false, plays: 0, best: null, view: '' };
+    return { v: 2, save: null, endings: {}, gen: {}, cleared: {}, sound: false, plays: 0, best: null, view: '',
+      classroom: true, projection: false, instant: true, reflection: {}, introStep: 0 };
   }
   function loadMeta() {
     meta = blankMeta();
@@ -37,6 +40,9 @@
     } catch (e) { /* 壊れた記録は使わない */ }
     if (meta.save && (!meta.save.node || !NODES[meta.save.node])) meta.save = null;
     ['endings', 'gen', 'cleared'].forEach(function (k) { if (!meta[k] || typeof meta[k] !== 'object' || Array.isArray(meta[k])) meta[k] = {}; });
+    meta.v = 2;
+    if (!meta.reflection || typeof meta.reflection !== 'object' || Array.isArray(meta.reflection)) meta.reflection = {};
+    if (meta.save) meta.save = hydrateState(meta.save);
   }
   function saveMeta() {
     try { localStorage.setItem(KEY, JSON.stringify(meta)); return true; }
@@ -45,7 +51,7 @@
 
   function freshState(chapterId) {
     var s = { node: '', ch: chapterId || 'c0', life: 3, maxLife: 3, ikari: 40, satsu: 40, saku: 3, flags: {}, items: [],
-      streak: 0, q: 0, ok: 0, hints: 0, picks: [], log: [], cp: null };
+      streak: 0, q: 0, ok: 0, hints: 0, picks: [], log: [], cp: null, rewinds: [], hinted: {}, phase: null };
     var idx = chapIndex(s.ch);
     // 途中の章から始めるときは、それまでの場面を史記どおりに選んだものとする
     if (idx >= 2) { s.flags.kyodai = true; s.flags.honest = true; }
@@ -54,6 +60,37 @@
     return s;
   }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function hydrateState(saved) {
+    var at = saved && NODES[saved.node];
+    if (!at) return null;
+    var state = freshState(at.ch);
+    Object.keys(state).forEach(function (key) {
+      if (saved[key] !== undefined && saved[key] !== null && typeof saved[key] === typeof state[key]) state[key] = saved[key];
+    });
+    state.node = saved.node; state.ch = at.ch;
+    ['flags', 'hinted'].forEach(function (key) { if (!state[key] || Array.isArray(state[key])) state[key] = {}; });
+    ['items', 'picks', 'log'].forEach(function (key) { if (!Array.isArray(state[key])) state[key] = []; });
+    state.items = state.items.filter(function (id) { return !!K.items[id]; });
+    state.log = state.log.filter(function (line) { return Array.isArray(line); });
+    state.picks = state.picks.filter(function (pick) { return pick && typeof pick === 'object'; });
+    ['life', 'maxLife', 'ikari', 'satsu', 'saku', 'streak', 'q', 'ok', 'hints'].forEach(function (key) {
+      if (!Number.isFinite(state[key]) || state[key] < 0) state[key] = freshState(at.ch)[key];
+    });
+    state.maxLife = Math.min(3, Math.max(1, state.maxLife)); state.life = Math.min(state.life, state.maxLife);
+    state.remainingMs = Number.isFinite(saved.remainingMs) ? Math.max(0, saved.remainingMs) : null;
+    state.genView = saved.genView === 'haku' ? 'haku' : 'yomi';
+    var phase = saved.phase;
+    if (phase && phase.node === state.node &&
+      ((phase.kind === 'feedback' && at.n.k === 'read' && at.n.o[phase.choice]) ||
+       (phase.kind === 'react' && NODES[phase.after] && typeof phase.text === 'string'))) state.phase = phase;
+    else state.phase = null;
+    state.game = saved.game && saved.game.node === state.node ? saved.game : null;
+    state.rewinds = Array.isArray(saved.rewinds) ? saved.rewinds.filter(function (point) {
+      return point && NODES[point.node] && point.snap && point.snap.node === point.node;
+    }).slice(-64) : [];
+    if (state.cp && (!NODES[state.cp.node] || !state.cp.snap)) state.cp = null;
+    return state;
+  }
 
   /* ============================ 台本の索引 ============================ */
   function chapIndex(id) { for (var i = 0; i < K.chapters.length; i++) if (K.chapters[i].id === id) return i; return 0; }
@@ -107,7 +144,13 @@
   function speakerHTML(id) {
     var c = who(id);
     if (!c) return '<div class="km-speaker narr">　</div>';
-    return '<div class="km-speaker"><span class="km-seal km-' + c.side + '">' + esc(c.seal) + '</span><b>' + esc(c.name) + '</b></div>';
+    var identity = id === 'you' ? (st && st.ch === 'c8' ? 'u' : 'hai') : id === 'ko' ? 'hai' : id;
+    var classroom = window.KoumonClassroom;
+    var p = classroom && classroom.people[identity];
+    var portrait = classroom && classroom.portraitHTML ? classroom.portraitHTML(identity) : '';
+    return '<div class="km-speaker' + (portrait ? ' km-speaker-portrait' : '') + '">' + portrait +
+      '<span class="km-speaker-identity"><span class="km-speaker-name"><span class="km-seal km-' + c.side + '">' + esc(c.seal) + '</span><b>' + esc(c.name) + '</b></span>' +
+      (p ? '<small>' + esc(p[0] + ' · ' + p[3]) + '</small>' : '') + '</span></div>';
   }
   function reduced() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
 
@@ -222,6 +265,8 @@
         '<div class="km-chip km-title-chip" id="km-title">楚漢の章</div>' +
         '<button class="km-chip km-btn-chip" data-km="menu">目次</button>' +
         '<button class="km-chip km-btn-chip" data-km="book">原文帳</button>' +
+        '<button class="km-chip km-btn-chip" data-km="characters">人物</button>' +
+        '<button class="km-chip km-btn-chip" data-km="settings">授業設定</button>' +
         '<button class="km-chip km-btn-chip" data-km="log">履歴</button>' +
         '<button class="km-chip km-btn-chip" data-km="view" title="本文を隠して場面の絵だけを見る（H キー）">絵を見る</button>' +
         '<button class="km-chip km-btn-chip" data-km="sound" id="km-sound" aria-pressed="false">音 切</button>' +
@@ -246,6 +291,13 @@
     $root.addEventListener('click', onClick);
     document.addEventListener('keydown', onKey, true);
     window.addEventListener('resize', onResize);
+    document.addEventListener('visibilitychange', function () { if (document.hidden) pauseTimer(); else resumeTimer(); });
+    window.addEventListener('pagehide', function () { if (st && mode !== 'end') persist(); });
+    window.addEventListener('save-error', function () {
+      var warning = $root.querySelector('.km-save-warning');
+      if (!warning) { warning = document.createElement('div'); warning.className = 'km-save-warning'; warning.setAttribute('role', 'status'); $root.appendChild(warning); }
+      warning.textContent = 'この端末では記録を保存できません。ページを閉じると進み具合は失われます。';
+    });
   }
   function onResize() { if ($root && ST) ST.resize(); }
 
@@ -283,27 +335,30 @@
     titleScreen();
   }
   function close() {
-    stopTimer();
+    if (st && mode !== 'end') persist();
+    cancelScene();
     stopAmbience();
-    if (st) persist();
-    if (window.KoumonStage) window.KoumonStage.stop();
+    closeModal(false);
+    if (window.KoumonClassroom) window.KoumonClassroom.hide();
+    if (ST) ST.stop();
     if ($root) $root.hidden = true;
     document.documentElement.classList.remove('km-open');
     if (onExit) onExit();
   }
 
   function persist() {
+    if (st && clockState) st.remainingMs = timerRemaining();
     if (st && st.node) meta.save = clone(st);
     saveMeta();
   }
 
   /* ============================ 表紙 ============================ */
   function titleScreen() {
-    st = null; mode = 'title';
-    Promise.resolve(ST.setScene('koumon', 'night', ['u', 'zo'], {})).then(function () {
-      ST.focus('wide');
-      if (ST.prewarm) ST.prewarm(['hai', 'ryo', 'msg', 'haku', 'kai', 'ei', 'sou', 'chin']);
-    });
+    cancelScene(); closeModal(false); stopAmbience();
+    if (window.KoumonClassroom) window.KoumonClassroom.hide();
+    st = null; cur = null; mode = 'title';
+    applyPreferences();
+    ST.stop();
     $root.classList.add('km-at-title');
     $root.classList.remove('km-view');
     el.status.innerHTML = '';
@@ -332,10 +387,33 @@
           '<button class="km-tab' + (ST.is3D ? '' : ' on') + '" data-km="view2d" aria-pressed="' + !ST.is3D + '">影絵（軽量）</button>' +
         '</div>' +
       '</div>';
+    if (window.KoumonClassroom) el.panel.innerHTML = window.KoumonClassroom.homeHTML(meta, !!ST.is3D);
     mode = 'title';
   }
 
+  function cancelScene() {
+    sceneEpoch++; stopTimer(); clearTimeout(cardTimer); showCard.fin = null;
+    if (typing) { clearInterval(typing.id); typing = null; }
+    if (el.card) el.card.classList.remove('on');
+    if (el.fade) el.fade.classList.remove('show');
+  }
+  function applyPreferences() {
+    $root.classList.toggle('km-classroom', meta.classroom);
+    $root.classList.toggle('km-projection', meta.projection);
+  }
+  function intro() {
+    if (st && mode !== 'end') persist();
+    cancelScene(); closeModal(false); mode = 'intro'; ST.stop();
+    window.KoumonClassroom.open($root, meta.introStep, {
+      step: function (i) { meta.introStep = i; saveMeta(); },
+      done: function () { window.KoumonClassroom.hide(); ST.start(); startNew('c0'); },
+      exit: function () { ST.start(); titleScreen(); }
+    });
+  }
+
   function startNew(chId) {
+    cancelScene(); closeModal(false);
+    ST.start();
     $root.classList.remove('km-at-title');
     st = freshState(chId || 'c0');
     meta.plays++;
@@ -346,10 +424,12 @@
     if (!meta.save) return startNew('c0');
     $root.classList.remove('km-at-title');
     st = clone(meta.save);
+    ST.start();
     var n = NODES[st.node];
     // 途中の場面へ戻るときは、その章の舞台を描き直してから続ける
     var sc = lastScene(st.node);
-    if (sc && sc.n !== n.n) applyScene(sc.n, true).then(function () { go(st.node, true); });
+    cancelScene(); var epoch = sceneEpoch;
+    if (sc && sc.n !== n.n) applyScene(sc.n, true).then(function () { if (epoch === sceneEpoch && st) go(st.node, true); });
     else go(st.node, true);
   }
   function lastScene(id) {
@@ -361,7 +441,7 @@
 
   /* ============================ 進行 ============================ */
   function go(id, resuming) {
-    stopTimer();
+    cancelScene();
     if (!id || !NODES[id]) { titleScreen(); return; }
     var at = NODES[id], n = at.n;
     if (st.ch !== at.ch) {
@@ -370,11 +450,23 @@
       st.ch = at.ch;
     }
     st.node = id;
+    if (!resuming) { st.phase = null; st.remainingMs = null; st.game = null; }
     if (n.cp && !resuming) { st.node = id; st.cp = { node: id, snap: snapshot() }; }
+    if ((n.t === 'ask' || n.t === 'game') && !st.phase && !st.game) {
+      var previous = st.rewinds[st.rewinds.length - 1];
+      if (!previous || previous.node !== id) {
+        st.rewinds.push({ node: id, snap: snapshot() });
+        if (st.rewinds.length > 64) st.rewinds.shift();
+      }
+    }
     cur = n;
     if (n.t !== 'end') persist();
     el.title.textContent = chap(st.ch).no + '　' + chap(st.ch).title;
     renderStatus();
+    if (resuming && st.phase && st.phase.node === id) {
+      if (st.phase.kind === 'feedback') { doAsk(n, true); return judgeRead(n, n.o[st.phase.choice], true); }
+      if (st.phase.kind === 'react') return renderReaction(st.phase);
+    }
     switch (n.t) {
       case 'scene': return doScene(n);
       case 'say': return doSay(n);
@@ -387,7 +479,42 @@
       case 'end': return doEnd(n.e);
     }
   }
-  function snapshot() { var s = clone(st); s.cp = null; return s; }
+  function snapshot() {
+    // 復帰点の中へ履歴や復帰点を入れ子にしない。
+    var s = {};
+    Object.keys(st).forEach(function (key) { if (key !== 'cp' && key !== 'rewinds') s[key] = st[key]; });
+    s.cp = null; s.rewinds = [];
+    return clone(s);
+  }
+  function retryPoint(eid) {
+    var points = st.rewinds, wanted = null, fallback = null;
+    function gameNode(kind) { return ORDER.filter(function (id) { return NODES[id].n.t === 'game' && NODES[id].n.g === kind; })[0]; }
+    if (eid === 'B7') { fallback = gameNode('gift'); wanted = function (p) { return p.node === fallback; }; }
+    else if (eid === 'B2' && !st.flags.kyodai) { fallback = 'c1-haku'; wanted = function (p) { return p.node === fallback; }; }
+    else if (eid === 'B2' && st.satsu >= 100) { fallback = 'c2-7'; wanted = function (p) { return p.snap.satsu < 100; }; }
+    else if (eid === 'B3') { fallback = 'c2-7'; wanted = function (p) { return p.snap.ikari < 100; }; }
+    else if (eid === 'B8') { fallback = st.node; wanted = function (p) { return p.node === st.node; }; }
+    for (var i = points.length - 1; i >= 0; i--) {
+      if (!wanted || wanted(points[i])) {
+        var point = clone(points[i]); point.snap.rewinds = clone(points.slice(0, i));
+        return cleanRetryPoint(point);
+      }
+    }
+    // 履歴を持たない旧版の記録でも、原因となった選択をやり直せる位置へ戻す。
+    if (fallback) {
+      var state = freshState(NODES[fallback].ch); state.node = fallback;
+      if (eid === 'B7') state.items = ['heki', 'to'];
+      return cleanRetryPoint({ node: fallback, snap: state });
+    }
+    return cleanRetryPoint(st.cp || { node: st.node, snap: snapshot() });
+  }
+  function cleanRetryPoint(point) {
+    point = clone(point);
+    point.snap.node = point.node;
+    point.snap.phase = null; point.snap.game = null; point.snap.remainingMs = null;
+    if (point.snap.life <= 0) point.snap.life = 1;
+    return point;
+  }
   function test(n) {
     if (n.f) return !!st.flags[n.f];
     if (n.ikari !== undefined) return st.ikari >= n.ikari;
@@ -415,27 +542,32 @@
 
   /* ---------- 舞台 ---------- */
   function applyScene(n, quiet) {
+    var epoch = sceneEpoch;
     var indoor = /tent|feast|nangong/.test(n.stage);
     if (meta.sound) ambience(indoor ? 'in' : 'out');
     return Promise.resolve(ST.setScene(n.stage, n.light, n.cast || [], n.pose || {})).then(function () {
+      if (epoch !== sceneEpoch) return;
       ST.focus('wide');
       if (!quiet && n.sfx) sfx(n.sfx);
     });
   }
   function fadeOver(kind, fn) {
+    var epoch = sceneEpoch;
     var f = el.fade;
     f.className = 'km-fade ' + (kind === 'white' ? 'white' : '') + ' show';
     void f.offsetWidth;
     setTimeout(function () {
+      if (epoch !== sceneEpoch) return;
       fn();
       f.classList.remove('show');
     }, reduced() ? 10 : 360);
   }
   function doScene(n) {
+    var epoch = sceneEpoch;
     if (n.set) apply(n);
     var after = function () {
       applyScene(n).then(function () {
-        if (cur !== n) return; // 準備のあいだに別の場面へ移った
+        if (cur !== n || epoch !== sceneEpoch || !st) return;
         if (n.caption) showCaption(n.caption);
         if (n.card) showCard(chap(st.ch), function () { go(nextOf(n)); });
         else go(nextOf(n));
@@ -463,7 +595,7 @@
       done();
     }
     showCard.fin = fin;
-    cardTimer = setTimeout(fin, reduced() ? 1600 : 3600);
+    if (!meta.classroom) cardTimer = setTimeout(fin, reduced() ? 1600 : 3600);
   }
 
   /* ---------- 台詞 ---------- */
@@ -478,14 +610,14 @@
     else if (n.b === 'think' && n.at && n.at !== 'wide') ST.showBubble(n.at, '（……）', 'think');
     else ST.hideBubble();
     logLine(n.w, n.x);
-    el.panel.innerHTML = speakerHTML(n.w) +
+    el.panel.innerHTML = speakerHTML(n.w) + '<span class="km-evidence-label">本文をもとにした再構成 · 創作の台詞を含む</span>' +
       '<div class="km-text' + (n.w ? '' : ' narr') + (n.w === 'you' ? ' inner' : '') + '" id="km-text"></div>' +
       '<div class="km-nav"><span class="km-hint-key">タップ／Enter で次へ</span><button class="km-btn gold km-next" data-km="next">次へ ▶</button></div>';
     typeText(document.getElementById('km-text'), n.x);
   }
   function typeText(node, text) {
     if (typing) { clearInterval(typing.id); typing = null; }
-    if (reduced()) { node.textContent = text; return; }
+    if (reduced() || meta.instant) { node.textContent = text; return; }
     var i = 0;
     node.textContent = '';
     typing = { node: node, text: text, id: setInterval(function () {
@@ -551,7 +683,7 @@
   }
 
   /* ---------- 選択 ---------- */
-  function doAsk(n) {
+  function doAsk(n, restoring) {
     mode = 'ask';
     ST.hideBubble();
     if (n.at) ST.focus(n.at); else if (n.w && n.w !== 'you') ST.focus(n.w);
@@ -563,12 +695,13 @@
       '<div class="km-ask-h">' + (n.k === 'read' ? '<span class="km-ask-tag read">読み解け</span>' : '<span class="km-ask-tag judge">決断</span>') +
         '<span class="km-ask-q">' + esc(n.q) + '</span></div>' +
       (n.stem ? '<div class="km-stem-wrap"><div class="km-vt km-stem">' + kanbunHTML(n.stem) + '</div></div>' : '') +
-      (n.timer ? '<div class="km-timer"><i id="km-timer-bar"></i></div>' : '') +
+      (n.timer && !meta.classroom ? '<div class="km-timer" aria-label="決断の残り時間"><i id="km-timer-bar"></i></div>' : '') +
       '<div class="km-opts">' + opts.map(function (x, k) {
         return '<button class="km-opt" data-km="pick" data-i="' + x.i + '"><span class="km-opt-n">' + '一二三四'.charAt(k) + '</span><span>' + esc(x.o.x) + '</span></button>';
       }).join('') + '</div>' +
-      (canHint ? '<div class="km-nav"><button class="km-btn km-hint-btn" data-km="hint"' + (st.saku > 0 ? '' : ' disabled') + '>' + esc(hintWho()) + 'に問う<small>策 残り ' + st.saku + '</small></button></div><div class="km-hint" id="km-hint" hidden></div>' : '');
-    if (n.timer && !reduced()) startTimer(n);
+      (canHint ? '<div class="km-nav"><button class="km-btn km-hint-btn" data-km="hint"' + (meta.classroom || st.saku > 0 || st.hinted[n.id] ? '' : ' disabled') + '>' + esc(hintWho()) + 'に問う<small>' + (meta.classroom ? '何度でも確認できます' : '策 残り ' + st.saku) + '</small></button></div><div class="km-hint" id="km-hint" hidden></div>' : '');
+    if (st.hinted[n.id]) showHint(n);
+    if (n.timer && !reduced() && !meta.classroom && !restoring) startTimer(n);
   }
   function hintWho() { return st.ch === 'c8' ? '虞' : st.ch === 'c9' ? '蕭何' : '子房（張良）'; }
   function shuffle(arr, seedStr) {
@@ -578,35 +711,53 @@
     return a;
   }
   function startTimer(n) {
-    var bar = document.getElementById('km-timer-bar'), t0 = Date.now(), dur = n.timer * 1000;
+    clockState = { n: n, remaining: st.remainingMs == null ? n.timer * 1000 : st.remainingMs, started: null };
+    resumeTimer();
+  }
+  function timerRemaining() { return clockState ? Math.max(0, clockState.remaining - (clockState.started == null ? 0 : Date.now() - clockState.started)) : null; }
+  function pauseTimer() {
+    if (!clockState) return;
+    clockState.remaining = timerRemaining(); clockState.started = null;
+    if (timerId) clearInterval(timerId); timerId = null;
+    if (st) { st.remainingMs = clockState.remaining; persist(); }
+  }
+  function resumeTimer() {
+    if (!clockState || timerId || meta.classroom || document.hidden || !el.modal.hidden || mode !== 'ask' || !st) return;
+    var n = clockState.n, bar = document.getElementById('km-timer-bar');
+    clockState.started = Date.now();
     timerId = setInterval(function () {
-      var u = (Date.now() - t0) / dur;
-      if (bar) bar.style.transform = 'scaleX(' + Math.max(0, 1 - u) + ')';
-      if (u >= 1) {
+      if (!st || cur !== n || mode !== 'ask') { stopTimer(); return; }
+      var remaining = timerRemaining();
+      if (bar) bar.style.transform = 'scaleX(' + remaining / (n.timer * 1000) + ')';
+      if (remaining <= 0) {
         stopTimer();
         if (n.timeout) { logLine('', '（動けなかった）'); go(n.timeout); }
       }
     }, 100);
   }
-  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+  function stopTimer() { if (timerId) clearInterval(timerId); timerId = null; clockState = null; }
 
   function useHint() {
     var n = cur;
-    if (!n || n.t !== 'ask' || st.saku <= 0 || n._hinted) return;
-    n._hinted = true;
-    st.saku--; st.hints++;
+    if (!n || n.t !== 'ask' || !n.hint || mode !== 'ask') return;
+    if (!st.hinted[n.id]) {
+      if (!meta.classroom && st.saku <= 0) return;
+      if (!meta.classroom) st.saku--;
+      st.hints++; st.hinted[n.id] = true;
+    }
     renderStatus();
+    showHint(n); persist();
+  }
+  function showHint(n) {
     var h = document.getElementById('km-hint');
     if (h) { h.hidden = false; h.innerHTML = speakerHTML(st.ch === 'c8' ? 'gu' : st.ch === 'c9' ? null : 'ryo') + '<p>' + esc(n.hint) + '</p>'; }
-    var b = $root.querySelector('[data-km="hint"]'); if (b) b.disabled = true;
-    persist();
+    var b = $root.querySelector('[data-km="hint"]'); if (b) b.textContent = 'ヒントをもう一度見る';
   }
 
   function pick(i) {
     var n = cur; if (!n || n.t !== 'ask' || mode !== 'ask') return;
     stopTimer();
     var o = n.o[i]; if (!o) return;
-    n._hinted = false;
     if (n.k === 'read') return judgeRead(n, o);
     st.picks.push({ q: n.q, a: o.x, ch: st.ch });
     if (st.picks.length > 40) st.picks.shift();
@@ -614,24 +765,28 @@
     apply(o);
     var to = o.go || nextOf(n);
     if (o.r) {
-      mode = 'react';
-      cur = { _after: to };
-      el.panel.innerHTML = speakerHTML(o.rw || null) + '<div class="km-text' + (o.rw ? '' : ' narr') + '">' + esc(o.r) + '</div>' +
-        '<div class="km-nav"><span class="km-hint-key">タップ／Enter で次へ</span><button class="km-btn gold km-next" data-km="next">次へ ▶</button></div>';
+      st.phase = { node: n.id, kind: 'react', after: to, text: o.r, speaker: o.rw || null };
       logLine(o.rw || '', o.r);
       persist();
-      return;
+      return renderReaction(st.phase);
     }
     go(to);
   }
 
-  function judgeRead(n, o) {
+  function renderReaction(phase) {
+    mode = 'react'; cur = { _after: phase.after };
+    el.panel.innerHTML = speakerHTML(phase.speaker) + '<span class="km-evidence-label">ゲーム上の創作</span><div class="km-text">' + esc(phase.text) + '</div>' +
+      '<div class="km-nav"><span></span><button class="km-btn gold km-next" data-km="next">次へ →</button></div>';
+    el.panel.querySelector('.km-next').focus({ preventScroll: true });
+  }
+  function judgeRead(n, o, restoring) {
     mode = 'feedback';
-    var ok = !!o.ok, safe = !!chap(st.ch).safe;
+    var ok = !!o.ok, safe = meta.classroom || !!chap(st.ch).safe;
+    var lifeNote = '';
+    if (!restoring) {
     st.q++;
     if (ok) { st.ok++; st.streak++; } else st.streak = 0;
     apply(o);
-    var lifeNote = '';
     if (!ok && !safe) {
       st.life = Math.max(0, st.life - 1);
       lifeNote = '<div class="km-life-note">読み違えた。命が一つ削られた。</div>';
@@ -641,6 +796,8 @@
       lifeNote = '<div class="km-life-note up">三つ続けて読み解いた。命が一つ戻った。</div>';
     }
     if (window.Store && window.Store.record) window.Store.record(null, ok, kanjiCount(n.stem || ''));
+    st.phase = { node: n.id, kind: 'feedback', choice: n.o.indexOf(o), lifeNote: lifeNote };
+    } else lifeNote = st.phase.lifeNote || '';
     renderStatus();
     var right = n.o.filter(function (x) { return x.ok; })[0];
     var kuho = n.kuho && window.KUHO ? window.KUHO.filter(function (k) { return k.id === n.kuho; })[0] : null;
@@ -655,7 +812,7 @@
     fb.className = 'km-fb ' + (ok ? 'ok' : 'ng');
     fb.innerHTML = '<div class="km-fb-h">' + (ok ? '◯ 読み解いた' : '✕ 読み違えた') + '</div>' +
       (ok ? '' : '<div class="km-fb-right">正しくは：' + esc(right ? right.x : '') + '</div>') +
-      '<p>' + esc(n.exp || '') + '</p>' +
+      '<span class="km-evidence-label">読解の解説 · 本文の理解と解釈</span><p>' + esc(n.exp || '') + '</p>' +
       (kuho ? '<div class="km-kuho"><span class="km-kuho-tag">句法</span><b>' + esc(kuho.form) + '</b>　' + esc(kuho.read || '') + '<br><small>' + esc(kuho.mean || '') + '</small></div>' : '') +
       lifeNote +
       '<div class="km-nav"><span></span><button class="km-btn gold km-next" data-km="fbnext">次へ ▶</button></div>';
@@ -666,14 +823,14 @@
     persist();
   }
   function afterFeedback() {
-    if (st.life <= 0) return doEnd('B8');
+    if (!meta.classroom && st.life <= 0) return doEnd('B8');
     go(nextOf(cur));
   }
 
   /* ---------- 状態表示 ---------- */
   function renderStatus() {
     if (!st) { el.status.innerHTML = ''; return; }
-    var safe = chap(st.ch).safe;
+    var safe = meta.classroom || chap(st.ch).safe;
     var hearts = '';
     for (var i = 0; i < st.maxLife; i++) hearts += '<i class="' + (i < st.life ? 'on' : '') + '"></i>';
     var meters = st.flags.meters && !safe && chapIndex(st.ch) <= 7;
@@ -684,7 +841,7 @@
     el.status.innerHTML =
       (safe ? '' : '<div class="km-life" aria-label="命 ' + st.life + '">' + '<span>命</span>' + hearts + '</div>') +
       (meters ? meter('項王の怒気', st.ikari, 'ikari') + meter('范増の殺気', st.satsu, 'satsu') : '') +
-      '<div class="km-saku" title="策（ヒント）"><span>策</span>' + st.saku + '</div>' +
+      (meta.classroom ? '<div class="km-study-badge">授業モード</div>' : '<div class="km-saku" title="策（ヒント）"><span>策</span>' + st.saku + '</div>') +
       (st.items.length ? '<div class="km-items">' + st.items.map(function (it) { var x = K.items[it]; return '<span title="' + esc(x.name) + '">' + esc(x.glyph) + '</span>'; }).join('') + '</div>' : '');
   }
 
@@ -698,25 +855,52 @@
     go(nextOf(n));
   }
   function modal(html, cls) {
-    el.modal.className = 'km-modal ' + (cls || '');
+    if (el.modal.hidden) modalFocus = document.activeElement;
+    var className = 'km-modal ' + (cls || '');
+    if (!el.modal.hidden && el.modal.className !== className) {
+      var previous = modalStack.findIndex(function (frame) { return frame.className === className; });
+      if (previous >= 0) modalStack = modalStack.slice(0, previous);
+      else modalStack.push({ className: el.modal.className, content: el.modal.firstChild, focus: document.activeElement, scroll: el.modal.scrollTop });
+    }
+    pauseTimer();
+    el.modal.className = className;
     el.modal.innerHTML = '<div class="km-mcard">' + html + '</div>';
     el.modal.hidden = false;
-    var f = el.modal.querySelector('button'); if (f) f.focus({ preventScroll: true });
+    el.modal.setAttribute('role', 'dialog'); el.modal.setAttribute('aria-modal', 'true');
+    el.panel.inert = true; $root.querySelector('.km-top').inert = true;
+    var f = el.modal.querySelector('button:not([disabled]),input,textarea,summary'); if (f) f.focus({ preventScroll: true });
   }
-  function closeModal() { el.modal.hidden = true; el.modal.innerHTML = ''; }
+  function closeModal(resume) {
+    el.modal.hidden = true; el.modal.innerHTML = ''; modalStack = [];
+    el.panel.inert = false; $root.querySelector('.km-top').inert = false;
+    if (resume !== false) { resumeTimer(); if (modalFocus && modalFocus.isConnected) modalFocus.focus({ preventScroll: true }); }
+  }
+  function dismissModal() {
+    if (modalStack.length) {
+      var frame = modalStack.pop();
+      el.modal.className = frame.className; el.modal.replaceChildren(frame.content); el.modal.scrollTop = frame.scroll;
+      var focus = frame.focus && frame.focus.isConnected ? frame.focus : el.modal.querySelector('button:not([disabled]),input,textarea,summary');
+      if (focus) focus.focus({ preventScroll: true });
+      return;
+    }
+    closeModal();
+  }
 
   /* 座次図：人物の札を選んでから席を押す */
   var seatS = null;
   function gameSeat(n) {
     var G = K.games.seat;
-    seatS = { place: {}, sel: null, tries: 0, n: n };
-    renderSeat();
+    var saved = st.game && st.game.kind === 'seat' ? st.game : {};
+    seatS = { place: saved.place || {}, sel: null, tries: saved.tries || 0, done: !!saved.done, message: saved.message || '', n: n };
+    renderSeat(seatS.message, seatS.done);
   }
   function renderSeat(msg, done) {
     var G = K.games.seat;
+    seatS.done = !!done; seatS.message = msg || '';
+    st.game = { node: seatS.n.id, kind: 'seat', place: seatS.place, tries: seatS.tries, done: seatS.done, message: seatS.message }; persist();
     function seatHTML(s) {
       var here = Object.keys(seatS.place).filter(function (p) { return seatS.place[p] === s.id; });
-      return '<button class="km-seat km-seat-' + s.id + '" data-km="seat" data-s="' + s.id + '" aria-label="' + esc(s.label) + '">' +
+      return '<button class="km-seat km-seat-' + s.id + '" data-km="seat" data-s="' + s.id + '"' + (done ? ' disabled' : '') + ' aria-label="' + esc(s.label) + '">' +
         '<span class="km-seat-l">' + esc(s.label) + '<small>' + esc(s.dir) + '・' + esc(s.rank) + '</small></span>' +
         '<span class="km-seat-p">' + here.map(function (p) { return '<span class="km-seal km-' + K.chars[p].side + '">' + esc(K.chars[p].seal) + '</span>'; }).join('') + '</span></button>';
     }
@@ -732,11 +916,12 @@
       }).join('') : '<span class="km-m-lead">全員を席に着けた。</span>') + '</div>' +
       (msg ? '<div class="km-m-msg">' + msg + '</div>' : '') +
       '<div class="km-nav">' +
-        '<button class="km-btn" data-km="seatreset">置き直す</button>' +
+        (done ? '<span></span>' : '<button class="km-btn" data-km="seatreset">置き直す</button>') +
         (done ? '<button class="km-btn gold" data-km="seatdone">宴へ ▶</button>' : '<button class="km-btn gold" data-km="seatcheck"' + (people.length ? ' disabled' : '') + '>史記と照らす</button>') +
       '</div>', 'km-m-seat');
   }
   function seatCheck() {
+    if (!seatS || seatS.done) return;
     var G = K.games.seat, wrong = [];
     seatS.tries++;
     G.seats.forEach(function (s) {
@@ -755,11 +940,12 @@
   /* 献上品：品を選んでから相手を押す */
   var giftS = null;
   function gameGift(n) {
-    giftS = { to: {}, sel: null, n: n };
+    giftS = { to: st.game && st.game.kind === 'gift' ? st.game.to || {} : {}, sel: null, n: n };
     renderGift();
   }
   function renderGift() {
     var G = K.games.gift;
+    st.game = { node: giftS.n.id, kind: 'gift', to: giftS.to }; persist();
     var all = G.items.every(function (it) { return giftS.to[it.id]; });
     modal('<h3>' + esc(G.title) + '</h3><p class="km-m-lead">' + esc(G.lead) + '</p>' +
       '<div class="km-gifts">' + G.items.map(function (it) {
@@ -772,6 +958,7 @@
       '<div class="km-nav"><button class="km-btn" data-km="giftreset">選び直す</button><button class="km-btn gold" data-km="giftdone"' + (all ? '' : ' disabled') + '>張良に託す ▶</button></div>', 'km-m-gift');
   }
   function giftDone() {
+    if (mode !== 'game' || !giftS) return;
     var G = K.games.gift;
     var ok = Object.keys(G.ans).every(function (k) { return giftS.to[k] === G.ans[k]; });
     st.flags.giftWrong = !ok;
@@ -779,18 +966,17 @@
     apply({ take: ['heki', 'to'] });
     closeModal();
     var n = giftS.n;
-    mode = 'react';
-    cur = { _after: nextOf(n) };
-    el.panel.innerHTML = speakerHTML('ryo') + '<div class="km-text">謹んで諾す。――白璧一双と玉斗一双、確かにお預かりしました。</div>' +
-      '<div class="km-nav"><span class="km-hint-key">タップ／Enter で次へ</span><button class="km-btn gold km-next" data-km="next">次へ ▶</button></div>';
+    st.phase = { node: n.id, kind: 'react', after: nextOf(n), speaker: 'ryo', text: '謹んで諾す。――白璧一双と玉斗一双、確かにお預かりしました。' };
+    renderReaction(st.phase);
     persist();
   }
 
   /* 逃げ道：三つの問いに順に答える。地図に道筋を描く */
   var routeS = null;
   function gameRoute(n) {
-    routeS = { step: 0, bad: false, n: n, notes: [] };
-    renderRoute();
+    var saved = st.game && st.game.kind === 'route' ? st.game : {};
+    routeS = { step: saved.step || 0, bad: !!saved.bad, n: n, message: saved.message || '' };
+    renderRoute(routeS.message);
   }
   function routeMap() {
     var s = routeS.step, ok = !routeS.bad;
@@ -806,6 +992,7 @@
   }
   function renderRoute(msg) {
     var G = K.games.route, s = G.steps[routeS.step];
+    st.game = { node: routeS.n.id, kind: 'route', step: routeS.step, bad: routeS.bad, message: msg || '' }; persist();
     modal('<h3>' + esc(G.title) + '</h3><p class="km-m-lead">' + esc(G.lead) + '</p>' + routeMap() +
       (msg ? '<div class="km-m-msg">' + msg + '</div>' : '') +
       (s ? '<div class="km-route-q"><b>' + (routeS.step + 1) + '／' + G.steps.length + '　' + esc(s.q) + '</b></div><div class="km-opts">' +
@@ -813,7 +1000,8 @@
         : '<div class="km-nav"><span></span><button class="km-btn gold" data-km="routedone">駆ける ▶</button></div>'), 'km-m-route');
   }
   function routePick(i) {
-    var G = K.games.route, s = G.steps[routeS.step], o = s.o[i];
+    var G = K.games.route, s = routeS && G.steps[routeS.step], o = s && s.o[i];
+    if (mode !== 'game' || !o) return;
     if (!o.ok) routeS.bad = true;
     st.picks.push({ q: s.q, a: o.x, ch: st.ch });
     routeS.step++;
@@ -831,6 +1019,7 @@
     stopTimer();
     mode = 'end';
     var E = K.endings[eid];
+    if (E.kind === 'bad') st.cp = retryPoint(eid);
     var firstTime = !meta.endings[eid];
     meta.endings[eid] = true;
     if (eid === 'T1') { meta.cleared.c7 = true; for (var i = 0; i <= 7; i++) meta.cleared['c' + i] = true; }
@@ -846,13 +1035,17 @@
     var grade = rate >= 95 ? '子房の智' : rate >= 80 ? '樊噲の胆' : rate >= 60 ? '項伯の情' : '鯫生の言';
     var picks = st.picks.slice(-5).map(function (p) { return '<li><span>' + esc(p.q) + '</span>' + esc(p.a) + '</li>'; }).join('');
     var btns = [];
-    if (E.kind === 'bad' && st.cp) btns.push('<button class="km-btn gold" data-km="retry">直前の分かれ道からやり直す</button>');
+    if (E.kind === 'bad' && st.cp) {
+      var retryNode = NODES[st.cp.node].n;
+      var retryLabel = retryNode.q || (retryNode.t === 'game' && K.games[retryNode.g].title) || chap(NODES[st.cp.node].ch).title;
+      btns.push('<button class="km-btn gold" data-km="retry">選び直す：' + esc(retryLabel) + '</button>');
+    }
     if (E.unlock) btns.push('<button class="km-btn gold" data-km="part2">第二部「垓下」へ進む</button>');
-    if (E.ai) btns.push('<button class="km-btn gold" data-km="ai">范増になって項王を説得する（AI）</button>');
+    if (E.ai || eid === 'T1') btns.push('<button class="km-btn gold" data-km="ai">范増として考える（AI活動）</button>');
     btns.push('<button class="km-btn" data-km="endings">結末帳</button>');
     btns.push('<button class="km-btn" data-km="totitle">表紙へ</button>');
     if (E.kind === 'bad') sfx('drum'); else sfx('pluck');
-    // 正史の結末で記録を閉じる。異聞の結末なら、続きは直前の分かれ道から
+    // 異聞の結末では、原因となった選択の前を続きとして保存する。
     if (E.kind === 'true') meta.save = null;
     else if (st.cp) { meta.save = clone(st.cp.snap); meta.save.cp = clone(st.cp); meta.save.node = st.cp.node; }
     saveMeta();
@@ -860,7 +1053,7 @@
       '<div class="km-end-kind">' + (E.kind === 'true' ? '正史' : '異聞') + '　結末' + (firstTime ? '<span class="km-new">初めて見た</span>' : '') + '</div>' +
       '<h3 class="km-end-t">' + esc(E.title) + '</h3><div class="km-end-sub">' + esc(E.sub) + '</div>' +
       '<p class="km-end-text">' + esc(E.text) + '</p>' +
-      '<div class="km-end-fact"><b>史実では</b>' + esc(E.fact) + '</div>' +
+      '<div class="km-end-fact"><b>史記の記述と、このゲームの解釈</b>' + esc(E.fact) + '</div>' +
       (E.kind === 'true' ? '<div class="km-end-stats"><div><b>' + st.ok + ' / ' + st.q + '</b><span>読み解いた句</span></div><div><b>' + rate + '%</b><span>読解率</span></div><div><b>' + esc(grade) + '</b><span>評</span></div><div><b>' + st.hints + '</b><span>策を用いた</span></div></div>' : '') +
       (picks ? '<details class="km-end-picks"><summary>この旅の選択を振り返る</summary><ol>' + picks + '</ol></details>' : '') +
       '<div class="km-end-btns">' + btns.join('') + '</div></div>', 'km-m-end');
@@ -869,13 +1062,15 @@
     if (!st || !st.cp) return titleScreen();
     var cp = st.cp;
     var keep = { q: st.q, ok: st.ok, hints: st.hints };
-    st = clone(cp.snap);
+    st = hydrateState(cp.snap);
+    if (!st) return titleScreen();
     st.cp = cp;
     st.q = keep.q; st.ok = keep.ok; st.hints = keep.hints;
     if (st.life <= 0) st.life = 1;
     closeModal();
+    cancelScene(); var epoch = sceneEpoch;
     var sc = lastScene(cp.node);
-    if (sc && sc.n !== NODES[cp.node].n) applyScene(sc.n, true).then(function () { go(cp.node, true); });
+    if (sc && sc.n !== NODES[cp.node].n) applyScene(sc.n, true).then(function () { if (epoch === sceneEpoch && st) go(cp.node, true); });
     else go(cp.node, true);
   }
 
@@ -883,8 +1078,8 @@
   function chapterMenu() {
     var html = '<h3>目次</h3><p class="km-m-lead">読み終えた章から、もう一度始められます。途中の章から始めるときは、それまでを史記どおりに選んだものとします。</p><div class="km-chaps">';
     K.chapters.forEach(function (c, i) {
-      var open = i === 0 || meta.cleared[K.chapters[i - 1].id] || meta.cleared[c.id];
-      if (c.part2) open = !!meta.endings.T1 && (c.id === 'c8' || meta.cleared.c8);
+      var open = meta.classroom || i === 0 || meta.cleared[K.chapters[i - 1].id] || meta.cleared[c.id];
+      if (c.part2 && !meta.classroom) open = !!meta.endings.T1 && (c.id === 'c8' || meta.cleared.c8);
       html += '<button class="km-chap" data-km="chap" data-c="' + c.id + '"' + (open ? '' : ' disabled') + '>' +
         '<span class="km-chap-no">' + esc(c.no) + '</span><b>' + (open ? esc(c.title) : '？？？') + '</b><small>' + (open ? esc(c.sub) : 'まだ開いていない') + '</small>' +
         (meta.cleared[c.id] ? '<span class="km-chap-done">読了</span>' : '') + '</button>';
@@ -892,17 +1087,17 @@
     html += '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
     modal(html, 'km-m-menu');
   }
-  function bookMenu(openId) {
+  function bookMenu(openId, back) {
     var ids = Object.keys(K.genbun);
     var html = '<h3>原文帳</h3><p class="km-m-lead">物語の中で読んだ『史記』の原文が、ここに綴じられます（' + Object.keys(meta.gen).length + ' / ' + ids.length + ' 段）。「教科書」は古典探究の教材の範囲、「補」は物語のつながりのために補った段です。</p><div class="km-book">';
     ids.forEach(function (gid, i) {
-      var g = K.genbun[gid], have = !!meta.gen[gid];
+      var g = K.genbun[gid], have = meta.classroom || !!meta.gen[gid] || !!back;
       html += '<details class="km-book-it"' + (openId === gid ? ' open' : '') + (have ? '' : ' aria-disabled="true"') + '>' +
         '<summary><span class="km-book-no">' + (i + 1) + '</span><b>' + (have ? esc(g.title) : '――　まだ読んでいない段') + '</b>' + tbTag(g) + '<small>' + esc(chap(g.ch).no) + '</small></summary>' +
         (have ? '<div class="km-paper km-paper-sm">' + genPaperHTML(g, 'haku') + '</div><div class="km-book-yomi">' + esc(g.yomi) + '</div><div class="km-yaku">' + esc(g.yaku) + '</div><div class="km-note">' + esc(g.note) + '</div>' : '') +
         '</details>';
     });
-    html += '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
+    html += '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">' + (back ? 'AI活動へ戻る' : '閉じる') + '</button></div>';
     modal(html, 'km-m-book');
   }
   function endingsMenu() {
@@ -912,7 +1107,7 @@
       html += '<div class="km-ends-it ' + E.kind + (have ? '' : ' locked') + '"><span class="km-ends-k">' + (E.kind === 'true' ? '正史' : '異聞') + '</span><b>' + (have ? esc(E.title) : '？？？') + '</b><small>' + (have ? esc(E.sub) : 'まだ見ていない') + '</small>' +
         (have ? '<p>' + esc(E.fact) + '</p>' : '') + '</div>';
     });
-    html += '</div><div class="km-nav"><span></span><button class="km-btn" data-km="' + (mode === 'end' ? 'totitle' : 'closemodal') + '">' + (mode === 'end' ? '表紙へ' : '閉じる') + '</button></div>';
+    html += '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
     modal(html, 'km-m-ends');
   }
   function logMenu() {
@@ -928,7 +1123,7 @@
     modal('<h3>遊び方</h3><div class="km-howto">' +
       '<p><b>進める</b>　画面か「次へ」をタップ。Enter・スペースキーでも進みます。</p>' +
       '<p><b>読み解け</b>　台詞の漢文の意味を選びます。読み違えると<b>命</b>が一つ減り、三つ続けて正しく読むと一つ戻ります。命が尽きると結末を迎えます。</p>' +
-      '<p><b>決断</b>　沛公としての判断です。史記と違う道を選ぶと、<b>異聞の結末</b>にたどり着くことがあります。結末からは、直前の分かれ道へ戻れます。</p>' +
+      '<p><b>決断</b>　沛公としての判断です。史記と違う道を選ぶと、<b>異聞の結末</b>にたどり着くことがあります。結末からは、原因になった選択へ戻って選び直せます。戻り先はボタンに表示されます。</p>' +
       '<p><b>項王の怒気・范増の殺気</b>　言葉づかい一つで上下します。どちらも満ちれば命はありません。</p>' +
       '<p><b>策</b>　「子房に問う」でヒントがもらえます。数には限りがあります。</p>' +
       '<p><b>原文帳</b>　物語で読んだ史記の原文（白文・書き下し・現代語訳・注）が綴じられます。読んだ字数は「学びの記録」にも加算されます。</p>' +
@@ -936,18 +1131,22 @@
       '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>', 'km-m-howto');
   }
   function aiScreen() {
-    modal('<h3>范増になって、項王を説得せよ</h3>' +
-      '<p class="km-m-lead">高祖は言った。「項羽は一の范増有れども用ゐる能はず」。もしあなたが范増なら、あの宴の最後の機会に、項王を動かせただろうか。</p>' +
-      '<ol class="km-ai-steps">' +
-        '<li>下の指示文をコピーして、授業で使っているAI（Claude など）に貼り付ける。</li>' +
-        '<li>AIが項王として話しはじめる。あなたは范増として、<b>五回まで</b>言葉をかけられる。</li>' +
-        '<li><b>本文を根拠にする</b>ほど説得力が上がる。原文帳の書き下し文を引用してみよう。後の歴史（垓下など）を持ち出すと「妖言」として退けられる。</li>' +
-        '<li>五回目のあと、AIが役を降りて講評する。説得できたか、どの本文が使えたかを振り返ろう。</li>' +
-      '</ol>' +
-      '<textarea class="km-ai-prompt" readonly rows="8" aria-label="AIへの指示文">' + esc(K.aiPrompt) + '</textarea>' +
-      '<div class="km-nav"><button class="km-btn" data-km="book">原文帳を開く</button><button class="km-btn gold" data-km="copyai">指示文をコピー</button></div>' +
-      '<p class="km-m-small">教員向けのワークシートと評価の観点は、リポジトリの docs/hanzo-roleplay.md にあります。</p>' +
-      '<div class="km-nav"><span></span><button class="km-btn" data-km="totitle">表紙へ</button></div>', 'km-m-ai');
+    modal('<div class="km-eyebrow">READ → THINK → DIALOGUE</div><h3>范増として、言葉を届ける。</h3>' +
+      '<p class="km-m-lead">玉玦の合図に、項王は応じない。その沈黙を、あなたはどう読む？</p>' +
+      '<div class="km-ai-brief"><b>創作上の目標</b><p>項王が范増の懸念を聞き、対応策を再検討する。対話は人物解釈を試す活動です。結果は史実でも成績でもありません。</p></div>' +
+      '<ol class="km-ai-steps"><li>根拠にする段を選ぶ。原文帳で前後の文脈も確かめる。</li><li>原文付きの指示文をコピーし、授業で使うAIへ貼り付ける。</li><li>范増として5回まで話し、AIの講評を本文と照合する。</li></ol>' +
+      '<fieldset class="km-evidence-picker"><legend>AIに渡す原文を選ぶ <small>この時点までの10段</small></legend>' +
+      Object.keys(K.genbun).slice(0,10).map(function(id) { return '<label><input type="checkbox" data-km-source="' + id + '"' + (aiSources.indexOf(id)>=0?' checked':'') + '><span><small>' + id + '</small>' + esc(K.genbun[id].title) + '</span></label>'; }).join('') + '</fieldset>' +
+      '<p class="km-m-small">本文の発言と事実を区別します。曹無傷の報告内容を、そのまま真実と断定しません。</p>' +
+      '<details class="km-prompt-preview"><summary>原文付き指示文を確認する</summary><textarea class="km-ai-prompt" readonly rows="10" aria-label="AIへの指示文">' + esc(window.KoumonClassroom.buildPrompt(aiSources)) + '</textarea></details>' +
+      '<div class="km-nav"><button class="km-btn" data-km="aibook">原文帳を開く</button><button class="km-btn gold" data-km="copyai"' + (aiSources.length?'':' disabled') + '>原文と指示文をコピー</button></div>' +
+      '<p class="km-m-small" role="status" id="km-ai-copy-status">個人情報を含めず、学校で利用するAIを使ってください。</p>' +
+      '<div class="km-nav"><button class="km-btn" data-km="closeai">戻る</button><button class="km-btn" data-km="reflection">対話を振り返る →</button></div>', 'km-m-ai');
+    el.modal.querySelectorAll('[data-km-source]').forEach(function(input) { input.addEventListener('change', function() {
+      aiSources = Array.prototype.filter.call(el.modal.querySelectorAll('[data-km-source]'), function(x){return x.checked;}).map(function(x){return x.getAttribute('data-km-source');});
+      el.modal.querySelector('.km-ai-prompt').value = window.KoumonClassroom.buildPrompt(aiSources);
+      el.modal.querySelector('[data-km="copyai"]').disabled = !aiSources.length;
+    }); });
   }
   function copyAI() {
     var ta = el.modal.querySelector('.km-ai-prompt');
@@ -956,8 +1155,32 @@
       if (b) b.textContent = ok ? 'コピーしました' : '選択して手動でコピーしてください';
       if (!ok && ta) { ta.focus(); ta.select(); }
     }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(K.aiPrompt).then(function () { done(true); }, function () { done(false); });
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(window.KoumonClassroom.buildPrompt(aiSources)).then(function () { done(true); }, function () { done(false); });
     else done(false);
+  }
+
+  function settings() {
+    modal('<h3>授業に合わせる</h3><p class="km-m-lead">設定はこのブラウザーに保存されます。</p><div class="km-settings">' +
+      '<label><input type="checkbox" data-pref="classroom"' + (meta.classroom?' checked':'') + '><span><b>授業モード</b><small>命を減らさず、時間制限なし。全章・全原文へ移動できます。</small></span></label>' +
+      '<label><input type="checkbox" data-pref="projection"' + (meta.projection?' checked':'') + '><span><b>投影して、みんなで読む</b><small>本文・選択肢を大きく表示。個人学習ではオフに。</small></span></label>' +
+      '<label><input type="checkbox" data-pref="instant"' + (meta.instant?' checked':'') + '><span><b>文字を一度に表示</b><small>オフにすると、台詞を少しずつ表示します。</small></span></label></div>' +
+      '<div class="km-viewsel"><span>舞台</span><button class="km-btn" data-km="view3d"' + (window.KoumonStage3D && window.KoumonStage3D.supported()?'':' disabled') + '>3D</button><button class="km-btn" data-km="view2d">影絵（軽量）</button></div>' +
+      '<p class="km-m-small">舞台の切替は現在の進行を保存して表紙に戻ります。</p><div class="km-nav"><button class="km-btn" data-km="fullscreen">全画面表示</button><button class="km-btn gold" data-km="closemodal">設定を閉じる</button></div>', 'km-m-settings');
+    el.modal.querySelectorAll('[data-pref]').forEach(function(input){ input.addEventListener('change', function(){
+      meta[input.dataset.pref] = input.checked; saveMeta(); applyPreferences();
+      if (st) { renderStatus(); if (mode === 'ask') { pauseTimer(); doAsk(cur); pauseTimer(); } }
+    }); });
+  }
+  function reflection() {
+    var fields = [['quote','根拠にした本文','段番号と引用を書こう。'],['reason','どう考え、何と伝えたか','引用から、どのように考えた？'],['difference','AIと本文の違い','AIの発言を本文と照合しよう。'],['next','読み直して気づいたこと','解釈を修正した点、次に確かめたい点は？']];
+    modal('<h3>言葉の根拠を、残しておこう。</h3><p class="km-m-lead">この端末に自動保存。氏名などの個人情報は不要です。</p><div class="km-reflection">' + fields.map(function(f){return '<label>' + f[1] + '<textarea data-reflection="' + f[0] + '" rows="3" placeholder="' + f[2] + '">' + esc(meta.reflection[f[0]] || '') + '</textarea></label>';}).join('') + '</div><div class="km-nav"><button class="km-btn" data-km="ai">AI活動へ</button><button class="km-btn gold" data-km="exportreflection">記録を保存する</button><button class="km-btn" data-km="closemodal">閉じる</button></div>', 'km-m-reflection');
+    el.modal.querySelectorAll('[data-reflection]').forEach(function(t){t.addEventListener('input',function(){meta.reflection[t.dataset.reflection]=t.value;saveMeta();});});
+  }
+  function exportReflection() {
+    var labels = {quote:'根拠にした本文',reason:'考えと伝えた言葉',difference:'AIと本文の違い',next:'読み直して気づいたこと'};
+    var content = '鴻門の会 — 振り返り\n\n' + Object.keys(labels).map(function(k){return labels[k]+'\n'+(meta.reflection[k]||'（未記入）');}).join('\n\n');
+    var url = URL.createObjectURL(new Blob([content], {type:'text/plain;charset=utf-8'}));
+    var a = document.createElement('a'); a.href=url; a.download='鴻門の会_振り返り.txt'; a.click(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
 
   function updateSoundChip() {
@@ -979,6 +1202,14 @@
     e.stopPropagation();
     var a = t.getAttribute('data-km');
     switch (a) {
+      case 'intro': intro(); break;
+      case 'settings': settings(); break;
+      case 'characters': modal(window.KoumonClassroom.charactersHTML() + '<div class="km-nav"><span></span><button class="km-btn gold" data-km="closemodal">物語へ戻る</button></div>', 'km-m-characters'); break;
+      case 'reflection': reflection(); break;
+      case 'exportreflection': exportReflection(); break;
+      case 'aibook': bookMenu(null, aiScreen); break;
+      case 'closeai': dismissModal(); break;
+      case 'fullscreen': if (!document.fullscreenElement && $root.requestFullscreen) $root.requestFullscreen().catch(function(){}); else if (document.exitFullscreen) document.exitFullscreen(); break;
       case 'next': advance(); break;
       case 'gennext': go(nextOf(cur)); break;
       case 'genview': renderGen(t.getAttribute('data-g'), t.getAttribute('data-v'), false); break;
@@ -998,11 +1229,11 @@
       case 'log': logMenu(); break;
       case 'howto': howto(); break;
       case 'closemodal':
-        closeModal();
-        if (mode === 'title') titleScreen();
+        dismissModal();
         break;
       case 'view': $root.classList.toggle('km-view'); break;
       case 'view3d': case 'view2d':
+        if (st && mode !== 'end') persist(); cancelScene(); closeModal(false);
         meta.view = a === 'view3d' ? '3d' : '2d'; saveMeta();
         mountStage(); ST.start(); titleScreen();
         break;
@@ -1012,7 +1243,7 @@
         else stopAmbience();
         break;
       case 'quit':
-        if (standalone) { closeModal(); if (st) persist(); titleScreen(); }
+        if (standalone) { if (st && mode !== 'end') persist(); titleScreen(); }
         else close();
         break;
       case 'retry': retry(); break;
@@ -1045,7 +1276,7 @@
       case 'routepick': routePick(Number(t.getAttribute('data-i'))); break;
       case 'routedone': routeDone(); break;
       case 'cfm-ok': if (confirmBox.ok) confirmBox.ok(); break;
-      case 'cfm-no': closeModal(); if (mode === 'title') titleScreen(); break;
+      case 'cfm-no': dismissModal(); break;
     }
   }
   function confirmBox(msg, okLabel, ok) {
@@ -1054,11 +1285,18 @@
   }
   function onKey(e) {
     if (!$root || $root.hidden) return;
+    if (mode === 'intro') return;
+    if (!el.modal.hidden && e.key === 'Tab') {
+      var focusable = Array.prototype.filter.call(el.modal.querySelectorAll('button:not([disabled]),input,textarea,summary,a[href]'), function(x){return !x.closest('details') || x.closest('details').open || x.tagName==='SUMMARY';});
+      var first=focusable[0], last=focusable[focusable.length-1];
+      if (e.shiftKey && document.activeElement===first) {e.preventDefault();last.focus();}
+      else if (!e.shiftKey && document.activeElement===last) {e.preventDefault();first.focus();}
+    }
     if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     var modalOpen = !el.modal.hidden;
     if (e.key === 'Escape') {
       e.preventDefault(); e.stopPropagation();
-      if (modalOpen && mode !== 'end' && mode !== 'game') { closeModal(); if (mode === 'title') titleScreen(); }
+      if (modalOpen && (modalStack.length || (mode !== 'end' && mode !== 'game'))) dismissModal();
       else if (!modalOpen) chapterMenu();
       return;
     }
