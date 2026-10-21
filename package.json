@@ -1,0 +1,12 @@
+{
+  "name": "koumonnokai",
+  "version": "1.0.0",
+  "description": "史記「鴻門之会」を沛公として 3D の舞台で読み解く漢文の物語ゲーム（楚漢の章）",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "worksheet": "python3 tools/worksheet.py"
+  },
+  "license": "MIT"
+}
