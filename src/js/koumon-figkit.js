@@ -283,7 +283,7 @@ function eyeTexture(R,iris,o){o=o||{};return canvasTex(R,256,256,(g,w,h)=>{
     else{const t=(a-LIM)/(1-LIM);col=mixc(mixc(SC,[206,196,184],.25),[180,140,130],sstep(.0,.5,t));}
     g.fillStyle="rgb("+(col[0]|0)+","+(col[1]|0)+","+(col[2]|0)+")";g.fillRect(0,y,w,1);}
   // upper-lid shadow (azimuth 0.75 = up)
-  const sg=g.createLinearGradient(0,0,w,0);sg.addColorStop(0,"rgba(40,25,20,0)");sg.addColorStop(.55,"rgba(40,25,20,0)");sg.addColorStop(.75,"rgba(40,25,20,.55)");sg.addColorStop(.95,"rgba(40,25,20,0)");sg.addColorStop(1,"rgba(40,25,20,0)");
+  const sg=g.createLinearGradient(0,0,w,0);sg.addColorStop(0,"rgba(40,25,20,0)");sg.addColorStop(.55,"rgba(40,25,20,0)");sg.addColorStop(.75,"rgba(40,25,20,"+(o.lidShade==null?.55:o.lidShade)+")");sg.addColorStop(.95,"rgba(40,25,20,0)");sg.addColorStop(1,"rgba(40,25,20,0)");
   g.fillStyle=sg;g.fillRect(0,h*.10,w,h*.9);
   // iris fibres
   const rnd=mulberry32(99);g.globalAlpha=.25;
@@ -330,7 +330,7 @@ function faceCurves(P){
   const nlf=[[.0195,-.0195],[.0262,-.0350],[.0300,-.0500],[.0335,-.0640]];
   const alar=[[.0098,-.0142],[.0172,-.0150],[.0216,-.0195],[.0210,-.0255],[.0172,-.0290]];
   const brow=t=>{// t 0..1 inner->outer ; returns [x(abs), y]
-    const x=.0105+.047*t;return[x,.0425+(P.browY||0)+.0062*Math.sin(clamp(t,0,1)*PI*.85)-(P.browDrop||.010)*t*t];};
+    const x=.0105+.047*t;return[x,.0425+(P.browY||0)+(P.browSlope||0)*t+(P.browArch==null?.0062:P.browArch)*Math.sin(clamp(t,0,1)*PI*.85)-(P.browDrop==null?.010:P.browDrop)*t*t+(P.browRough||0)*Math.sin(t*24)*Math.sin(PI*t)];};
   return{ys,yU,yL,MW,eye,W,EX,EY,nlf,alar,brow};
 }
 // geometric relief: only features >= ~4mm wide (finer detail lives in the face textures)
@@ -364,21 +364,22 @@ function v_in(v,a,b){return v>a&&v<b;}
 function kidWarpFn(P){const k=P.kidWarp,y0=P.kidWarpY!=null?P.kidWarpY:.012,b=.02;if(!k||k>=1)return null;const kI=1/k-1;
   return y=>{const d=y0-y;if(d<=0)return y;const h=d>=b?d-b*.5:d*d/(2*b);return y-kI*h;};}
 function headSDF(P){
-  const er=P.eyeR||.0118;const eyes=[[-.0315,.0245,.0735],[.0315,.0245,.0735]];
+  const er=P.eyeR||.0118,ez=P.eyeZ==null?.0735:P.eyeZ;const eyes=[[-.0315,.0245,ez],[.0315,.0245,ez]];
   const C=faceCurves(P);
   // shape multipliers: cran [sx,sy,sz] & cranOff, jaw, nose, brow, cheekFat, neckR
-  const cr=P.cran||[1,1,1],co=P.cranOff||[0,0,0],jw=P.jaw||1,ns=P.nose||1,bw=P.browK||1,nk=P.neckR||1;// browK: brow-ridge size (P.brow is the eyebrow colour)
+  const cr=P.cran||[1,1,1],co=P.cranOff||[0,0,0],jw=P.jaw||1,ns=P.nose||1,bw=P.browK||1,nk=P.neckR||1;
+  const fw=P.faceWidth||1,fl=P.faceLength||jw,cb=P.cheekbone||1,cw=P.chinWidth||1;
   const cE=(c,r)=>sEll([c[0]*cr[0]+co[0],c[1]*cr[1]+co[1],c[2]*cr[2]+co[2]],[r[0]*cr[0],r[1]*cr[1],r[2]*cr[2]]);
-  const JC=[0,-.020,.050],J=p=>[JC[0]+(p[0]-JC[0])*jw,JC[1]+(p[1]-JC[1])*jw,JC[2]+(p[2]-JC[2])*(1-(1-jw)*.6)];
+  const JC=[0,-.020,.050],J=p=>[JC[0]+(p[0]-JC[0])*jw*fw,JC[1]+(p[1]-JC[1])*fl,JC[2]+(p[2]-JC[2])*(1-(1-jw)*.6)];
   const NC=[0,-.010,.092],N=p=>[NC[0]+(p[0]-NC[0])*ns,NC[1]+(p[1]-NC[1])*ns,NC[2]+(p[2]-NC[2])*ns];
   const cran=U([K(cE([0,.044,-.010],[.0765,.084,.095]),0),K(cE([0,.040,.030],[.064,.070,.066]),.035),K(cE([0,.020,-.045],[.068,.064,.058]),.035)]);
-  const fp=[K(sEll([0,.004,.050],[.066,.044,.048]),0),K(sEll(J([0,-.047,.040]),[.047*jw,.046*jw,.051]),.03),
-    K(sEll(J([0,-.044,.071]),[.030*jw,.022*jw,.031]),.02),K(sEll(J([0,-.080,.081]),[.018*jw,.016*jw,.016*jw]),.018),
+  const fp=[K(sEll([0,.004,.050],[.066*fw,.044,.048]),0),K(sEll(J([0,-.047,.040]),[.047*jw*fw,.046*fl,.051]),.03),
+    K(sEll(J([0,-.044,.071]),[.030*jw*fw,.022*fl,.031]),.02),K(sEll(J([0,-.080,.081]),[.018*jw*cw,.016*fl,.016*jw]),.018),
     K(sEll(J([0,-.047,.0915]),[.022*jw,.0105,.0085]),.010)];
   for(const s of[-1,1]){
     fp.push(K(sCap(J([s*.0485,-.060,.0]),J([s*.019,-.089,.071]),.0100*jw),.025));
     fp.push(K(sCap(J([s*.0485,-.060,.0]),[s*.058,-.015,-.008],.010),.02));
-    fp.push(K(sEll([s*.047,.007,.064],[.023,.013,.019],rotM(0,s*.45,0)),.02));
+    fp.push(K(sEll([s*.047*fw,.007,.064],[.023*fw*cb,.013,.019*cb],rotM(0,s*.45,0)),.02));
     fp.push(K(sCap([s*.058,.006,.050],[s*.070,.004,.008],.008),.02));
     fp.push(K(sCap([s*.050,.040,.074],[0,.042,.093],.0085*bw),.02));
     fp.push(K(sEll([s*.034,.001,.078],[.017,.012,.011]),.016));
@@ -387,18 +388,23 @@ function headSDF(P){
     // (no hollow under the cheekbone, no bulge beside the mouth)
     if(P.kid){const cf=P.cheekFat||1;fp.push(K(sEll([s*.038,-.008,.064],[.024*cf,.023*cf,.021*cf]),.03),K(sEll([s*.050,-.022,.036],[.016,.022,.028]),.035));}
     else if(P.cheekFat)fp.push(K(sEll([s*.036,-.022,.070],[.026*P.cheekFat,.026*P.cheekFat,.020*P.cheekFat]),.02));
+    // Buccal mass bridges the cheekbone to the mandibular angle. This controls
+    // the outline separately from the front cheek apple (round elders, heavy
+    // warriors, smooth scholars, and the intentionally hollow elderly adviser).
+    if(P.cheekFill){const cf=P.cheekFill;fp.push(K(sEll(J([s*.035,-.026,.041]),[.020*jw*fw*cf,.043*fl,.035*cf]),.024));}
   }
   let F=U([cran,K(U(fp),.025)]);
   F=S(F,[K(sEll([-.0185,.0255,.0885],[.0062,.0075,.0065]),.007),K(sEll([.0185,.0255,.0885],[.0062,.0075,.0065]),.007)]);
-  const nose=U([K(sCone(N([0,.029,.0905]),N([0,-.007,.1035]),.0058*ns,.0070*ns),0),K(sEll(N([0,-.013,.0915]),[.0120*ns,.0130*ns,.0110*ns]),.008),
+  const rawNose=U([K(sCone(N([0,.029,.0905]),N([0,-.007,.1035]),.0058*ns,.0070*ns),0),K(sEll(N([0,-.013,.0915]),[.0120*ns,.0130*ns,.0110*ns]),.008),
     K(sSphere(N([0,-.0165,.1030]),.0093*ns),.004),
     K(sEll(N([-.0140,-.0210,.0930]),[.0062*ns,.0058*ns,.0074*ns]),.0045),K(sEll(N([.0140,-.0210,.0930]),[.0062*ns,.0058*ns,.0074*ns]),.0045),
     K(sCap(N([0,-.0238,.1010]),N([0,-.0296,.0952]),.0033*ns),.0024)]);
+  const nw=P.noseWidth||1,nose={f:(x,y,z)=>rawNose.f(x/nw,y,z)*mn(1,nw),bs:rawNose.bs};
   const lids=[];
   for(const ec of eyes){const s=ec[0]<0?-1:1;
     lids.push(K(sSphere(ec,er+.0021),0));
-    lids.push(K(sEll([s*.0335,.0330,.0790],[.0140,.0042*(P.hood||1),.0070],rotM(0,0,s*-.08)),.006));
-    lids.push(K(sEll([s*.0310,.0140,.0802],[.0105,.0030,.0050]),.004));}
+    lids.push(K(sEll([s*.0335,.0330,ez+.0055],[.0140,.0042*(P.hood||1),.0070],rotM(0,0,s*-.08)),.006));
+    lids.push(K(sEll([s*.0310,.0140,ez+.0067],[.0105,.0030,.0050]),.004));}
   // (a child's neck is a smooth column: no sternocleidomastoid cords, no larynx)
   const neck=P.kid?U([K(sCone([0,-.035,-.020],[0,-.165,-.008],.049*nk,.052*nk),0)]):U([K(sCone([0,-.035,-.020],[0,-.165,-.008],.049*nk,.052*nk),0),
     K(sCap([-.050*nk,-.040,-.030],[-.012,-.160,.032],.010*nk),.018),K(sCap([.050*nk,-.040,-.030],[.012,-.160,.032],.010*nk),.018),
@@ -407,7 +413,8 @@ function headSDF(P){
   const cuts=[];
   for(const ec of eyes){const s=ec[0]<0?-1:1;
     cuts.push(K(eyeAperture(ec,s,C),.0011));
-    cuts.push(K(sEll(N([s*.0080,-.0283,.0950]),[.0029*ns,.0021*ns,.0039*ns],rotM(-.15,s*.40,0)),.0012));}
+    const nc=N([s*.0080,-.0283,.0950]);nc[0]*=nw;
+    cuts.push(K(sEll(nc,[.0029*ns*nw,.0021*ns,.0039*ns],rotM(-.15,s*.40,0)),.0012));}
   F=S(F,cuts);
   F=D(F,faceRelief(P,C),.0030);
   const ears=[];
@@ -438,6 +445,19 @@ function earSDF(P){
   return F;}
 
 // ---- broad vertex paint (skin tone, redness, scalp stubble, AO); fine facial detail is in the face textures ----
+// Facial hair follows the existing skin surface; no cheek-to-chin bridge geometry.
+function faceHairMask(P,C,x,y,z){
+  const ax=ab(x),fw=P.faceWidth||1,fl=P.faceLength||1,cheek=P.beardCheek==null?1:P.beardCheek;
+  const t=clamp((ax/fw-.022)/.040,0,1),top=(P.beardTop==null?-.064:P.beardTop)+(P.beardRise==null?.043:P.beardRise)*Math.pow(t,P.beardCurve||2)+(P.beardRagged||.0015)*N2(x*180,y*150,z*120);
+  const jaw=sstep(top+.007,top-.005,y)*sstep(-.126*fl,-.096*fl,y)*sstep(.012,.036,z)*clamp(cheek,0,1);
+  const chinScale=P.beardChinPoint?1-.50*clamp((-.067-y)/(.042*fl),0,1):1;
+  const chin=sstep(-.061,-.071,y)*sstep(-.126*fl,-.096*fl,y)*sstep(.028,.055,z)*sstep(.029*(P.beardW||1)*chinScale,.018*(P.beardW||1)*chinScale,ax);
+  const mw=.028*(P.moustacheWidth||1),my=C.yU(clamp(x,-C.MW,C.MW))+.004;
+  const moustache=gauss(y-my,.0060*(P.moustacheThick||1))*sstep(mw,mw-.006,ax)*sstep(.066,.083,z);
+  // Keep the mouth and lower lip readable instead of painting a solid face mask.
+  const lipClear=1-gauss(y-C.ys(x),.008)*sstep(C.MW+.004,C.MW-.003,ax);
+  return clamp(mx(jaw,chin,moustache)*lipClear,0,1);
+}
 function headPainter(P,H){
   const skin=lin(P.skin||0xcfa58a),skinR=lin(P.skinRed||0xc98a74),stub=lin(P.stubble||0x5d5f66);
   return(x,y,z,nx,ny,nz,i,fw)=>{
@@ -446,17 +466,21 @@ function headPainter(P,H){
     const nose=Math.exp(-((x/.012)**2+((y+.016)/.015)**2+((z-.106)/.012)**2));
     const ear=sstep(.062,.075,ab(x))*sstep(.0,.02,-z+.02);
     c=mixc(c,skinR,clamp(cheek*(.30+.25*(P.kid||0))+nose*.40+ear*.35,0,1));
-    const az=Math.atan2(x,z),aaz=ab(az);
-    const yb=aaz<.6?lerp(.090,.074,aaz/.6):aaz<1.15?lerp(.074,.047,(aaz-.6)/.55):aaz<1.55?lerp(.047,.036,(aaz-1.15)/.4):aaz<2.0?lerp(.036,-.008,(aaz-1.55)/.45):lerp(-.008,-.052,(aaz-2.0)/(PI-2.0));
+    const yb=hairlineY(P,x,z);
     let hair=sstep(yb-.005,yb+.006,y);
     // keep only the ear itself clear (a soft-edged ellipse around it; the temple hair comes down in front of and above the ear)
     if(ab(x)>.060){const e=((y-.002)/.031)**2+((z+.007)/.027)**2;if(e<1.5)hair*=sstep(.80,1.5,e);}
     if(P.scalp==="stubble"){const sp=.6+.4*N2(x*700,y*700,z*700);c=mixc(c,stub,hair*(P.stubAmt||.32)*sp);}
-    else if(P.scalp==="hair"){const st=.80+.20*N2(x*90,y*900,z*90)+.08*N1(x*400,y*60,z*400);c=mixc(c,mulc(lin(P.hairC||0xd8d3ca),st),hair*.96);}
+    else if(P.scalp==="hair"){const st=.92+.035*Math.sin(Math.atan2(x,z+.04)*70+y*18);c=mixc(c,mulc(lin(P.hairC||0xd8d3ca),st),hair*.96);}
     else if(P.scalp==="dark"){c=mixc(c,lin(P.hairC||0x1c1714),hair*.85);}
     if(P.beard==="stubble"){// jaw sides (outside face texture)
       const jaw=sstep(.012,-.010,y)*sstep(-.115,-.092,y)*sstep(-.015,.01,z);const sp=.6+.4*N2(x*900,y*900,z*900);
       c=mixc(c,lin(0x8a8580),jaw*.22*sp*(1-fw));}
+    if(P.beard==="long"){
+      const mask=faceHairMask(P,H.C,x,y,z),hc=lin(P.hairC||0x17130f);
+      const grey=clamp((P.hairGrey||0)*.55,0,.6),strand=.92+.055*N2(x*150,y*90,z*150);
+      c=mixc(c,mulc(mixc(hc,lin(0x9b958c),grey),strand),mask*(.91+.025*N2(x*260,y*100,z*160)));
+    }
     const mo=1+.04*N1(x*260,y*260,z*260)+.03*N3(x*70,y*70,z*70);c=mulc(c,mo);
     return c;};
 }
@@ -510,6 +534,10 @@ function faceTextures(R,P,C){
       for(let k=3;k>=0;k--){g.lineWidth=(.0024+k*.0012)*PX*(P.browW||1);g.globalAlpha=.22*kid*(k?.35:1);g.beginPath();
         for(let i=0;i<=20;i++){const b=C.brow(i/20*.92);if(i)g.lineTo(X(sx*b[0]),Y(b[1]));else g.moveTo(X(sx*b[0]),Y(b[1]));}g.stroke();}g.restore();}
     for(const sx of[-1,1]){const n=P.browHairs||260;
+      // Broad pigment survives minification; individual hairs alone vanished
+      // into dotted eyebrows at the normal game camera distance.
+      if(!mode&&P.browFill){g.save();g.strokeStyle=rel(P.brow||0x3a3431,.95);g.globalAlpha=P.browFill;g.lineCap="round";
+        for(let j=0;j<24;j++){const a=C.brow(j/24),b=C.brow((j+1)/24);g.lineWidth=(.0027-.0018*j/24)*(P.browW||1)*PX;g.beginPath();g.moveTo(X(sx*a[0]),Y(a[1]));g.lineTo(X(sx*b[0]),Y(b[1]));g.stroke();}g.restore();}
       for(let i=0;i<n;i++){const t=Math.pow(rnd(),.85);const b=C.brow(t);const w=(.0032-.0016*t)*(P.browW||1);const off=(rnd()-.5)*w;
         const x=sx*b[0],y=b[1]+off;const ang=t<.15?1.2-t*3:.18-.15*t+(rnd()-.5)*.25;// flow up at inner end, then outward
         const L=(.0035+rnd()*.003)*PX;const dx=Math.cos(ang)*L*sx,dy=-Math.sin(ang)*L;
@@ -551,6 +579,18 @@ function faceTextures(R,P,C){
     for(const sx of[-1,1]){soft(g,()=>polyXY(g,C.nlf.slice(0,3),sx),3.5,mode?"rgb(90,90,90)":rel(0x8a5a48),(mode?.30:.10)*(.4+ag)*(1-kid),4);
       if(ag>.3)soft(g,()=>{g.beginPath();g.moveTo(X(sx*(MW+.0008)),Y(C.ys(sx*MW)-.0015));g.lineTo(X(sx*(MW+.0035)),Y(-.067));},1.3,mode?"rgb(80,80,80)":rel(0x8a5a48),(mode?.4:.22)*ag,3);
       soft(g,()=>polyXY(g,C.alar,sx),3,mode?"rgb(90,90,90)":rel(0x7a5040),(mode?.30:.12)*(1-.6*kid),3);}
+    // Moustache is painted onto the face UVs, not suspended tubes beside the nose.
+    if(P.beard==="long"){
+      const mw=.028*(P.moustacheWidth||1),th=.006*(P.moustacheThick||1);
+      g.save();g.fillStyle=mode?"rgb(145,145,145)":rel(P.hairC||0x17130f,.93);g.globalAlpha=.96;
+      for(const sx of[-1,1]){
+        g.beginPath();
+        for(let i=0;i<=28;i++){const t=i/28,x=sx*(.002+(mw-.002)*t),y=C.yU(clamp(x,-C.MW,C.MW))+.003+th*Math.pow(1-t,.7);if(i)g.lineTo(X(x),Y(y));else g.moveTo(X(x),Y(y));}
+        for(let i=28;i>=0;i--){const t=i/28,x=sx*(.002+(mw-.002)*t),y=C.yU(clamp(x,-C.MW,C.MW))+.0015-.001*t;g.lineTo(X(x),Y(y));}
+        g.closePath();g.fill();
+      }
+      g.restore();
+    }
     // ---------- beard stubble & whiskers ----------
     if(P.beard==="stubble"){
       const dens=(x,y)=>{const ax=ab(x);const mous=gauss(y-(C.yU(x)+.0045),.0035)*gauss(x,.020)*(y>C.yU(x)+.0008?1:0);
@@ -581,25 +621,36 @@ function faceSkinMat(R,map,bump,o){o=o||{};
       .replace("#include <map_fragment>","#ifdef USE_MAP\n vec4 texelColor=mapTexelToLinear(texture2D(map,vUv));\n diffuseColor.rgb*=mix(vec3(1.0),texelColor.rgb,vFrontW);\n#endif")
       .replace("dHdxy_fwd(), faceDirection","dHdxy_fwd()*vFrontW, faceDirection");};
   m.customProgramCacheKey=()=>"tsureFaceSkin";R.add(m);return m;}
-// ---- hair pieces (head-local): long white beard + moustache + bushy brows (roujin) ----
-function beardSDF(P){const parts=[];const L=P.beardLen||.13,bw=P.beardW||1,wk=P.whiskers3||1;
-  // chin beard: tapering flattened mass from chin downward（bw で幅、劉邦の「美須髯」は広く長く）
-  parts.push(K(sEll([0,-.090,.080],[.026*bw,.022,.016]),0));
-  parts.push(K(sCone([0,-.095,.080],[0,-.095-L*.55,.084+.006*(bw-1)],.020*bw,.014*bw),.02));
-  parts.push(K(sCone([0,-.095-L*.55,.084+.006*(bw-1)],[0,-.095-L,.080],.014*bw,.004),.015));
-  for(const s of[-1,1]){// jaw beard & sideburns（髯＝頬ひげ）
-    parts.push(K(sCap([s*.050,-.040,.012],[s*.040,-.072,.050],.0075*wk),.012));parts.push(K(sCap([s*.040,-.072,.050],[s*.016,-.092,.076],.0095*wk),.012));
-    if(bw>1.15)parts.push(K(sCone([s*.03,-.085,.07],[s*.024*bw,-.095-L*.6,.074],.012,.005),.016));
-    // moustache tufts drooping past mouth corners
-    parts.push(K(sTube([[s*.003,-.0345,.1005],[s*.014,-.0400,.0990],[s*.025,-.0490,.0920],[s*.030,-.0640,.0860],[s*.031,-.0760,.0840]],[.0040,.0042,.0036,.0026,.0014]),.004));
-    // brows: thick, drooping outer ends
-    parts.push(K(sTube([[s*.011,.0455,.0950],[s*.026,.0490,.0920],[s*.042,.0470,.0840],[s*.056,.0400,.0720],[s*.062,.0320,.0660]],[.0030,.0040,.0040,.0034,.0018]),.003));}
-  let F=U(parts);
-  // keep the mouth slit free
-  F=S(F,[K(sEll([0,-.0505,.100],[.020,.0042,.012]),.003)]);
-  const nz=makeNoise(55);
-  F=D(F,(x,y,z)=>{const fl=y<-.07?Math.sin(x*780+nz(x*60,y*20,z*60)*2.2):Math.sin((x*.6+y)*720+nz(x*50,y*50,z*50)*2);return .0011*fl;},.0012);
-  return F;}
+// ---- chin beard volume; cheek hair and moustache follow the skin surface ----
+function beardSDF(P,H){
+  // Only a pendant below the chin has volume. Cheeks and moustache use skin-bound
+  // colour, so a changing jaw cannot leave a suspended strip beside the face.
+  H=H||headSDF(P);
+  const L=P.beardLen||.13,bw=P.beardW||1,fl=P.faceLength||P.jaw||1;
+  const chinY=-.020-.053*fl;
+  let front=.17,rootZ=.075;
+  for(let z=.166;z>=-.03;z-=.003){
+    if(H.F.f(0,chinY,z)<=0){let back=z;for(let i=0;i<10;i++){const mid=(front+back)/2;if(H.F.f(0,chinY,mid)>0)front=mid;else back=mid;}rootZ=(front+back)/2;break;}
+    front=z;
+  }
+  const width=.024*bw,depth=.010*(P.beardDepth||1),length=P.beardVolume?L:L>.095?L:Math.min(L,.021);
+  const top=chinY+.005,bottom=chinY-length;
+  if(P.beardVolume){
+    // Full short beard wraps under the jaw. Its root sits inside the chin,
+    // unlike a hanging tapered slab whose front edge reads as a separate prop.
+    return U([K(sEll([0,chinY-.018,rootZ-.030],[width,.60*length,depth*2.0]),0),
+      K(sEll([width*.62,chinY-.008,rootZ-.046],[width*.58,length*.42,depth*1.8]),.016),
+      K(sEll([-width*.62,chinY-.008,rootZ-.046],[width*.58,length*.42,depth*1.8]),.016)]);
+  }
+  // A single flattened, tapering volume joins the chin and falls in front of
+  // the collar. Its continuous section avoids separate beads at the root.
+  return {f:(x,y,z)=>{
+    const t=clamp((top-y)/(top-bottom),0,1),w=width*(.82+.18*sstep(0,.17,t))*Math.pow(1-t,P.beardVolume?.30:.65)+.001;
+    const d=depth*(1-(P.beardVolume?.40:.73)*t),cz=rootZ-.004+(P.beardVolume?.015:L>.095?.052:.004)*Math.pow(t,.72)+.0005*Math.sin(x*520+y*16);
+    const radial=(sq((x/w)**2+((z-cz)/d)**2)-1)*mn(w,d);
+    return mx(radial,y-top,bottom-y);
+  },bs:[0,(top+bottom)/2,rootZ+.03,length*.7+width]};
+}
 // tate-eboshi (lacquered gauze cap), head-local
 function eboshiSDF(P){const h=P.eboH||.27;
   const parts=[K(sEll([0,.090,-.006],[.0800,.060,.0985]),0),K(sEll([0,.150,-.016],[.066,.075,.088]),.05),K(sEll([0,.090+h*.55,-.032],[.046,h*.30,.076]),.07),
@@ -640,19 +691,21 @@ function buildHead(R,P,q){
   const tex=faceTextures(R,P,H.C);HEADT.tex=performance.now()-tA;
   const grp=new THREE.Group();
   const mesh=new THREE.Mesh(g,faceSkinMat(R,tex.map,tex.bump,{rough:P.rough}));mesh.castShadow=true;mesh.receiveShadow=true;grp.add(mesh);
-  const etex=eyeTexture(R,P.iris||[70,46,30],{irisR:P.irisR,pupilR:P.pupilR,sclera:P.sclera,catchlight:P.catchlight,double:P.doublePupil});
+  const etex=eyeTexture(R,P.iris||[70,46,30],{irisR:P.irisR,pupilR:P.pupilR,sclera:P.sclera,catchlight:P.catchlight,double:P.doublePupil,lidShade:P.eyeLidShade});
   const em=R.add(new THREE.MeshStandardMaterial({map:etex,roughness:.10,metalness:0}));
   const eg=[];for(const e of H.eyes){const sg=new THREE.SphereGeometry(H.er,28,20);sg.rotateX(PI/2);
     sg.rotateX((P.gazePitch||0));sg.rotateY((P.gazeYaw||0));sg.translate(e[0],e[1],e[2]);eg.push(sg);} // gazePitch > 0 looks down
   const emesh=new THREE.Mesh(mergeGeoms(R,eg),em);grp.add(emesh);
   const hq=q==="low"?.004:q==="medium"?.003:.0024;
-  if(P.beard==="long"){const B=beardSDF(P);const hc=lin(P.hairC||0xd8d3ca);
+  if(P.beard==="long"&&(P.beardVolume||(P.beardLen||.13)>.095||P.beardCheek===0)){const B=beardSDF(P,H);const hc=lin(P.hairC||0xd8d3ca);
     // 色・白髪・顔との接触陰影も焼き込むので、寸法だけで他人物と共有しない。
-    const bp=cachePoly("beard|"+q+"|"+JSON.stringify(P),()=>{const pl=polygonize(B.f,[-.08,-.25,.0],[.08,.065,.125],hq,{levels:3,lip:1.4,seedS:2});
+    const beardBottom=-.020-.070*(P.faceLength||P.jaw||1)-(P.beardLen||.13)-.014;
+    const bp=cachePoly("beard|"+q+"|"+JSON.stringify(P),()=>{const pl=polygonize(B.f,[-.10,beardBottom,-.005],[.10,.075,.16],hq,{levels:3,lip:1.4,seedS:2});
       const ao=bakeAO(pl,(x,y,z)=>mn(B.f(x,y,z),H.F.f(x,y,z)),.004,3,1.2);paint(pl,(x,y,z)=>{
-        const strand=sstep(.55,.92,.5+.5*Math.sin(x*740+N2(x*70,y*25,z*65)*3));
-        const c=mixc(hc,lin(0xb0aaa2),strand*(P.hairGrey||0));
-        return mulc(c,.86+.14*N2(x*300,y*80,z*300)-.10*sstep(-.11,-.2,y));},ao,.35);return pl;});
+        const strand=sstep(.76,.98,.5+.5*Math.sin(x*420+N2(x*24,y*12,z*24)));
+        const base=P.beardVolume?mixc(hc,lin(P.skin||0xcfa58a),.10):hc;
+        const c=mixc(base,lin(0xb0aaa2),strand*(P.hairGrey||0)*.28);
+        return mulc(c,.93+.035*Math.sin(x*420+y*18)-.06*sstep(-.11,-.25,y));},ao,.48);return pl;});
     const bm=new THREE.Mesh(R.add(toGeom(bp)),R.add(new THREE.MeshStandardMaterial({vertexColors:true,roughness:.62,metalness:0})));bm.castShadow=true;bm.receiveShadow=true;grp.add(bm);}
   if(P.eboshi){const E=eboshiSDF(P);
     const ep=cachePoly("eboshi|"+q+"|"+(P.eboH||.27),()=>{const pl=polygonize(E.f,[-.10,0,-.13],[.10,.44,.12],q==="low"?.007:.0045,{levels:3,lip:1.4,seedS:2});
@@ -769,27 +822,32 @@ function skinPainter(P,kind,hd){const skin=lin(P.skin||0xc49a78),red=lin(P.skinR
     const mo=1+.05*N1(x*200,y*200,z*200);return mulc(c,mo);};}
 /** 髪（頭皮の上にかぶさる髪の層と、頭頂の髻）。頭部と同じ SDF から作るので額や耳ぎわの線が頭の形に沿う。
     P.hairThick: 髪の厚み(m) / P.topknot: 髻の大きさ（0 で無し）/ P.hairC: 色 / P.hairGloss: つや */
+function hairlineY(P,x,z){
+  const a=ab(Math.atan2(x,z+.025)),front=P.hairline==null?.074:P.hairline,recession=P.hairRecede||0;
+  let y=a<.7?lerp(front,front+.004,a/.7):a<1.5?lerp(front+.004,.018,(a-.7)/.8):lerp(.018,-.070,clamp((a-1.5)/(PI-1.5),0,1));
+  y+=recession*gauss(a-1.02,.30);
+  // 緩やかな富士額とこめかみ。直線状の前髪の縁を避ける。
+  return y-.003*gauss(a,.22)+.001*Math.sin(a*9);
+}
 function hairMesh(R,P,q){
   const H=headSDF(P),hf=H.F.f,th=P.hairThick||.006,tk=P.topknot==null?.034:P.topknot;
   // 生え際の高さ（後ろ -0.065 → 前 0.05）。耳の上は耳を出す
-  const yh=(x,y,z)=>{const t=clamp((z+.03)/.12,0,1);let v=-.07+t*t*.122;if(ab(x)>.05&&z>-.035&&z<.05)v=mx(v,.012+(.05-z)*.1);
-    // こめかみの剃り込み（額の角を少し後退させる）
-    v+=.008*sstep(.025,.05,ab(x))*sstep(.04,.07,z);return v;};
+  const yh=(x,y,z)=>hairlineY(P,x,z);
   const knot=tk>0?sSphere([0,.122+tk*.4,-.04],tk):null;
   const F={f:(x,y,z)=>{let d=mx(hf(x,y,z)-th,yh(x,y,z)-y);
       // 頭皮側へ食い込みすぎないよう、頭の内側は切る（中が詰まっていても見えない）
       if(knot){const kd=knot.f(x,y,z);d=smin(d,kd,.012);}
       // 櫛目：前から髻へ流れる細かい凹凸
-      const a=Math.atan2(x,z+.04);d+=.00025*Math.sin(a*60+N1(x*40,y*40,z*40)*2);
+      const a=Math.atan2(x,z+.04);d+=.0008*Math.sin(a*28+y*12)+.0002*Math.sin(a*82+y*24);
       return d;},bs:[0,.03,0,.2]};
   const h=q==="low"?.0045:q==="medium"?.0034:.0028;
   const key="hair|"+JSON.stringify(P)+"|"+q;
   const poly=cachePoly(key,()=>{const pl=polygonize(F.f,[-.115,-.13,-.135],[.115,.2,.13],h,{levels:3,lip:1.3,seedS:3});
     const hc=lin(P.hairC||0x17130f);
-    paint(pl,(x,y,z)=>{const a=Math.atan2(x,z+.04);const st=.92+.045*Math.sin(a*150+N2(x*60,y*30,z*60)*3)+.025*N1(x*120,y*120,z*120);const grey=P.hairGrey||0;
+    paint(pl,(x,y,z)=>{const a=Math.atan2(x,z+.04);const st=.94+.035*Math.sin(a*82+y*24);const grey=P.hairGrey||0;
       // 白髪はこめかみと鬢から混じる細い筋として（まだらにしない）
-      let c=mulc(hc,st);if(grey>0){const temple=sstep(.035,.075,ab(x))*sstep(-.06,.02,z);const streak=sstep(.55,.95,Math.sin(a*170+N2(x*50,y*25,z*50)*4)*.5+.5);
-        c=mixc(c,lin(0xb0aaa2),streak*grey*(.35+.65*temple));}return c;},null,0);
+      let c=mulc(hc,st);if(grey>0){const temple=sstep(.035,.075,ab(x))*sstep(-.06,.02,z);const streak=sstep(.84,.99,Math.sin(a*82+y*24)*.5+.5);
+        c=mixc(c,lin(0xb0aaa2),streak*grey*.28*(.15+.85*temple));}return c;},null,0);
     return pl;});
   const m=new THREE.Mesh(R.add(toGeom(poly)),R.add(new THREE.MeshStandardMaterial({vertexColors:true,roughness:P.hairGloss!=null?1-P.hairGloss:.5,metalness:0})));
   m.castShadow=true;m.receiveShadow=true;return m;}
