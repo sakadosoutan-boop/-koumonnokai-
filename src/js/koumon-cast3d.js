@@ -160,8 +160,9 @@
 
   /* ============================ 人物の設定 ============================ */
   function headP(o) {
-    var p = { catchlight: true, scalp: 'hair', hairC: 0x17130f, iris: [40, 28, 20], brow: 0x221c18, lipU: .0040, lipL: .0050, lipUvol: .0013, lipLvol: .0017, skin: 0xc49a74, skinRed: 0xb87c62 };
+    var p = { eyeR: .0140, eyeZ: .0790, eyeOpenU: .0065, eyeOpenL: .0042, irisR: .145, pupilR: .052, sclera: [235, 228, 214], eyeLidShade: .22, lash: .75, browFill: .28, catchlight: true, scalp: 'hair', hairC: 0x17130f, iris: [40, 28, 20], brow: 0x221c18, lipU: .0040, lipL: .0050, lipUvol: .0013, lipLvol: .0017, skin: 0xc49a74, skinRed: 0xb87c62 };
     for (var k in o) p[k] = o[k];
+    p.eyeOpenU = Math.max(.0060, p.eyeOpenU); p.eyeOpenL = Math.max(.0038, p.eyeOpenL);
     return p;
   }
   /* robe: 表衣 / trim: 縁 / inner: 中衣（襟元の白）/ belt: 大帯 / pei: 佩玉 / cap: 冠 / armor: 'lacq'|'iron' / lace: 綴じ紐の色 */
@@ -200,6 +201,25 @@
     rba:  { h: 1.77, robe: 0x7a2418, trim: 0x2a0e0a, armor: 'iron', lace: 0x6a1a10, cap: 'kabuto', sword: 1, legs: 0x2a2018,
             head: headP({ seed: 314, age: 34, thin: .2, beard: 'long', beardLen: .06, wrinkles: .4 }) }
   };
+
+  // 生成肖像に合わせた識別用の造形。頭蓋だけでなく、頬・下顎・髭の量を変える。
+  var FACE_IDENTITY = {
+    // silhouette = chin, lower jaw, cheek, temple width. The shared sculpt below
+    // carries eyes, UVs, skin-bound whiskers, hair and crown through the same warp.
+    hai: { cheekFill: 0.9, silhouette: [1.08, 1.18, .98, 1.02], lowerFace: 1.16, upperFace: 1.02, faceWidth: 1.03, faceLength: 1.12, cheekbone: .90, chinWidth: 1.18, jaw: 1.04, nose: 1.35, neckR: 1.05, beardLen: .145, beardW: 1.60, beardDepth: 1.35, beardCheek: 1.05, moustacheDrop: .021, moustacheThick: 1.2, browW: 1.5, browY: -.002, hairline: .079, hairRecede: .015, eyeOpenU: .0064, eyeOpenL: .0042, browArch: .0040 },
+    u: { beardChinPoint: true, smile: -.08, lipL: .0044, lipU: .0036, mouthW: .023, browFill: .72, moustacheWidth: .90, beardRise: .028, beardTop: -.078, noseWidth: .83, irisR: .15, cheekFill: 1.12, silhouette: [1.35, 1.30, 1.05, 1.12], lowerFace: .98, upperFace: .98, faceWidth: 1.08, faceLength: 1.02, cheekbone: .88, chinWidth: 1.40, jaw: 1.15, neckR: 1.23, nose: 1.18, cheekFat: .55, beardLen: .054, beardW: 1.03, beardDepth: 1.4, beardCheek: .72, moustacheDrop: .008, moustacheThick: 1.05, browW: 1.75, browY: -.001, browSlope: .008, browDrop: .004, hairline: .075, hairRecede: .003, eyeOpenU: .0068, eyeOpenL: .0044, eyeTilt: .12, browArch: .0018, topknot: .038 },
+    ryo: { cheekFill: 0.74, silhouette: [.91, 1.04, .87, .92], lowerFace: 1.10, upperFace: 1.02, faceWidth: .90, faceLength: 1.04, cheekbone: .78, chinWidth: .92, jaw: .93, nose: .88, thin: .06, cheekFat: .48, hairline: .069, hairRecede: .003, eyeOpenU: .0062, eyeOpenL: .0041, eyeTilt: .11, browW: 1.15, browArch: .0030, browDrop: .004, mouthW: .0225 },
+    zo: { hood: .95, cheekFill: 0.35, silhouette: [.78, .85, .88, .94], lowerFace: 1.24, upperFace: 1.12, brow: 0xbdb7aa, faceWidth: .91, faceLength: 1.16, cheekbone: 1.08, chinWidth: .80, jaw: .92, nose: 1.18, neckR: .86, beardLen: .205, beardW: 1.02, beardDepth: .82, beardCheek: .55, moustacheDrop: .040, moustacheThick: .78, browW: 1.65, browY: .001, browSlope: -.008, browDrop: .009, hairline: .092, hairRecede: .022, eyeOpenU: .0057, eyeOpenL: .0038, browArch: .0030 },
+    haku: { cheekFill: 1.12, silhouette: [1.18, 1.27, 1.07, 1.02], lowerFace: .85, upperFace: 1.00, faceWidth: 1.08, faceLength: .94, cheekbone: .77, chinWidth: 1.20, jaw: 1.02, nose: 1.01, thin: 0, cheekFat: 1.05, beardLen: .040, beardW: 1.28, beardDepth: 1.15, beardCheek: 1.0, moustacheDrop: .014, moustacheThick: 1.1, browW: 1.35, browY: .002, browSlope: -.006, browDrop: .010, hairline: .077, hairRecede: .013, hairGrey: .40, eyeOpenU: .0070, eyeOpenL: .0048, browArch: .0090 },
+    kai: { smile: -.22, lipL: .0055, lipU: .0048, mouthW: .027, browRough: .0015, browFill: .87, moustacheWidth: 1.32, beardRagged: .003, beardCurve: 1.35, beardRise: .040, beardTop: -.050, beardVolume: true, noseWidth: 1.30, cheekFill: 1.2, silhouette: [1.37, 1.38, 1.22, 1.20], lowerFace: .90, upperFace: .94, faceWidth: 1.09, faceLength: 1.04, cheekbone: .83, chinWidth: 1.45, jaw: 1.14, nose: 1.24, neckR: 1.30, cheekFat: .90, beardLen: .070, beardW: 1.75, beardDepth: 1.70, beardCheek: 1.30, moustacheDrop: .011, moustacheThick: 1.75, browW: 3.10, browY: -.001, browSlope: .011, browDrop: .003, hairline: .073, hairRecede: .006, eyeOpenU: .0078, eyeOpenL: .0050, eyeTilt: .10, browArch: .0025},
+    sou: { cheekFill: 1.12, silhouette: [.69, .92, .99, 1.01], lowerFace: 1.01, upperFace: .98, faceWidth: .96, faceLength: 1.03, cheekbone: .93, chinWidth: .76, jaw: .96, nose: .99, hairline: .068, hairRecede: .002, eyeOpenU: .0064, eyeOpenL: .0041, eyeTilt: .21, browW: 1.65, browY: -.006, browSlope: .014, browDrop: .003, browArch: .0010, mouthW: .0215 },
+    chin: { cheekFill: 0.76, silhouette: [.87, 1.03, .91, .93], lowerFace: 1.16, upperFace: 1.04, faceWidth: .94, faceLength: 1.06, cheekbone: .80, chinWidth: .90, jaw: .95, nose: 1.07, thin: .12, cheekFat: .38, beardLen: .032, beardW: .73, beardDepth: .8, beardCheek: 0, moustacheWidth: .90, moustacheDrop: .008, moustacheThick: .72, browW: 1.30, hairline: .076, hairRecede: .007, eyeOpenU: .0064, eyeOpenL: .0043, eyeTilt: .06, browArch: .0060 }
+  };
+  Object.keys(FACE_IDENTITY).forEach(function (id) { Object.assign(CAST[id].head, FACE_IDENTITY[id]); });
+  Object.assign(CAST.ko.head, FACE_IDENTITY.hai); // 高祖も劉邦と同じ骨格。
+  CAST.u.cap = 'warcrown';
+  CAST.kai.cap = 'warwrap';
+  CAST.sou.cap = 'warwrap';
 
   /* ============================ 衣の形 ============================ */
   /* 胴：輪切りを積んだ形。断面は角の丸い長方形（超楕円）で、肩は高さとともに狭まる */
@@ -435,7 +455,18 @@
       var fg = new THREE.ExtrudeGeometry(front, { depth: .008, bevelEnabled: false }); fg.translate(0, 0, -.004);
       var fm = mesh(fg, lac); fm.position.set(0, .12, .02); fm.rotation.x = -.62; g.add(fm);
       var liang = mesh(new THREE.BoxGeometry(.006, .006, .1), std(0x2a2420, .5)); liang.position.set(0, .158, -.01); liang.rotation.x = -.62; g.add(liang);
-      cord(.06, .11, .03, .058, -.03, .05); cord(-.06, .11, .03, -.058, -.03, .05);
+      // The reference cap has no exposed chin strap. A straight buried cord
+      // previously left two isolated black ends protruding through the cheeks.
+    } else if (kind === 'warcrown' || kind === 'warwrap') {
+      // 肖像に合わせ、宴席では髻を留める小冠。顔を囲う兜・錣を重ねない。
+      var ring = new THREE.Shape(); ring.absarc(0, 0, .041, 0, PI * 2, false);
+      var hole = new THREE.Path(); hole.absarc(0, 0, .035, 0, PI * 2, true); ring.holes.push(hole);
+      var rg = new THREE.ExtrudeGeometry(ring, { depth: kind === 'warcrown' ? .025 : .018, bevelEnabled: true, bevelSize: .0018, bevelThickness: .0018, bevelSegments: 2, curveSegments: 20 });
+      rg.rotateX(-PI / 2);
+      var circlet = mesh(rg, kind === 'warcrown' ? bron : std(c.trim, .9)); circlet.position.set(0, .132, -.04); g.add(circlet);
+      if (kind === 'warcrown') {
+        var pin = mesh(new THREE.CylinderGeometry(.0024, .0024, .145, 10), bron); pin.rotation.z = PI / 2; pin.position.set(0, .148, -.04); g.add(pin);
+      }
     } else if (kind === 'bawang') {
       // 霸王の兜：黒漆の鉢に金の覆輪、額に金の飾り板と赤い玉。鉢のまわりは黒漆の小札の錣（頬から後ろへ）。
       // 頂の受け金から、赤く染めた毛の纓が四方へ垂れる
@@ -665,6 +696,42 @@
   }
 
   /* ============================ 人物を組む ============================ */
+  // Portrait sculpt in head space. Smooth height bands replace the common
+  // pinched-cheek outline; UVs stay attached to vertices. Below the chin the
+  // deformation fades into the original neck, retaining its torso connection.
+  function sculptPortrait(group, p) {
+    if (!p.silhouette) return;
+    var profile = p.silhouette, levels = [-.165, -.115, -.065, -.008, .05, .14];
+    var widths = [1, profile[0], profile[1], profile[2], profile[3], profile[3]];
+    function smooth(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
+    function warp(v) {
+      var y = v.y, w = widths[0];
+      for (var i = 1; i < levels.length; i++) {
+        if (y >= levels[i]) w = widths[i];
+        else { w += (widths[i] - w) * smooth((y - levels[i - 1]) / (levels[i] - levels[i - 1])); break; }
+      }
+      var neck = smooth((y + .165) / .075);
+      var vertical = y < .0245 ? p.lowerFace : p.upperFace;
+      v.x *= w;
+      v.y = y + (y - .0245) * ((vertical || 1) - 1) * neck;
+      // A modest larger portrait head helps the silhouette read at game scale.
+      var size = 1 + .07 * smooth((y + .165) / .10);
+      v.x *= size; v.y = -.165 + (v.y + .165) * size; v.z *= size;
+      return v;
+    }
+    group.updateMatrixWorld(true);
+    var fromWorld = group.matrixWorld.clone().invert();
+    group.traverse(function (o) {
+      if (!o.isMesh || !o.geometry.attributes.position) return;
+      var toHead = fromWorld.clone().multiply(o.matrixWorld), toLocal = toHead.clone().invert();
+      var g = o.geometry.clone(), a = g.attributes.position, v = new THREE.Vector3();
+      for (var i = 0; i < a.count; i++) {
+        v.fromBufferAttribute(a, i).applyMatrix4(toHead); warp(v).applyMatrix4(toLocal); a.setXYZ(i, v.x, v.y, v.z);
+      }
+      a.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingBox(); g.computeBoundingSphere(); o.geometry = g;
+    });
+  }
+
   function headParts(c) {
     var K = window.KM_FIGKIT, out = { head: null, hair: null };
     if (!K) return out;
@@ -800,6 +867,7 @@
     var hat = hatMesh(c.cap, c); headG.add(hat);
     hat.traverse(function (o) { if (o.isMesh) o.castShadow = false; }); // 冠の影で目元が暗くならないように
     if (c.cap === 'bawang' || c.cap === 'kabuto') hat.position.y = .008;
+    sculptPortrait(headG, c.head);
     var headTop = new THREE.Object3D(); headTop.position.set(0, .34 * s, 0); headPiv.add(headTop);
 
     // 披風（項王）
@@ -1171,7 +1239,7 @@
   }
 
   window.KM_CAST3D = {
-    CAST: CAST, makeFigure: makeFigure, makeHorse: makeHorse, lacquerCloudTex: lacquerCloudTex, cupMesh: cupMesh,
+    CAST: CAST, makeFigure: makeFigure, makeHorse: makeHorse, sculptPortrait: sculptPortrait, lacquerCloudTex: lacquerCloudTex, cupMesh: cupMesh,
     setQuality: function (q) { Q = q; }
   };
 })();
