@@ -377,8 +377,10 @@ function headSDF(P){
     K(sEll(J([0,-.044,.071]),[.030*jw*fw,.022*fl,.031]),.02),K(sEll(J([0,-.080,.081]),[.018*jw*cw,.016*fl,.016*jw]),.018),
     K(sEll(J([0,-.047,.0915]),[.022*jw,.0105,.0085]),.010)];
   for(const s of[-1,1]){
-    fp.push(K(sCap(J([s*.0485,-.060,.0]),J([s*.019,-.089,.071]),.0100*jw),.025));
-    fp.push(K(sCap(J([s*.0485,-.060,.0]),[s*.058,-.015,-.008],.010),.02));
+    // The rear mandibular strut runs under the ear. Keep it embedded in the
+    // cheek/skull blend; the former wide capsules made an isolated side lobe.
+    fp.push(K(sCap(J([s*.046,-.060,.0]),J([s*.019,-.089,.071]),.0085*jw),.018));
+    fp.push(K(sCone(J([s*.046,-.060,.0]),[s*.055,-.015,-.008],.0075,.0065),.014));
     fp.push(K(sEll([s*.047*fw,.007,.064],[.023*fw*cb,.013,.019*cb],rotM(0,s*.45,0)),.02));
     fp.push(K(sCap([s*.058,.006,.050],[s*.070,.004,.008],.008),.02));
     fp.push(K(sCap([s*.050,.040,.074],[0,.042,.093],.0085*bw),.02));
@@ -394,6 +396,10 @@ function headSDF(P){
     if(P.cheekFill){const cf=P.cheekFill;fp.push(K(sEll(J([s*.035,-.026,.041]),[.020*jw*fw*cf,.043*fl,.035*cf]),.024));}
   }
   let F=U([cran,K(U(fp),.025)]);
+  // A shallow SDF fill keeps the scholar's under-eye cheek plane continuous.
+  // Jaw width is controlled by the underlying fused volumes and portrait warp.
+  if(P.cheekPlaneSmooth){const a=P.cheekPlaneSmooth;
+    F=D(F,(x,y,z)=>a*gauss(ab(x)-.039,.022)*gauss(y+.029,.024)*sstep(.045,.074,z),a);}
   F=S(F,[K(sEll([-.0185,.0255,.0885],[.0062,.0075,.0065]),.007),K(sEll([.0185,.0255,.0885],[.0062,.0075,.0065]),.007)]);
   const rawNose=U([K(sCone(N([0,.029,.0905]),N([0,-.007,.1035]),.0058*ns,.0070*ns),0),K(sEll(N([0,-.013,.0915]),[.0120*ns,.0130*ns,.0110*ns]),.008),
     K(sSphere(N([0,-.0165,.1030]),.0093*ns),.004),
@@ -407,7 +413,9 @@ function headSDF(P){
     lids.push(K(sEll([s*.0310,.0140,ez+.0067],[.0105,.0030,.0050]),.004));}
   // (a child's neck is a smooth column: no sternocleidomastoid cords, no larynx)
   const neck=P.kid?U([K(sCone([0,-.035,-.020],[0,-.165,-.008],.049*nk,.052*nk),0)]):U([K(sCone([0,-.035,-.020],[0,-.165,-.008],.049*nk,.052*nk),0),
-    K(sCap([-.050*nk,-.040,-.030],[-.012,-.160,.032],.010*nk),.018),K(sCap([.050*nk,-.040,-.030],[.012,-.160,.032],.010*nk),.018),
+    // Sternocleidomastoid cords rise from the neck, below the ear. The former
+    // high/wide roots surfaced as round lobes at the rear jaw on every adult.
+    K(sCap([-.044*nk,-.072,-.027],[-.012,-.160,.032],.007*nk),.012),K(sCap([.044*nk,-.072,-.027],[.012,-.160,.032],.007*nk),.012),
     K(sEll([0,-.108,.036],[.008,.011,.008*nk]),.012)]);
   F=U([F,K(nose,.006),K(U(lids),.0045),K(neck,.03)]);
   const cuts=[];
@@ -826,6 +834,7 @@ function hairlineY(P,x,z){
   const a=ab(Math.atan2(x,z+.025)),front=P.hairline==null?.074:P.hairline,recession=P.hairRecede||0;
   let y=a<.7?lerp(front,front+.004,a/.7):a<1.5?lerp(front+.004,.018,(a-.7)/.8):lerp(.018,-.070,clamp((a-1.5)/(PI-1.5),0,1));
   y+=recession*gauss(a-1.02,.30);
+  if(P.hairSweep)y+=(P.hairSweep||0)*clamp(x/.055,-1,1)*sstep(.012,.055,z);
   // 緩やかな富士額とこめかみ。直線状の前髪の縁を避ける。
   return y-.003*gauss(a,.22)+.001*Math.sin(a*9);
 }
