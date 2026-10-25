@@ -1,74 +1,77 @@
-# 肖像を基準にした3D人物の調整
+# 人物モデルの造形と確認範囲
 
-基準は `src/assets/character-atlas.png`。2026-10-22〜23の改修は、肖像の識別特徴を既存のThree.jsモデルへ反映するものです。肖像自体も学習用の創作であり、史実の容貌を復元したものではありません。
+2026-10-25。基準は `src/assets/character-atlas.png` の創作肖像です。容貌は史実の復元ではありません。胸から下の衣装は、肖像の色と服装体系から補完しています。
 
-| 人物 | 肖像から合わせる特徴 |
-| --- | --- |
-| 劉邦 | 長めの輪郭、高い鼻、豊かな長髭、後退気味の生え際 |
-| 項羽 | 広い顎と太い首、密な短髭、小さな冠と髻 |
-| 張良 | 細い輪郭、穏やかな目元、髭のない顔 |
-| 范増 | 痩せた頬、長い白髭、高い額、老齢の目元 |
-| 項伯 | 丸めの輪郭、短めの白髪混じりの髭 |
-| 樊噲 | 最も広い顔、厚い首、密な髭、髻留め |
-| 項荘 | 若く細い顔、髭なし、簡素な髻留め |
-| 陳平 | 細長い輪郭、細い口髭と短い顎髭 |
+## 土台の交換
 
-## モデルの確認方法
+主要8人の頭部を旧SDFから、Blender公式Human Base Meshes（CC0）を基礎に造形した連続メッシュへ交換しました。額、眼瞼、鼻、唇、頬、顎、耳、首が一体です。眼球は各顔の眼瞼へ合わせ、新しい頭部に旧 `sculptPortrait` を重ねて適用しません。
 
-目元は低画質でも確認します。旧設定の開口全高3.8〜6mmはlowの頭部メッシュ間隔4.8mmに近く、皮膚が瞳を覆う原因になっていました。輪郭だけでなく、白目・虹彩・瞼の接続と、縮小表示でも目が開いて見えることを確認対象にします。
+目は横幅、上瞼の山、下瞼の弧、目頭・目尻、上瞼の重なり、目袋、眉を人物別に造形しています。色付きと同一色の拡大比較で、眉色だけによる識別になっていないことを確認します。
 
-`tools/model-preview.cjs` はゲームが使う実際の人物生成コードとThree.jsを読み、Canvas上のCPUラスタライザで多方向の画像を作ります。モデルの頂点・法線・インデックスの健全性も検査します。鎧などのInstancedMeshも、各部品の変換行列と色を反映します。
+| 人物 | 眼形・顔の識別特徴 | 衣装と髪 |
+| --- | --- | --- |
+| 劉邦 | 長角顔、高い鼻、加齢した瞼とわずかな左右差 | 深い青緑、文様襟、長い黒灰髭 |
+| 項羽 | 角顎、内側が重く鋭い眼裂、低い斜眉 | 黒甲、真鍮の縁、赤披風、小冠、短髭 |
+| 張良 | 滑らかな頬、横長で穏やかな眼裂、整った鼻梁 | 青灰の重ね襟、流れる生え際、小さな髪留め |
+| 范増 | 高い額、重い上瞼、目袋、痩せた頬 | 黄褐色、暗襟、白髪と長い白髭 |
+| 項伯 | 丸めの短顔、丸みのある垂れ目、柔らかい眉 | 紫灰、短い灰混じり髭、文官冠 |
+| 樊噲 | 広い顎と鼻、厚い眉間、圧縮された眼裂 | 暗い鉄甲、太い革帯、濃い頬髭 |
+| 項荘 | 若い角顔、目尻へ向かう細い眼裂、鋭い斜眉 | 褐色の実用甲、赤褐色の髻紐 |
+| 陳平 | 細長い顔、水平で落ち着いた眼裂、細い鼻 | 暗青灰、黒冠、細い口髭と短い顎髭 |
 
-これは形状・接続の確認用です。WebGLのPBR、影、バンプマップ、半透明描画、画面上の速度を再現・検証するものではありません。画像の下段にこの制約を表示しています。
+手も公式人体素材から作り、掌・指・手首が連続した形へ交換しています。左右と11姿勢を持ち、剣と戟は握りの中心・軸・半径へ配置します。
+
+衣装は厚みを持つ表裏の布、重ね襟、胴の折り目、巻き身頃、重力方向へ垂れる袋袖、裏地と留め具を持つ札甲、傾斜した肩甲、床へ流れる披風です。立つ・座る・跪く裾を切り替え、軽量設定では細分・面取り・小さい鋲を減らします。物理布シミュレーションではなく姿勢に応じた変形です。
+
+## 編集と配布
+
+編集用の `source-assets/heads.blend`、`hands.blend`、`costumes.blend` と再生成スクリプトを保存しています。元の頭部・手は非表示のコレクションに保持しています。[出典manifest](assets/manifest.csv)と[再生成手順](../source-assets/README.md)を参照してください。
+
+ゲームはBlenderを必要としません。座標・法線・色を量子化し、共有インデックスとともにJavaScriptへ内包します。`npm run build` で単一HTMLにも含め、実行時に外部モデルを取得しません。
+
+## 確認方法
+
+`tools/character-gallery.html` は実際のThree.js素材を使い、人物・姿勢・画質を切り替えて回転・拡大する確認ページです。
+
+CPU比較は次のコマンドで再現できます。`@napi-rs/canvas` の場所が既定と異なる場合は `CANVAS_MODULE` に指定します。
 
 ```powershell
-# @napi-rs/canvasのインストール先を必要に応じて指定
-$env:CANVAS_MODULE = 'path/to/@napi-rs/canvas'
-node tools/model-preview.cjs model-preview-output/after hai,u,ryo,zo low
-node tools/model-preview.cjs model-preview-output/after hai,u,ryo,zo,haku,kai,sou,chin low --portraits
-node tools/model-preview.cjs model-preview-output/after hai,u,ryo,zo,haku,kai,sou,chin low --clay-faces
-
-# 比較対象のソースをGitの確定版から読む場合
-$env:MODEL_REF = 'f54ea60'
-node tools/model-preview.cjs model-preview-output/before hai,u,ryo,zo,haku,kai,sou,chin low --portraits
+node tools/model-preview.cjs model-preview-output/review hai,u,ryo,zo,haku,kai,sou,chin high --portraits
+node tools/model-preview.cjs model-preview-output/review hai,u,ryo,zo,haku,kai,sou,chin high --bodies
+node tools/model-preview.cjs model-preview-output/review hai,u,ryo,zo,haku,kai,sou,chin high --eyes
+node tools/model-preview.cjs model-preview-output/review hai,u,ryo,zo,haku,kai,sou,chin high --eyes --gray
+node tools/model-preview.cjs model-preview-output/review sou high --pose=dance
 ```
 
-MODEL_REFを指定しない場合は作業中のソースを読みます。生成物は `model-preview-output/` に保存し、通常のビルドには含めません。ゲームの配布用HTMLは従来通り `npm run build` で更新します。
+CPUラスタライザは実モデルの変換と色を使い、InstancedMeshの配置、面の表裏と鏡像の向き、整数色属性の正規化を反映します。WebGLのPBR・影・バンプ・透明描画・速度を再現しません。
 
-## 2026-10-22の画像レビュー
+`tools/export-model-scene.cjs` と `tools/render-model-scene.py` は実モデルをBlenderへ渡し、別の照明で四方向を描画します。これもゲームのWebGL画面とは別の検証です。
 
-8人のlow設定の一覧と四方向、劉邦・項羽・張良・范増のhigh設定の正面・側面・斜め・上方を目視確認しました。high設定でも頭部の生成精度はゲームの設定に従いmediumです。
+```powershell
+node tools/export-model-scene.cjs model-preview-output/scene ryo stand high
+& $env:BLENDER_EXE -b --python tools/render-model-scene.py -- model-preview-output/scene/ryo-stand.json model-preview-output/render
+```
 
-初稿では頬髭を結ぶ太い立体部品が肌から離れ、横顔に三角形の空隙や顎当て状の輪郭がありました。頬髭を頭部の頂点色、口髭を顔のテクスチャに置き換えた最終版では、この浮きが解消しています。長髭は顎下から連続し、確認した角度では根元の明白な空隙はありません。眼球の明白な浮きや頭部の破損も確認されませんでした。
+確認対象は眼球と瞼、髪・髭の根元、首と襟、肩甲と紐、袖の肩・肘・手首、帯と裾、披風の床接触、武器の握りです。
 
-さらに肖像の特徴をデフォルメし、顎・頬・こめかみの幅と顔の上下の長さを人物ごとに変えました。劉邦は長角顔、項羽は幅広い角顔、張良は細い卵形、范増は痩せた長顔、項伯は丸い短顔、樊噲は最も幅広い重厚な顔、項荘はV形の顎、陳平は細長い顔です。鼻、目の開き、眉の角度も調整しました。
+## 保存した比較画像
 
-頭部は首元の接続を保ちながら約7%拡大しています。目・髪・髭・冠も頭部と同じ変形を通し、テクスチャのUVは頂点に保持します。頬から黒い線として出ていた冠紐の端点を除去しました。髪・髭・冠・色を外した同一縮尺の灰色比較にも、ゲームと同じ `sculptPortrait` を適用しています。8人のlow設定の四方向と灰色比較で、共通の輪郭に依存していた状態からの差を確認しました。
+![8人の顔（CPU）](model-preview/portraits-high.png)
 
-ただし、劉邦と范増の長髭はまだ先細りの簡略形です。項羽と樊噲の後ろ顎には丸い隆起が残り、張良と陳平の細顔には共通点があります。自然な毛束、頬や目元の細かな造形、肖像の写実性を再現した完成モデルではありません。ブラウザー上のWebGL描画・照明・動作速度は、このCPU画像レビューの確認範囲に含みません。
+![8人の眼形（CPU・同縮尺）](model-preview/eyes-high.png)
 
-### 保存した確認画像
+![色を外した眼形（CPU・同縮尺）](model-preview/eyes-clay-high.png)
 
-2026-10-23に目元と項羽・樊噲を再調整しました。主要8人の目の開口を約10〜13mmへ広げ、眼球の大きさ・前後位置と瞼を連動させています。白目の明るさ、虹彩の比率、眼球テクスチャの影も調整し、lowの8人一覧で白目と虹彩を確認しました。目は読み取りやすさを優先した、やや丸く見開くデフォルメです。
+![8人の衣装（CPU・同縮尺）](model-preview/bodies-high.png)
 
-項羽は整った斜眉・細めの鼻・露出した頬・短い顎髭、樊噲は粗い極太眉・幅広鼻・大きい口髭・高い頬髭と丸く豊かな顎髭に分けています。両者のhigh四方向で眼球と髭の接続も確認しました。
+![張良の四方向（CPU）](model-preview/ryo-high.png)
 
-### 顎の膨らみと張良の再調整
+![項羽の四方向（CPU）](model-preview/u-high.png)
 
-耳の下から後ろへ壺のように膨らんでいた輪郭を、顔の母体・下顎の部品・首の筋の接続から見直しました。後ろの顎部品を細くして内側へ寄せ、首の筋の上端を下げました。項羽は下顎幅も調整し、大きな輪状の張り出しを抑えています。8人の同一色の顔比較と、項羽・張良・劉邦・樊噲のhigh四方向で、首の断絶や目・髭の浮きがないことを確認しました。
+![実モデルを別の照明で確認（Blender、ゲーム画面ではありません）](model-preview/ryo-blender.png)
 
-張良は大きな黒冠を小さな髪留めに換え、額を見せる流れた生え際、鼻筋、顎幅、眉と目の比率を肖像に寄せました。ただし、頬と耳下には小さな隆起が残り、目元も肖像の端正な眼瞼には達していません。現行の手続き型の頭部は球・楕円・カプセルの結合であり、張良を肖像画に近い端正な顔へ仕上げるには、眼瞼・鼻梁・頬・顎を連続した面として彫った頭部メッシュが必要です。この限界は[Blender Studioの頭部造形の説明](https://studio.blender.org/training/stylized-character-workflow/5d3a1bd54bc3ff1bb9513d3e/)も参照して確認しました。
+## 残る限界
 
-以下は顎と張良を再調整した後のCPU画像です。実ブラウザーのWebGL画面はこの画像で検証できません。
+髪と髭は毛束によるゲーム向けの簡略造形で、一本ずつの毛髪や布の物理計算は行いません。原画は一方向の胸像なので、側面・背面や下半身には補完があります。主要8人以外の一部には共通ベースの控えめな変形や旧素材を使います。
 
-![8人の識別確認（low、CPU描画）](model-preview/portraits-low.png)
-
-![髪・髭・冠・色を外した輪郭の比較（low、CPU描画）](model-preview/clay-faces-low.png)
-
-![劉邦の四方向確認（high、CPU描画）](model-preview/hai-high.png)
-
-![項羽の四方向確認（high、CPU描画）](model-preview/u-high.png)
-
-![張良の四方向確認（high、CPU描画）](model-preview/ryo-high.png)
-
-![樊噲の四方向確認（high、CPU描画）](model-preview/kai-high.png)
+ブラウザーの実画面確認は未完了です。以前のMicrosoft Edge操作が自動承認で拒否され、アプリ内ブラウザー使用可否の回答もまだないため、CPU・Blender画像と構造テストを区別して記録しています。

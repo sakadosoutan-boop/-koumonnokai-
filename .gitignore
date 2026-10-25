@@ -1,3 +1,6 @@
 node_modules/
 model-preview-output/
+__pycache__/
+*.pyc
+source-assets/*.blend1
 .DS_Store
