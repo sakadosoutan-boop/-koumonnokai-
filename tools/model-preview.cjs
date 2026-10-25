@@ -1,5 +1,5 @@
 /* Offline geometry/material inspection; deliberately does not drive a browser.
- * Usage: node tools/model-preview.cjs [output-dir] [hai,u] [low|high] [--portraits|--clay-faces]
+ * Usage: node tools/model-preview.cjs [output-dir] [hai,u] [low|high] [--portraits|--clay-faces|--bodies|--eyes] [--gray] [--pose=stand]
  * Set CANVAS_MODULE to an installed @napi-rs/canvas directory if required.
  * Lambert shading approximates material base color; no WebGL PBR, shadows,
  * normal/bump maps, antialiasing or transparency sorting is reproduced.
@@ -14,8 +14,12 @@ const ids=(process.argv[3]||'hai,u').split(','),quality=process.argv[4]||'low';
 fs.mkdirSync(out,{recursive:true});
 const context={console,performance,document:{createElement(tag){if(tag!=='canvas')throw Error(tag);return createCanvas(1,1);}},setTimeout,clearTimeout};
 context.window=context;vm.createContext(context);
-for(const file of ['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-cast3d.js']){
-  const source=process.env.MODEL_REF?execFileSync('git',['show',process.env.MODEL_REF+':'+file],{cwd:root,encoding:'utf8',maxBuffer:10000000}):fs.readFileSync(path.join(root,file),'utf8');
+const modules=['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-cast3d.js'];
+const optional=new Set(modules.slice(2,-1));
+for(const file of modules){
+  let source;
+  try { source=process.env.MODEL_REF?execFileSync('git',['show',process.env.MODEL_REF+':'+file],{cwd:root,encoding:'utf8',maxBuffer:50000000,stdio:['ignore','pipe','ignore']}):fs.readFileSync(path.join(root,file),'utf8'); }
+  catch(error){if(optional.has(file))continue;throw error;}
   vm.runInContext(source,context,{filename:file});
 }
 const T=context.THREE,V=T.Vector3;
@@ -37,7 +41,11 @@ function collect(object){
     if(!m.isMesh)return;
     const g=m.geometry,p=g.attributes.position;if(!p)return;
     if(!g.attributes.normal)g.computeVertexNormals();
-    const n=g.attributes.normal,c=g.attributes.color,uv=g.attributes.uv,fw=g.attributes.frontW;
+    const n=g.attributes.normal,uv=g.attributes.uv,fw=g.attributes.frontW;
+    let c=g.attributes.color;
+    // WebGL normalizes integer attributes; Three r128 CPU getX/getY do not.
+    if(c&&c.normalized){const divisor=c.array.constructor.name==='Uint8Array'?255:c.array.constructor.name==='Uint16Array'?65535:1;
+      c=new T.BufferAttribute(Float32Array.from(c.array,v=>v/divisor),c.itemSize);}
     for(let instance=0;instance<(m.isInstancedMesh?m.count:1);instance++){
     const world=m.matrixWorld.clone(),instanceColor=new T.Color(1,1,1);
     if(m.isInstancedMesh){const local=new T.Matrix4();m.getMatrixAt(instance,local);world.multiply(local);if(m.instanceColor)m.getColorAt(instance,instanceColor);}
@@ -47,7 +55,8 @@ function collect(object){
       if(![v.x,v.y,v.z,q.x,q.y,q.z].every(Number.isFinite))throw Error('Non-finite geometry '+m.name);
       positions.set([v.x,v.y,v.z],i*3);normals.set([q.x,q.y,q.z],i*3);
     }
-    const indices=g.index?g.index.array:Uint32Array.from({length:p.count},(_,i)=>i);
+    let indices=g.index?g.index.array:Uint32Array.from({length:p.count},(_,i)=>i);
+    if(world.determinant()<0){indices=Uint32Array.from(indices);for(let i=0;i<indices.length;i+=3)[indices[i+1],indices[i+2]]=[indices[i+2],indices[i+1]];}
     for(const i of indices)if(i>=p.count)throw Error('Invalid index');
     const materials=Array.isArray(m.material)?m.material:[m.material];
     const groups=Array.isArray(m.material)&&g.groups.length?g.groups:[{start:0,count:indices.length,materialIndex:0}];
@@ -64,11 +73,12 @@ function render(model,center,span,angles,width,height){
   const light=toward.clone().multiplyScalar(.7).add(up.clone().multiplyScalar(.8)).add(right.clone().multiplyScalar(-.5)).normalize();
   const scale=height/span;
   for(const m of model.meshes){
-    const p=m.positions,n=m.normals,count=p.length/3,screen=new Float32Array(count*3),illum=new Float32Array(count);
+    const p=m.positions,n=m.normals,count=p.length/3,screen=new Float32Array(count*3),illum=new Float32Array(count),backIllum=new Float32Array(count);
     for(let i=0;i<count;i++){
       const v=new V(p[i*3]-center.x,p[i*3+1]-center.y,p[i*3+2]-center.z);
       screen[i*3]=width/2+v.dot(right)*scale;screen[i*3+1]=height/2-v.dot(up)*scale;screen[i*3+2]=v.dot(toward);
-      illum[i]=.38+.62*Math.max(0,n[i*3]*light.x+n[i*3+1]*light.y+n[i*3+2]*light.z);
+      const dot=n[i*3]*light.x+n[i*3+1]*light.y+n[i*3+2]*light.z;
+      illum[i]=.38+.62*Math.max(0,dot);backIllum[i]=.38+.62*Math.max(0,-dot);
     }
     for(const group of m.groups){
       const mat=m.materials[group.materialIndex];if(!mat||mat.visible===false||mat.opacity<.25)continue;
@@ -76,6 +86,9 @@ function render(model,center,span,angles,width,height){
       for(let t=group.start;t<end;t+=3){
         const a=m.indices[t],b=m.indices[t+1],c=m.indices[t+2],ax=screen[a*3],ay=screen[a*3+1],bx=screen[b*3],by=screen[b*3+1],cx=screen[c*3],cy=screen[c*3+1];
         const den=(by-cy)*(ax-cx)+(cx-bx)*(ay-cy);if(Math.abs(den)<1e-8)continue;
+        const front=den<0;
+        if(mat.side!==T.DoubleSide&&((mat.side===T.BackSide&&front)||(mat.side!==T.BackSide&&!front)))continue;
+        const lighting=front?illum:backIllum;
         const minx=Math.max(0,Math.floor(Math.min(ax,bx,cx))),maxx=Math.min(width-1,Math.ceil(Math.max(ax,bx,cx))),miny=Math.max(0,Math.floor(Math.min(ay,by,cy))),maxy=Math.min(height-1,Math.ceil(Math.max(ay,by,cy)));
         for(let y=miny;y<=maxy;y++)for(let x=minx;x<=maxx;x++){
           const wa=((by-cy)*(x+.5-cx)+(cx-bx)*(y+.5-cy))/den,wb=((cy-ay)*(x+.5-cx)+(ax-cx)*(y+.5-cy))/den,wc=1-wa-wb;
@@ -93,7 +106,7 @@ function render(model,center,span,angles,width,height){
             const w=m.fw?wa*m.fw.getX(a)+wb*m.fw.getX(b)+wc*m.fw.getX(c):1;
             r*=1-w+w*(tex.srgb?linear[tex.data[q]]:tex.data[q]/255);g*=1-w+w*(tex.srgb?linear[tex.data[q+1]]:tex.data[q+1]/255);bl*=1-w+w*(tex.srgb?linear[tex.data[q+2]]:tex.data[q+2]/255);
           }
-          const shade=wa*illum[a]+wb*illum[b]+wc*illum[c];depth[pixel]=z;data[pixel*4]=srgb(r*shade);data[pixel*4+1]=srgb(g*shade);data[pixel*4+2]=srgb(bl*shade);
+          const shade=wa*lighting[a]+wb*lighting[b]+wc*lighting[c];depth[pixel]=z;data[pixel*4]=srgb(r*shade);data[pixel*4+1]=srgb(g*shade);data[pixel*4+2]=srgb(bl*shade);
         }
       }
     }
@@ -102,21 +115,45 @@ function render(model,center,span,angles,width,height){
 }
 const views=[['Front',0,0],['Side',90,0],['Three-quarter',35,8],['Overhead',35,35]],report=[];
 const clayFaces=process.argv.includes('--clay-faces');
-const portraitsOnly=process.argv.includes('--portraits')&&!clayFaces;
-const portraits=portraitsOnly?createCanvas(1440,Math.ceil(ids.length/4)*420):null;
+const eyeOnly=process.argv.includes('--eyes'),grayEyes=process.argv.includes('--gray');
+const eyeSheet=eyeOnly?createCanvas(1440,Math.ceil(ids.length/4)*260):null;
+const bodies=process.argv.includes('--bodies')&&!clayFaces;
+const pose=(process.argv.find(a=>a.startsWith('--pose='))||'--pose=stand').slice(7);
+const portraitsOnly=(process.argv.includes('--portraits')||bodies)&&!clayFaces;
+const tileW=bodies?384:360,tileH=bodies?620:420;
+const portraits=portraitsOnly?createCanvas(tileW*4,Math.ceil(ids.length/4)*tileH):null;
 const claySheet=clayFaces?createCanvas(1920,Math.ceil(ids.length/4)*440):null;
 const names={hai:'Liu Bang',u:'Xiang Yu',ryo:'Zhang Liang',zo:'Fan Zeng',haku:'Xiang Bo',kai:'Fan Kuai',sou:'Xiang Zhuang',chin:'Chen Ping'};
 for(const id of ids){
+  if(eyeOnly){
+    const started=performance.now(),built=context.KM_HEADS.build(id,context.KM_CAST3D.CAST[id].head,quality);
+    if(!built)throw Error('No anatomical eye asset for '+id);
+    const face=grayEyes?new T.Group():built.group;
+    if(grayEyes)for(const original of [built.surface,built.eyes]){
+      const part=original.clone(true);part.traverse(m=>{if(!m.isMesh)return;m.material=new T.MeshStandardMaterial({color:0x999999,roughness:.7});});face.add(part);
+    }
+    const model=collect(face),pc=eyeSheet.getContext('2d'),i=ids.indexOf(id),x=i%4*360,y=Math.floor(i/4)*260;
+    pc.fillStyle='#ebe8e1';pc.fillRect(x,y,360,260);
+    pc.drawImage(render(model,new V(0,.027,.070),.10,[0,0],360,210),x,y+32);
+    pc.fillStyle='#262a2a';pc.font='18px sans-serif';pc.fillText(names[id]||id,x+12,y+24);
+    pc.font='11px sans-serif';pc.fillText('Same scale / CPU geometry / not WebGL',x+12,y+255);
+    report.push({id,quality,vertices:model.vertices,triangles:model.triangles,seconds:(performance.now()-started)/1000});continue;
+  }
   if(clayFaces){
     const started=performance.now(),K=context.KM_FIGKIT;
     const P=Object.assign({},context.KM_CAST3D.CAST[id].head,{beard:'none',scalp:null,eboshi:false});
     // Match runtime head resolution and preserve its complete face/morph parameters.
-    const built=K.buildHead(K.Res(),P,quality==='high'?'medium':'low'),face=new T.Group();
+    const asset=context.KM_HEADS&&context.KM_HEADS.build(id,P,quality);
+    const built=asset||K.buildHead(K.Res(),P,quality==='high'?'medium':'low'),face=new T.Group();
     // Use the exact runtime portrait warp before stripping decorative meshes.
-    if(context.KM_CAST3D.sculptPortrait)context.KM_CAST3D.sculptPortrait(built.group,P);
-    for(const mesh of built.group.children.slice(0,2)){
-      mesh.material=mesh.material.clone();mesh.material.map=null;mesh.material.bumpMap=null;
-      mesh.material.vertexColors=false;mesh.material.color.setHex(0x999999);face.add(mesh);
+    if(!asset&&context.KM_CAST3D.sculptPortrait)context.KM_CAST3D.sculptPortrait(built.group,P);
+    const surfaces=asset?[asset.surface,asset.eyes].filter(Boolean):built.group.children.slice(0,2);
+    for(const original of surfaces){
+      const part=original.clone(true);
+      part.traverse(mesh=>{if(!mesh.isMesh)return;
+        mesh.material=mesh.material.clone();mesh.material.map=null;mesh.material.bumpMap=null;
+        mesh.material.vertexColors=false;mesh.material.color.setHex(0x999999);
+      });face.add(part);
     }
     const model=collect(face),box=new T.Box3().setFromObject(face),pc=claySheet.getContext('2d');
     const i=ids.indexOf(id),x=i%4*480,y=Math.floor(i/4)*440;
@@ -128,15 +165,16 @@ for(const id of ids){
     const entry={id,quality,vertices:model.vertices,triangles:model.triangles,bounds:box,seconds:Math.round((performance.now()-started)/100)/10};
     report.push(entry);console.log(JSON.stringify(entry));continue;
   }
-  const started=performance.now(),figure=context.KM_CAST3D.makeFigure(id);figure.userData.update(0,0);figure.updateMatrixWorld(true);
-  const model=collect(figure),box=new T.Box3().setFromObject(figure),center=box.getCenter(new V()),span=box.max.y-box.min.y;
+  const started=performance.now(),figure=context.KM_CAST3D.makeFigure(id);figure.userData.setPose(pose);figure.userData.update(0,0);figure.updateMatrixWorld(true);
+  const model=collect(figure),box=new T.Box3().setFromObject(figure),center=box.getCenter(new V());
+  const span=Math.max(box.max.y-box.min.y,(box.max.x-box.min.x)/(360/690),(box.max.z-box.min.z)/(360/690));
   const head=figure.userData.rig.headPiv.getWorldPosition(new V());head.y+=.08;
   if(portraitsOnly){
-    const pc=portraits.getContext('2d'),i=ids.indexOf(id),x=i%4*360,y=Math.floor(i/4)*420;
-    pc.fillStyle='#ebe8e1';pc.fillRect(x,y,360,420);
-    pc.drawImage(render(model,head,.48,[25,4],360,370),x,y+35);
+    const pc=portraits.getContext('2d'),i=ids.indexOf(id),x=i%4*tileW,y=Math.floor(i/4)*tileH;
+    pc.fillStyle='#ebe8e1';pc.fillRect(x,y,tileW,tileH);
+    pc.drawImage(render(model,bodies?new V(0,1.05,0):head,bodies?2.34:.48,[25,4],tileW,tileH-50),x,y+35);
     pc.fillStyle='#262a2a';pc.font='18px sans-serif';pc.fillText(names[id]||id,x+12,y+25);
-    pc.font='12px sans-serif';pc.fillText('CPU geometry preview / not WebGL',x+12,y+414);
+    pc.font='12px sans-serif';pc.fillText('CPU geometry preview / not WebGL',x+12,y+tileH-6);
   }else{
   const sheet=createCanvas(1440,1120),s=sheet.getContext('2d');s.fillStyle='#ebe8e1';s.fillRect(0,0,1440,1120);
   for(let i=0;i<views.length;i++){
@@ -148,6 +186,7 @@ for(const id of ids){
   }
   const entry={id,quality,vertices:model.vertices,triangles:model.triangles,bounds:box,seconds:Math.round((performance.now()-started)/100)/10};report.push(entry);console.log(JSON.stringify(entry));
 }
-if(portraitsOnly)fs.writeFileSync(path.join(out,'portraits-'+quality+'.png'),portraits.toBuffer('image/png'));
+if(portraitsOnly)fs.writeFileSync(path.join(out,(bodies?'bodies-':'portraits-')+quality+'.png'),portraits.toBuffer('image/png'));
+if(eyeOnly)fs.writeFileSync(path.join(out,'eyes-'+(grayEyes?'clay-':'')+quality+'.png'),eyeSheet.toBuffer('image/png'));
 if(clayFaces)fs.writeFileSync(path.join(out,'clay-faces-'+quality+'.png'),claySheet.toBuffer('image/png'));
 fs.writeFileSync(path.join(out,clayFaces?'clay-report.json':'report.json'),JSON.stringify({generatedAt:new Date().toISOString(),renderer:'CPU Lambert; not runtime WebGL',models:report},null,2));

@@ -37,13 +37,19 @@ src/js/koumon.js           進行・画面・保存・小さな遊び・音
 src/js/koumon-classroom.js 導入の紙芝居・人物案内・資料付きAI指示文
 src/js/koumon-3d.js        3D の舞台（Three.js）
 src/js/koumon-cast3d.js    3D の人物（衣・甲冑・冠・持ち物・姿勢）と馬
-src/js/koumon-figkit.js    頭部・髪・手の SDF 彫刻
+src/js/koumon-heads.js     人物別の人体ベース頭部・眼球・髪・髭
+src/js/koumon-hands.js     解剖メッシュによる手と握り
+src/js/koumon-costume.js   厚みのある布・重ね襟・袖・札甲・披風
+src/js/koumon-figkit.js    補助・予備のSDF造形
+src/js/*-assets.js         Blenderから書き出した圧縮メッシュ
+source-assets/            編集用Blenderアセットと再現手順
 src/js/koumon-stage.js     影絵（2D）の舞台
 src/js/learning.js         訓点の表示
 src/js/soukan.js           単独ページの起動
 src/styles/                画面のスタイル
 src/vendor/three.min.js    Three.js r128（MIT）
 tools/build.mjs            一枚にまとめる（node tools/build.mjs → dist/index.html）
+tools/character-gallery.html 人物を回転・拡大して確認するページ
 ```
 
 ## 開発時の確認
@@ -54,4 +60,4 @@ tools/build.mjs            一枚にまとめる（node tools/build.mjs → dist
 
 人物ガイド・導入・会話には主要8人の肖像を使用しています。画像の制作情報と創作表現の範囲は [`docs/character-art.md`](docs/character-art.md)、検証済みの範囲と実画面・印刷の未確認項目は [`docs/implementation-audit.md`](docs/implementation-audit.md) を参照してください。
 
-MIT（`LICENSE`）。Three.js r128 は MIT。
+MIT（`LICENSE`）。Three.js r128 は MIT。頭部と手はBlender公式Human Base Meshes（CC0）を基礎に造形しています。[出典manifest](docs/assets/manifest.csv)と[編集用アセットの説明](source-assets/README.md)を参照してください。

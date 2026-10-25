@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-25",
+  "runtimeHeadSha256": "cd29ecea1de7cbf7716d8e42ae4479137970122791925006b4c9d038f3c09fdc",
+  "nativeSources": {
+    "heads.blend": "1ef08c5a5bf22bcaf438a4d2b33b1c98d07cbe6b003fd80dbeb8c10361a89d5c",
+    "hands.blend": "4c4f8c73ed94e969ad81aaee4a0849f4bd90328b7cf2386205cc9df611056c4c",
+    "costumes.blend": "162128572ff5ab53092532f5c4e8eee8b721a1f652ea98e3431a3336fe81ebb1"
+  },
+  "tests": {
+    "npmTest": {
+      "passed": 36,
+      "failed": 0
+    },
+    "castPoseLodGeometryCases": 360,
+    "headSourceRebuild": {
+      "maxPositionDelta": 0,
+      "maxNormalDelta": 0,
+      "colorsIdentical": true,
+      "triangleSetsAndWindingIdentical": true,
+      "byteIdentical": false,
+      "difference": "Skin triangle ordering only."
+    }
+  },
+  "visualEvidence": {
+    "cpu": "docs/model-preview/",
+    "native": "source-assets/",
+    "gallery": "tools/character-gallery.html",
+    "checked": "Eight head/eye comparisons, principal-character four views, collars/shoulders/hair/beards, garment poses, hand and handle contact.",
+    "webgl": "Not checked; browser permission unanswered after prior Edge auto-review rejection.",
+    "cpuFaceCulling": "Material front/back sides and mirrored winding are respected.",
+    "blender": "docs/model-preview/ryo-blender.png; independent light review of actual meshes, not game WebGL."
+  }
+}

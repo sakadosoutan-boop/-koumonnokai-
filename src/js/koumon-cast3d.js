@@ -236,6 +236,7 @@
   }
   function sexp(c, n) { return Math.sign(c) * Math.pow(Math.abs(c), 2 / n); }
   function torsoGeo(s, b, color) {
+    if (window.KM_COSTUME) return window.KM_COSTUME.thorax(s, b, color);
     var rings = 26, segs = 56, y0 = TORSO[0][0], y1 = TORSO[TORSO.length - 1][0];
     var pos = [], idx = [];
     for (var r = 0; r <= rings; r++) {
@@ -349,6 +350,7 @@
       o.len 長さ / o.y0 始まりの高さ / o.r(u) 筒の半径 / o.H(u) 袂の深さ / o.sag 腕を垂らしたとき、袂が軸に沿って下がる量
       o.def 腕を垂らしたときの袂の向き（体の内側・やや後ろ）/ o.slide 腕を上げると袖口が肘のほうへ下がる / o.trim 袖口の縁の色 */
   function bagTube(o, mat) {
+    if (window.KM_COSTUME) return window.KM_COSTUME.sleeve(o, mat);
     var rings = o.rings || 16, segs = o.segs || 28, n = (rings + 1) * (segs + 1), y0 = o.y0 || 0;
     var pos = new Float32Array(n * 3), U = new Float32Array(n), SA = new Float32Array(n), CA = new Float32Array(n), RR = new Float32Array(n), HH = new Float32Array(n);
     var idx = [], uv = [], Hmax = 1e-6;
@@ -439,14 +441,8 @@
       // 台（髻を包む）と、板を留める横木
       var seat = mesh(new THREE.CylinderGeometry(.03, .038, .05, 18), lac); seat.position.set(0, .135, .0); seat.rotation.x = -.35; seat.scale.z = 1.25; g.add(seat);
       var bar = mesh(new THREE.BoxGeometry(.066, .012, .016), lac); bar.position.set(0, .16, .035); bar.rotation.x = -.5; g.add(bar);
-      // 纓（あごひも）：耳の前を通って、あごの下で結ぶ
-      [-1, 1].forEach(function (sd) {
-        var cv = new THREE.CatmullRomCurve3([new V3(sd * .03, .15, .02), new V3(sd * .07, .09, .03), new V3(sd * .078, .02, .035), new V3(sd * .062, -.06, .05), new V3(sd * .022, -.112, .066)]);
-        g.add(mesh(new THREE.TubeGeometry(cv, 24, .0024, 5), lac, false));
-        var tail = new THREE.CatmullRomCurve3([new V3(sd * .006, -.118, .07), new V3(sd * .012, -.15, .072), new V3(sd * .018, -.19, .066)]);
-        g.add(mesh(new THREE.TubeGeometry(tail, 10, .002, 5), lac, false));
-      });
-      var knot2 = mesh(new THREE.SphereGeometry(.007, 8, 6), lac, false); knot2.position.set(0, -.116, .07); g.add(knot2);
+      // The portrait leaves the face open; fixed-size chin cords floated
+      // around the fitted anatomical head rather than contacting the skin.
     } else if (kind === 'jinxian') {
       // 進賢冠：前が高く後ろへ下がる板（梁）を、黒い幘の上にのせる
       var ze = mesh(new THREE.CylinderGeometry(.084, .09, .045, 28, 1, true), std(0x0e0c0c, .45, 0, { side: THREE.DoubleSide })); ze.position.set(0, .1, -.012); ze.rotation.x = .18; g.add(ze);
@@ -732,8 +728,12 @@
     });
   }
 
-  function headParts(c) {
+  function headParts(c, id) {
     var K = window.KM_FIGKIT, out = { head: null, hair: null };
+    if (window.KM_HEADS) {
+      var asset = window.KM_HEADS.build(id, c.head, Q);
+      if (asset) return { head: asset.group, hair: null, asset: true, anchors: asset.anchors, headwear: asset.headwear };
+    }
     if (!K) return out;
     var hq = Q === 'high' ? 'medium' : 'low';
     try { out.head = K.buildHead(K.Res(), c.head, hq).group; } catch (e) { out.head = null; }
@@ -747,6 +747,9 @@
   function makeFigure(id) {
     var c = CAST[id];
     if (!c) return null;
+    var costume = window.KM_COSTUME;
+    if (costume && costume.setQuality) costume.setQuality(Q);
+    if (costume) c = costume.resolveStyle(id, c);
     var s = c.h / 1.72, b = c.build || 1, armored = !!c.armor, lady = !!c.lady;
     var root = new THREE.Group(); root.name = 'fig-' + id;
     var body = new THREE.Group(); root.add(body);
@@ -763,7 +766,12 @@
     // 胴
     var torso = mesh(torsoGeo(s, b, armored ? laceColor : robeColor), cloth); chest.add(torso);
     // 襟（右衽）・中衣の白・大帯
-    if (!armored) {
+    if (costume) {
+      chest.add(costume.collar(c, s, b, armored));
+      chest.add(costume.waist(c, s, b, armored));
+      if (armored) chest.add(costume.armor(c, s, b, 'torso'));
+      if (!armored && c.pei) { var peiLayered = peiMesh(); peiLayered.position.set(.12 * s, -.3 * s, .06 * s); peiLayered.scale.setScalar(s); chest.add(peiLayered); }
+    } else if (!armored) {
       chest.add(bandOnTorso([[.05, .225], [.03, .17], [-.03, .08], [-.1, -.04], [-.15, -.15]], .038, s, b, c.trim, .007));
       chest.add(bandOnTorso([[.058, .222], [.04, .18], [.0, .12]], .012, s, b, c.inner || 0xe8dcc4, .011));
       chest.add(bandOnTorso([[-.05, .225], [-.03, .19], [-.005, .15]], .03, s, b, c.trim, .005));
@@ -782,7 +790,7 @@
 
     // 裾：立ち・坐り・跽き
     var hemLen = .95 * s;
-    var mk = function (o) { var g = skirtGeo(o), m = mesh(g, cloth); if (g.userData.band) m.add(mesh(g.userData.band, cloth, false)); return m; };
+    var mk = function (o) { if (costume) return costume.skirt(o, cloth); var g = skirtGeo(o), m = mesh(g, cloth); if (g.userData.band) m.add(mesh(g.userData.band, cloth, false)); return m; };
     var skirtStand = armored
       ? mk({ len: .62 * s, r0: .17 * s, r1: .25 * s * b, hip: .02 * s, depth: .8, fold: .012, color: robeColor, trim: c.trim, frontLift: .03, seed: 5 })
       : mk({ len: hemLen - .015, r0: .165 * s, r1: (lady ? .44 : .33) * s, hip: .03 * s, depth: .82, fold: .016, color: robeColor, trim: c.trim, frontLift: lady ? 0 : .045, wrap: !lady, seed: 7 });
@@ -792,7 +800,7 @@
     var skirtKneel = mk({ len: .62 * s, r0: .17 * s, r1: .3 * s, hip: .03 * s, depth: .9, fold: .014, color: robeColor, trim: c.trim, frontLift: 0, wrap: !armored && !lady, seat: .24 * s, seed: 13 });
     skirtKneel.visible = false; pelvis.add(skirtKneel);
     var skirtPlates = null;
-    if (armored) { skirtPlates = armorPlates(c.armor, s, b, skirtPlateRows(s, b), c.gold); pelvis.add(skirtPlates); }
+    if (armored) { skirtPlates = costume ? costume.armor(c, s, b, 'skirt') : armorPlates(c.armor, s, b, skirtPlateRows(s, b), c.gold); pelvis.add(skirtPlates); }
 
     // 脚と履（兵は袴に行縢＝脚絆を巻く）
     var legs = {};
@@ -827,21 +835,25 @@
       var sd = k === 'L' ? 1 : -1;
       var sh = new THREE.Group(); sh.position.set(sd * .188 * s * b, .145 * s, -.005 * s); chest.add(sh);
       var armC = armored ? (c.legs || robeColor) : robeColor, def = new V3(-sd * .5, 0, -.86);
-      var ball = mesh(new THREE.SphereGeometry(.058 * s * b, 18, 12), cloth); ball.scale.set(1, .92, 1);
-      paintGeo(ball.geometry, function (x, y, z, i, t) { t.set(armored ? laceColor : robeColor); }); ball.position.y = -.01 * s; sh.add(ball);
+      if (!costume) {
+        var ball = mesh(new THREE.SphereGeometry(.058 * s * b, 18, 12), cloth); ball.scale.set(1, .92, 1);
+        paintGeo(ball.geometry, function (x, y, z, i, t) { t.set(armored ? laceColor : robeColor); }); ball.position.y = -.01 * s; sh.add(ball);
+      }
       var Hel = armored ? 0 : (lady ? .08 : .06) * s, Hmx = armored ? 0 : (lady ? .32 : .25) * s;
-      var upper = bagTube({ len: .31 * s, y0: .005 * s, r: function (u) { return lerp(.06 * b, .064, u) * s; }, H: function (u) { return Hel * sstep(.2, 1, u); }, def: def, color: armC }, cloth);
+      var upper = bagTube({ upper: true, fitted: armored, side: sd, scale: s, len: .31 * s, y0: .005 * s, r: function (u) { return lerp((costume ? (armored ? .062 : .069) : .06) * b, costume ? (armored ? .049 : .062) : .066, u) * s; }, H: function (u) { return Hel * sstep(.2, 1, u); }, def: def, color: armC }, cloth);
       sh.add(upper);
-      if (armored) { var sp3 = armorPlates(c.armor, s, b, shoulderPlateRows(s, b), c.gold, [.03, .042]); if (sd < 0) { sp3.scale.x = -1; sp3.material = sp3.material.clone(); sp3.material.side = THREE.DoubleSide; } sh.add(sp3); }
+      if (armored) { var sp3 = costume ? costume.armor(c, s, b, 'shoulder', sd) : armorPlates(c.armor, s, b, shoulderPlateRows(s, b), c.gold, [.03, .042]); if (!costume && sd < 0) { sp3.scale.x = -1; sp3.material = sp3.material.clone(); sp3.material.side = THREE.DoubleSide; } sh.add(sp3); }
       var el = new THREE.Group(); el.position.y = -.29 * s; sh.add(el);
+      upper.userData.elbowJoint = el;
       var fore = armored
-        ? bagTube({ len: .25 * s, y0: .01 * s, rings: 8, segs: 20, r: function (u) { return lerp(.058, .05, u) * s; }, def: def, color: armC }, cloth)
-        : bagTube({ len: .32 * s, y0: .016 * s, slide: true, def: def, color: armC, trim: c.trim, sag: (lady ? .17 : .11) * s,
-            r: function (u) { return (u < .55 ? lerp(.064, .076, u / .55) : lerp(.076, .055, (u - .55) / .45)) * s; },
+        ? bagTube({ fitted: true, side: sd, scale: s, len: .25 * s, y0: .01 * s, rings: 8, segs: 20, r: function (u) { return lerp(costume ? .052 : .058, .045, u) * s; }, def: def, color: armC }, cloth)
+        : bagTube({ side: sd, scale: s, len: (costume ? .285 : .32) * s, y0: .016 * s, slide: true, def: def, color: armC, trim: c.trim, sag: (lady ? .17 : .11) * s,
+            r: function (u) { return (u < .55 ? lerp(.068, .078, u / .55) : lerp(.078, costume ? .046 : .055, (u - .55) / .45)) * s; },
             H: function (u) { return Hel + (Hmx - Hel) * sstep(0, .62, u) - Hmx * .82 * sstep(.62, 1, u); } }, cloth);
       el.add(fore);
+      fore.userData.elbowJoint = el;
       sleeves.push(upper, fore);
-      if (armored) { var bracer = mesh(new THREE.CylinderGeometry(.058 * s, .052 * s, .14 * s, 14), std(0x3a2414, .55, .1)); bracer.position.y = -.17 * s; el.add(bracer); }
+      if (armored) { if (costume) el.add(costume.bracer(c, s)); else { var bracer = mesh(new THREE.CylinderGeometry(.058 * s, .052 * s, .14 * s, 14), std(0x3a2414, .55, .1)); bracer.position.y = -.17 * s; el.add(bracer); } }
       else { var fa = mesh(new THREE.CylinderGeometry(.031 * s, .026 * s, .25 * s, 10), skinM); fa.position.y = -.13 * s; el.add(fa); } // 袖が下がると見える前腕
       var wr = new THREE.Group(); wr.position.y = -.25 * s; el.add(wr);
       arms[k] = { sh: sh, el: el, wr: wr };
@@ -850,7 +862,8 @@
       var A = arms[k];
       if (A.hand) A.wr.remove(A.hand);
       var K = window.KM_FIGKIT, hm = null;
-      try { if (K) hm = K.handMesh(K.Res(), pose === 'hidden' ? 'relax' : pose || 'relax', k, c.head, Q === 'high' ? 'medium' : 'low'); } catch (e) { hm = null; }
+      if (window.KM_HANDS) hm = window.KM_HANDS.build(pose === 'hidden' ? 'relax' : pose || 'relax', k, c.head, Q);
+      try { if (!hm && K) hm = K.handMesh(K.Res(), pose === 'hidden' ? 'relax' : pose || 'relax', k, c.head, Q === 'high' ? 'medium' : 'low'); } catch (e) { hm = null; }
       if (!hm) { hm = mesh(new THREE.BoxGeometry(.07, .17, .03), skinM); hm.position.y = .06; }
       hm.scale.setScalar(s);
       var g = new THREE.Group(); g.add(hm);
@@ -860,19 +873,27 @@
     }
 
     // 頭・髪・冠
-    var hp = headParts(c), HEAD_PIV = [0, -.032, -.018];
+    var hp = headParts(c, id), HEAD_PIV = [0, -.032, -.018];
     var headG = new THREE.Group(); headG.position.set(-HEAD_PIV[0], -HEAD_PIV[1] + .1 * s, -HEAD_PIV[2]); headG.scale.setScalar(s); headPiv.add(headG);
     if (hp.head) headG.add(hp.head); else { var hb = mesh(new THREE.SphereGeometry(.1, 20, 16), skinM); hb.position.y = .03; headG.add(hb); }
     if (hp.hair) headG.add(hp.hair);
-    var hat = hatMesh(c.cap, c); headG.add(hat);
+    var hat = hp.headwear ? new THREE.Group() : hatMesh(c.cap, c); headG.add(hat);
+    if (hp.asset && hp.anchors && hp.anchors.hat) {
+      var hatAnchor = hp.anchors.hat;
+      if (hatAnchor.offset) hat.position.fromArray(hatAnchor.offset);
+      if (hatAnchor.scale) hat.scale.fromArray(hatAnchor.scale);
+    }
     hat.traverse(function (o) { if (o.isMesh) o.castShadow = false; }); // 冠の影で目元が暗くならないように
     if (c.cap === 'bawang' || c.cap === 'kabuto') hat.position.y = .008;
-    sculptPortrait(headG, c.head);
+    if (!hp.asset) sculptPortrait(headG, c.head);
     var headTop = new THREE.Object3D(); headTop.position.set(0, .34 * s, 0); headPiv.add(headTop);
 
     // 披風（項王）
     var cape = null;
     if (c.cape) {
+      if (costume) {
+        cape = costume.cape(c, s, b); chest.add(cape);
+      } else {
       var cg = new THREE.PlaneGeometry(.74 * s * b, 1.22 * s, 14, 18); cg.translate(0, -.61 * s, 0);
       (function () { var cp = cg.attributes.position; for (var i = 0; i < cp.count; i++) { var x = cp.getX(i), y = cp.getY(i), u = -y / (1.22 * s);
         var wdt = .62 + u * .55; cp.setXYZ(i, x * wdt, y, Math.pow(x * wdt / (.37 * s * b), 2) * .16 * s * (1 - u * .5) + Math.sin(x * 40 + u * 3) * .012 * u); } })();
@@ -881,6 +902,7 @@
       cape = mesh(cg, capeM); cape.position.set(0, .19 * s, -.16 * s * b); chest.add(cape);
       cg.userData = { base: cg.attributes.position.array.slice() };
       [-1, 1].forEach(function (sd) { var clasp = mesh(new THREE.SphereGeometry(.022 * s, 12, 10), std(0xc8a048, .3, .85)); clasp.position.set(sd * .14 * s * b, .19 * s, .02 * s); chest.add(clasp); });
+      }
     }
 
     // 持ち物
@@ -907,11 +929,31 @@
       A.wr.add(obj);
       obj.position.set(pos[0], pos[1], pos[2]);
       obj.rotation.set(rot[0], rot[1], rot[2]);
+      if (window.KM_HANDS && (obj === props.sword || obj === props.halberd || obj === props.cup)) A.heldHandle = obj;
       obj.visible = true;
+    }
+    function alignHeldHandle(k) {
+      var A = arms[k], hand = A.hand && A.hand.children[0], obj = A.heldHandle;
+      if (!obj || !hand || !hand.userData.gripCenter) return;
+      var center = new V3().fromArray(hand.userData.gripCenter).multiplyScalar(s).applyQuaternion(A.hand.quaternion);
+      if (obj === props.cup) {
+        root.updateMatrixWorld(true);
+        var gripWorld = A.wr.localToWorld(center.clone());
+        var mouthWorld = headG.localToWorld(new V3(0, -.038, .073));
+        var towardMouth = mouthWorld.sub(gripWorld).normalize();
+        var worldRotation = new THREE.Quaternion().setFromUnitVectors(new V3(-.07, .075, 0).normalize(), towardMouth);
+        var wristRotation = A.wr.getWorldQuaternion(new THREE.Quaternion());
+        obj.quaternion.copy(wristRotation.invert().multiply(worldRotation)); obj.scale.setScalar(s);
+        obj.position.copy(center).sub(new V3(.07 * s, 0, 0).applyQuaternion(obj.quaternion));
+        return;
+      }
+      var axis = new V3().fromArray(hand.userData.gripAxis).applyQuaternion(A.hand.quaternion).normalize();
+      obj.position.copy(center); obj.quaternion.setFromUnitVectors(new V3(0, 1, 0), axis);
     }
 
     var state = { pose: 'stand', look: null, lookW: 0, talk: 0, yaw: 0 };
     function setPose(pose) {
+      ['L', 'R'].forEach(function (k) { arms[k].heldHandle = null; });
       state.pose = pose;
       root.visible = pose !== 'gone';
       body.rotation.set(0, 0, 0); body.position.set(0, 0, 0);
@@ -944,14 +986,14 @@
         if (props.shield) { root.add(props.shield); props.shield.position.set(0, .04, .5); props.shield.rotation.set(-PI / 2, 0, 0); props.shield.visible = true; }
         root.add(props.meat); props.meat.position.set(0, .12, .52); props.meat.visible = true;
       }
-      if (pose === 'drink') { setArm('R', 2.35, .5, 2.05); hpz.R = 'hold'; holdIn('R', props.cup, [0, 0, .3], [0, -.1 * s, .06]); headPiv.rotation.x = -.45; neck.rotation.x = -.2; }
+      if (pose === 'drink') { setArm('R', 1.30, .18, 2.10, .45); hpz.R = window.KM_HANDS ? 'grasp' : 'hold'; holdIn('R', props.cup, [0, 0, .3], [0, -.1 * s, .06]); headPiv.rotation.x = -.18; neck.rotation.x = -.08; }
       if (pose === 'glare') { setArm('L', .2, .38, .32); setArm('R', .2, .38, .32); hpz = { L: 'grasp', R: 'grasp' }; legs.L.hip.rotation.z = .12; legs.R.hip.rotation.z = -.12; }
       if (pose === 'charge') { spine.rotation.x = .3; setArm('L', 1.3, .2, .3); hpz.L = 'grasp'; legs.L.hip.rotation.x = -.5; legs.L.knee.rotation.x = .5; legs.R.hip.rotation.x = .4; }
       if ((pose === 'glare' || pose === 'charge' || pose === 'stand' || pose === 'run') && props.shield) holdIn('L', props.shield, [0, PI / 2, 0], [-.05, -.12 * s, .1]);
       if (props.halberd && pose !== 'down') { holdIn('R', props.halberd, [0, 0, 0], [0, -.62, .02]); setArm('R', .45, .05, .9); hpz.R = 'grasp'; }
       if (pose === 'down') { body.rotation.x = -PI / 2; body.position.set(0, .14, .9 * s); setArm('L', 2.8, .4, .2); setArm('R', .3, .6, .4); }
       if (pose === 'run') hpz = { L: 'grasp', R: 'grasp' };
-      ['L', 'R'].forEach(function (k) { if (arms[k].handPose !== hpz[k]) attachHand(k, hpz[k]); });
+      ['L', 'R'].forEach(function (k) { if (arms[k].handPose !== hpz[k]) attachHand(k, hpz[k]); alignHeldHandle(k); });
       state.base = { L: arms.L.cur.slice(), R: arms.R.cur.slice(), hL: hpz.L, hR: hpz.R };
     }
 
@@ -969,11 +1011,19 @@
       var g = cape.geometry, base = g.userData.base, p = g.attributes.position;
       var seated = state.pose === 'sit' || state.pose === 'kneel' || state.pose === 'raise';
       for (var i = 0; i < p.count; i++) {
-        var x = base[i * 3], y = base[i * 3 + 1], u = -y / (1.22 * s);
+        var x = base[i * 3], y = base[i * 3 + 1], u = g.userData.hemU ? g.userData.hemU[i] : -y / (1.22 * s);
         var wave = Math.sin(t * (moving ? 6 : 1.4) + u * 4 + x * 6) * (moving ? .08 : .02) * u;
         var z = base[i * 3 + 2] - u * u * (moving ? .35 : .06) + wave;
         var yy = y;
-        if (seated && u > .45) { yy = -.45 * 1.22 * s - (u - .45) * .1; z -= (u - .45) * 1.22 * s * .9; }
+        if (seated) {
+          // Shorter distance to the floor while seated: the excess cloak pools
+          // behind the wearer after reaching the floor, instead of forming a
+          // horizontal shelf at knee height.
+          var floorDrop = (state.pose === 'kneel' ? 1.10 : .88) * s;
+          var excess = Math.max(0, -y - floorDrop), pool = sstep(0, .12 * s, excess);
+          yy = Math.max(y, -floorDrop) + .009 * s * Math.sin(x * 34 / s + u * 16) * pool;
+          z -= excess * .92;
+        }
         p.setXYZ(i, x, yy, z);
       }
       p.needsUpdate = true; g.computeVertexNormals();

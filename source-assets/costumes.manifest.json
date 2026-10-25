@@ -1,0 +1,25 @@
+{
+  "asset": "楚漢衣装アトリエ v1",
+  "generatedAt": "2026-10-25T14:55:58.881Z",
+  "nativeSource": "source-assets/costumes.blend",
+  "runtime": "src/js/koumon-costume.js",
+  "reproduce": "node tools/author-costume-assets.cjs",
+  "author": "Original meshes authored for this project by Codex",
+  "sourceKind": "Original continuous parametric cut-and-drape garment surfaces; no third-party garment imports",
+  "license": "MIT, matching the project license",
+  "reference": "src/assets/character-atlas.png (project-supplied reference)",
+  "contents": [
+    "folded bodice with open crossed neckline",
+    "sewn layered collars and nape stand",
+    "folded girdle and curved belt tails",
+    "underrobe and separate overlapping curved front",
+    "double-surface gravity-deformed bag sleeves",
+    "padded lamellar backing, curved bevelled lamellae, through-laces and rivets",
+    "three sloping shoulder lames with suspension straps",
+    "four divided tassets and bound edges",
+    "gathered thick cloak and mounted brooches"
+  ],
+  "validation": "CPU multiview and pose images in model-preview-output/costume-rebuild; CPU rendering is not runtime WebGL or cloth simulation",
+  "geometryAssets": 218,
+  "meshInstances": 2850
+}

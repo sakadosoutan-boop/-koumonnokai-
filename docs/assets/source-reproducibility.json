@@ -1,0 +1,152 @@
+{
+  "cast": {
+    "ryo": {
+      "high.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      },
+      "low.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      }
+    },
+    "hai": {
+      "high.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      },
+      "low.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      }
+    },
+    "u": {
+      "high.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      },
+      "low.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      }
+    },
+    "zo": {
+      "high.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      },
+      "low.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      }
+    },
+    "haku": {
+      "high.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      },
+      "low.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      }
+    },
+    "kai": {
+      "high.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      },
+      "low.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      }
+    },
+    "sou": {
+      "high.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      },
+      "low.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      }
+    },
+    "chin": {
+      "high.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      },
+      "low.skin": {
+        "maxPositionDelta": 0,
+        "maxNormalDelta": 0,
+        "changedPositions": 0,
+        "changedNormals": 0,
+        "indicesIdentical": false,
+        "colorsIdentical": true
+      }
+    }
+  },
+  "maxPositionDelta": 0,
+  "maxNormalDelta": 0,
+  "indicesIdentical": false,
+  "colorIdentical": true
+}
