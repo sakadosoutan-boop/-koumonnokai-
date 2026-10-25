@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const {JSDOM}=require('jsdom');
 const root=path.resolve(__dirname,'..'),KEY='kanbun-dojo:koumon:v1';
 async function setup(id='c0-1',options={}){
-  const dom=new JSDOM('<!doctype html><html><body></body></html>',{url:'http://localhost/',runScripts:'outside-only',pretendToBeVisual:true});
+  const dom=new JSDOM('<!doctype html><html><body></body></html>',{url:options.url||'http://localhost/',runScripts:'outside-only',pretendToBeVisual:true});
   const w=dom.window,intervals=new Map(),timeouts=new Map(),errors=[];
   let clock=0,serial=0,maxSaveLength=0;
   const setItem=w.Storage.prototype.setItem;

@@ -24,7 +24,7 @@
   /* ============================ 記録 ============================ */
   function blankMeta() {
     return { v: 2, save: null, endings: {}, gen: {}, cleared: {}, sound: false, plays: 0, best: null, view: '',
-      classroom: true, projection: false, instant: true, reflection: {}, introStep: 0 };
+      classroom: true, projection: false, instant: true, meters: true, reflection: {}, missed: {}, introStep: 0 };
   }
   function loadMeta() {
     meta = blankMeta();
@@ -39,7 +39,8 @@
       }
     } catch (e) { /* 壊れた記録は使わない */ }
     if (meta.save && (!meta.save.node || !NODES[meta.save.node])) meta.save = null;
-    ['endings', 'gen', 'cleared'].forEach(function (k) { if (!meta[k] || typeof meta[k] !== 'object' || Array.isArray(meta[k])) meta[k] = {}; });
+    ['endings', 'gen', 'cleared', 'missed'].forEach(function (k) { if (!meta[k] || typeof meta[k] !== 'object' || Array.isArray(meta[k])) meta[k] = {}; });
+    Object.keys(meta.missed).forEach(function (id) { if (!NODES[id] || NODES[id].n.k !== 'read') delete meta.missed[id]; });
     meta.v = 2;
     if (!meta.reflection || typeof meta.reflection !== 'object' || Array.isArray(meta.reflection)) meta.reflection = {};
     if (meta.save) meta.save = hydrateState(meta.save);
@@ -82,6 +83,7 @@
     var phase = saved.phase;
     if (phase && phase.node === state.node &&
       ((phase.kind === 'feedback' && at.n.k === 'read' && at.n.o[phase.choice]) ||
+       (phase.kind === 'retry' && at.n.k === 'read' && Array.isArray(phase.wrong) && phase.wrong.length && phase.wrong.every(function (i) { return at.n.o[i] && !at.n.o[i].ok; })) ||
        (phase.kind === 'react' && NODES[phase.after] && typeof phase.text === 'string'))) state.phase = phase;
     else state.phase = null;
     state.game = saved.game && saved.game.node === state.node ? saved.game : null;
@@ -333,6 +335,7 @@
     updateSoundChip();
     ST.start();
     titleScreen();
+    startFromHash();
   }
   function close() {
     if (st && mode !== 'end') persist();
@@ -465,6 +468,7 @@
     renderStatus();
     if (resuming && st.phase && st.phase.node === id) {
       if (st.phase.kind === 'feedback') { doAsk(n, true); return judgeRead(n, n.o[st.phase.choice], true); }
+      if (st.phase.kind === 'retry') { doAsk(n, true); return markRetry(n); }
       if (st.phase.kind === 'react') return renderReaction(st.phase);
     }
     switch (n.t) {
@@ -482,8 +486,9 @@
   function snapshot() {
     // 復帰点の中へ履歴や復帰点を入れ子にしない。
     var s = {};
-    Object.keys(st).forEach(function (key) { if (key !== 'cp' && key !== 'rewinds') s[key] = st[key]; });
-    s.cp = null; s.rewinds = [];
+    // 台詞の履歴は復帰点ごとに複製せず、選び直したあとも続けて残す。
+    Object.keys(st).forEach(function (key) { if (key !== 'cp' && key !== 'rewinds' && key !== 'log') s[key] = st[key]; });
+    s.cp = null; s.rewinds = []; s.log = [];
     return clone(s);
   }
   function retryPoint(eid) {
@@ -634,6 +639,8 @@
       go(nextOf(cur));
     } else if (mode === 'react') {
       go(cur._after);
+    } else if (mode === 'gen') {
+      go(nextOf(cur));
     }
   }
 
@@ -679,7 +686,7 @@
       '<div class="km-yaku-label">現代語訳</div>' +
       '<div class="km-yaku">' + esc(g.yaku) + '</div>' +
       '<div class="km-note">' + esc(g.note) + '</div>' +
-      '<div class="km-nav"><span class="km-hint-key">本文は横にスクロールできます</span><button class="km-btn gold km-next" data-km="gennext">次へ ▶</button></div>';
+      '<div class="km-nav km-nav-sticky"><span class="km-hint-key">本文は横にスクロールできます</span><button class="km-btn gold km-next" data-km="gennext">次へ ▶</button></div>';
   }
 
   /* ---------- 選択 ---------- */
@@ -699,7 +706,9 @@
       '<div class="km-opts">' + opts.map(function (x, k) {
         return '<button class="km-opt" data-km="pick" data-i="' + x.i + '"><span class="km-opt-n">' + '一二三四'.charAt(k) + '</span><span>' + esc(x.o.x) + '</span></button>';
       }).join('') + '</div>' +
-      (canHint ? '<div class="km-nav"><button class="km-btn km-hint-btn" data-km="hint"' + (meta.classroom || st.saku > 0 || st.hinted[n.id] ? '' : ' disabled') + '>' + esc(hintWho()) + 'に問う<small>' + (meta.classroom ? '何度でも確認できます' : '策 残り ' + st.saku) + '</small></button></div><div class="km-hint" id="km-hint" hidden></div>' : '');
+        '<div class="km-nav">' + (canHint ? '<button class="km-btn km-hint-btn" data-km="hint"' + (meta.classroom || st.saku > 0 || st.hinted[n.id] ? '' : ' disabled') + '>' + esc(hintWho()) + 'に問う<small>' + (meta.classroom ? '何度でも確認できます' : '策 残り ' + st.saku) + '</small></button>' : '<span></span>') +
+        '<span class="km-hint-key km-key-hint">1〜' + opts.length + ' キーでも選べます</span></div>' +
+      (canHint ? '<div class="km-hint" id="km-hint" hidden></div>' : '');
     if (st.hinted[n.id]) showHint(n);
     if (n.timer && !reduced() && !meta.classroom && !restoring) startTimer(n);
   }
@@ -759,8 +768,7 @@
     stopTimer();
     var o = n.o[i]; if (!o) return;
     if (n.k === 'read') return judgeRead(n, o);
-    st.picks.push({ q: n.q, a: o.x, ch: st.ch });
-    if (st.picks.length > 40) st.picks.shift();
+    recordPick(n.q, o.x, n.o, o);
     logLine('you', o.x);
     apply(o);
     var to = o.go || nextOf(n);
@@ -773,19 +781,60 @@
     go(to);
   }
 
+  /** 決断の記録。史記の道が一つに定まる問いだけ、史記の選択を添える。 */
+  function recordPick(q, a, options, chosen) {
+    var hist = options ? options.filter(function (x) { return x.ok; }) : [];
+    var pick = { q: q, a: a, ch: st.ch };
+    if (hist.length === 1 && hist.length < options.length) { pick.hist = hist[0].x; pick.same = chosen === hist[0]; }
+    else if (options) pick.interp = true;
+    st.picks.push(pick);
+    if (st.picks.length > 40) st.picks.shift();
+  }
+  function noteMissed(n) {
+    meta.missed[n.id] = (meta.missed[n.id] || 0) + 1;
+    saveMeta();
+  }
+
   function renderReaction(phase) {
     mode = 'react'; cur = { _after: phase.after };
     el.panel.innerHTML = speakerHTML(phase.speaker) + '<span class="km-evidence-label">ゲーム上の創作</span><div class="km-text">' + esc(phase.text) + '</div>' +
       '<div class="km-nav"><span></span><button class="km-btn gold km-next" data-km="next">次へ →</button></div>';
     el.panel.querySelector('.km-next').focus({ preventScroll: true });
   }
+  /** 授業モードでは、最初の読み違いで答えを見せず、ヒントを添えてもう一度考えさせる。 */
+  function retryRead(n, i) {
+    st.phase = { node: n.id, kind: 'retry', wrong: [i] };
+    noteMissed(n);
+    markRetry(n);
+    persist();
+  }
+  function markRetry(n) {
+    mode = 'ask';
+    st.phase.wrong.forEach(function (i) {
+      var b = $root.querySelector('.km-opt[data-i="' + i + '"]');
+      if (b) { b.disabled = true; b.classList.add('ng'); }
+    });
+    if (n.hint) showHint(n);
+    var fb = document.createElement('div');
+    fb.className = 'km-fb km-fb-retry';
+    fb.setAttribute('role', 'status');
+    fb.innerHTML = '<div class="km-fb-h">もう一度、読み直そう</div><p>' + (n.hint ? '下のヒントを手がかりに、' : '') + '残りの選択肢から選び直してください。</p>';
+    var opts = $root.querySelector('.km-opts');
+    if (opts) opts.parentNode.insertBefore(fb, opts.nextSibling);
+    fb.scrollIntoView({ block: 'nearest' });
+    var first = $root.querySelector('.km-opt:not([disabled])'); if (first) first.focus({ preventScroll: true });
+  }
   function judgeRead(n, o, restoring) {
+    var retried = !!(st.phase && st.phase.node === n.id && (st.phase.kind === 'retry' || st.phase.retried));
+    if (!restoring && !o.ok && meta.classroom && !retried) return retryRead(n, n.o.indexOf(o));
     mode = 'feedback';
     var ok = !!o.ok, safe = meta.classroom || !!chap(st.ch).safe;
     var lifeNote = '';
     if (!restoring) {
     st.q++;
-    if (ok) { st.ok++; st.streak++; } else st.streak = 0;
+    // 読解率は一度目の読みで数える。読み直して正解したときは連続正解にも数えない。
+    if (ok && !retried) { st.ok++; st.streak++; } else st.streak = 0;
+    if (!ok && !retried) noteMissed(n);
     apply(o);
     if (!ok && !safe) {
       st.life = Math.max(0, st.life - 1);
@@ -796,8 +845,9 @@
       lifeNote = '<div class="km-life-note up">三つ続けて読み解いた。命が一つ戻った。</div>';
     }
     if (window.Store && window.Store.record) window.Store.record(null, ok, kanjiCount(n.stem || ''));
-    st.phase = { node: n.id, kind: 'feedback', choice: n.o.indexOf(o), lifeNote: lifeNote };
-    } else lifeNote = st.phase.lifeNote || '';
+    st.phase = { node: n.id, kind: 'feedback', choice: n.o.indexOf(o), lifeNote: lifeNote, retried: retried };
+    } else { lifeNote = st.phase.lifeNote || ''; retried = !!st.phase.retried; }
+    var oldRetry = $root.querySelector('.km-fb-retry'); if (oldRetry) oldRetry.parentNode.removeChild(oldRetry);
     renderStatus();
     var right = n.o.filter(function (x) { return x.ok; })[0];
     var kuho = n.kuho && window.KUHO ? window.KUHO.filter(function (k) { return k.id === n.kuho; })[0] : null;
@@ -810,12 +860,12 @@
     });
     var fb = document.createElement('div');
     fb.className = 'km-fb ' + (ok ? 'ok' : 'ng');
-    fb.innerHTML = '<div class="km-fb-h">' + (ok ? '◯ 読み解いた' : '✕ 読み違えた') + '</div>' +
+    fb.innerHTML = '<div class="km-fb-h">' + (ok ? (retried ? '◯ 読み直して、読み解いた' : '◯ 読み解いた') : '✕ 読み違えた') + '</div>' +
       (ok ? '' : '<div class="km-fb-right">正しくは：' + esc(right ? right.x : '') + '</div>') +
       '<span class="km-evidence-label">読解の解説 · 本文の理解と解釈</span><p>' + esc(n.exp || '') + '</p>' +
       (kuho ? '<div class="km-kuho"><span class="km-kuho-tag">句法</span><b>' + esc(kuho.form) + '</b>　' + esc(kuho.read || '') + '<br><small>' + esc(kuho.mean || '') + '</small></div>' : '') +
       lifeNote +
-      '<div class="km-nav"><span></span><button class="km-btn gold km-next" data-km="fbnext">次へ ▶</button></div>';
+      '<div class="km-nav km-nav-sticky"><span></span><button class="km-btn gold km-next" data-km="fbnext">次へ ▶</button></div>';
     var old = $root.querySelector('.km-hint-btn'); if (old) old.parentNode.parentNode.removeChild(old.parentNode);
     el.panel.appendChild(fb);
     fb.scrollIntoView({ block: 'nearest' });
@@ -833,7 +883,8 @@
     var safe = meta.classroom || chap(st.ch).safe;
     var hearts = '';
     for (var i = 0; i < st.maxLife; i++) hearts += '<i class="' + (i < st.life ? 'on' : '') + '"></i>';
-    var meters = st.flags.meters && !safe && chapIndex(st.ch) <= 7;
+    // 授業モードでは命に響かないが、言葉づかいの因果が見えるよう怒気・殺気は参考として示す。
+    var meters = st.flags.meters && chapIndex(st.ch) <= 7 && (!safe || (meta.classroom && meta.meters));
     function meter(label, v, cls) {
       var p = Math.max(0, Math.min(100, v));
       return '<div class="km-meter ' + cls + (p >= 75 ? ' hot' : '') + '" title="' + label + ' ' + p + '"><span>' + label + '</span><b><i style="width:' + p + '%"></i></b></div>';
@@ -962,7 +1013,9 @@
     var G = K.games.gift;
     var ok = Object.keys(G.ans).every(function (k) { return giftS.to[k] === G.ans[k]; });
     st.flags.giftWrong = !ok;
-    st.picks.push({ q: '献上の品', a: G.items.map(function (it) { return it.name + '→' + (giftS.to[it.id] === 'u' ? '項王' : '亜父'); }).join('、'), ch: st.ch });
+    var giftText = function (to) { return G.items.map(function (it) { return it.name + '→' + (to[it.id] === 'u' ? '項王' : '亜父'); }).join('、'); };
+    st.picks.push({ q: '献上の品', a: giftText(giftS.to), ch: st.ch, hist: giftText(G.ans), same: ok });
+    if (st.picks.length > 40) st.picks.shift();
     apply({ take: ['heki', 'to'] });
     closeModal();
     var n = giftS.n;
@@ -1003,7 +1056,7 @@
     var G = K.games.route, s = routeS && G.steps[routeS.step], o = s && s.o[i];
     if (mode !== 'game' || !o) return;
     if (!o.ok) routeS.bad = true;
-    st.picks.push({ q: s.q, a: o.x, ch: st.ch });
+    recordPick(s.q, o.x, s.o, o);
     routeS.step++;
     renderRoute(esc(o.r));
   }
@@ -1033,7 +1086,6 @@
       }
     }
     var grade = rate >= 95 ? '子房の智' : rate >= 80 ? '樊噲の胆' : rate >= 60 ? '項伯の情' : '鯫生の言';
-    var picks = st.picks.slice(-5).map(function (p) { return '<li><span>' + esc(p.q) + '</span>' + esc(p.a) + '</li>'; }).join('');
     var btns = [];
     if (E.kind === 'bad' && st.cp) {
       var retryNode = NODES[st.cp.node].n;
@@ -1042,12 +1094,14 @@
     }
     if (E.unlock) btns.push('<button class="km-btn gold" data-km="part2">第二部「垓下」へ進む</button>');
     if (E.ai || eid === 'T1') btns.push('<button class="km-btn gold" data-km="ai">范増として考える（AI活動）</button>');
+    if (missedIds().length) btns.push('<button class="km-btn" data-km="review">読み直し帳<small>' + missedIds().length + ' 問</small></button>');
+    btns.push('<button class="km-btn" data-km="record">学習記録を書き出す</button>');
     btns.push('<button class="km-btn" data-km="endings">結末帳</button>');
     btns.push('<button class="km-btn" data-km="totitle">表紙へ</button>');
     if (E.kind === 'bad') sfx('drum'); else sfx('pluck');
     // 異聞の結末では、原因となった選択の前を続きとして保存する。
     if (E.kind === 'true') meta.save = null;
-    else if (st.cp) { meta.save = clone(st.cp.snap); meta.save.cp = clone(st.cp); meta.save.node = st.cp.node; }
+    else if (st.cp) { meta.save = clone(st.cp.snap); meta.save.cp = clone(st.cp); meta.save.node = st.cp.node; meta.save.log = clone(st.log); }
     saveMeta();
     modal('<div class="km-end ' + E.kind + '">' +
       '<div class="km-end-kind">' + (E.kind === 'true' ? '正史' : '異聞') + '　結末' + (firstTime ? '<span class="km-new">初めて見た</span>' : '') + '</div>' +
@@ -1055,17 +1109,36 @@
       '<p class="km-end-text">' + esc(E.text) + '</p>' +
       '<div class="km-end-fact"><b>史記の記述と、このゲームの解釈</b>' + esc(E.fact) + '</div>' +
       (E.kind === 'true' ? '<div class="km-end-stats"><div><b>' + st.ok + ' / ' + st.q + '</b><span>読み解いた句</span></div><div><b>' + rate + '%</b><span>読解率</span></div><div><b>' + esc(grade) + '</b><span>評</span></div><div><b>' + st.hints + '</b><span>策を用いた</span></div></div>' : '') +
-      (picks ? '<details class="km-end-picks"><summary>この旅の選択を振り返る</summary><ol>' + picks + '</ol></details>' : '') +
+      routeHTML(st.picks, E.kind === 'true') +
       '<div class="km-end-btns">' + btns.join('') + '</div></div>', 'km-m-end');
+  }
+  /** あなたの道と史記の道を並べる。史記の道が一つに定まらない問いは「あなたの読み」として分ける。 */
+  function routeHTML(picks, open) {
+    var compared = picks.filter(function (p) { return p.hist; }), interp = picks.filter(function (p) { return p.interp; });
+    var plain = picks.filter(function (p) { return !p.hist && !p.interp; });
+    if (!compared.length && !interp.length && !plain.length) return '';
+    var differ = compared.filter(function (p) { return !p.same; }).length;
+    return '<details class="km-end-picks"' + (open ? ' open' : '') + '><summary>あなたの道と史記の道' +
+      (compared.length ? '<small>' + (differ ? '史記と違う選択 ' + differ + ' / ' + compared.length : compared.length + ' の決断すべてが史記どおり') + '</small>' : '') + '</summary>' +
+      (compared.length ? '<ol class="km-route-list">' + compared.map(function (p) {
+        return '<li class="' + (p.same ? 'same' : 'differ') + '"><span>' + esc(p.q) + '</span>' +
+          '<div><b>あなた</b>' + esc(p.a) + '</div>' +
+          (p.same ? '<div class="km-route-mark">史記と同じ</div>' : '<div><b>史記</b>' + esc(p.hist) + '</div>') + '</li>';
+      }).join('') + '</ol>' : '') +
+      (interp.length ? '<p class="km-route-h">あなたの読み（本文からいくつも説明できる問い）</p><ol class="km-route-list">' + interp.map(function (p) {
+        return '<li class="interp"><span>' + esc(p.q) + '</span><div><b>あなた</b>' + esc(p.a) + '</div></li>';
+      }).join('') + '</ol>' : '') +
+      (plain.length ? '<ol class="km-route-list">' + plain.map(function (p) { return '<li><span>' + esc(p.q) + '</span><div>' + esc(p.a) + '</div></li>'; }).join('') + '</ol>' : '') +
+      '</details>';
   }
   function retry() {
     if (!st || !st.cp) return titleScreen();
     var cp = st.cp;
-    var keep = { q: st.q, ok: st.ok, hints: st.hints };
+    var keep = { q: st.q, ok: st.ok, hints: st.hints, log: st.log };
     st = hydrateState(cp.snap);
     if (!st) return titleScreen();
     st.cp = cp;
-    st.q = keep.q; st.ok = keep.ok; st.hints = keep.hints;
+    st.q = keep.q; st.ok = keep.ok; st.hints = keep.hints; st.log = keep.log;
     if (st.life <= 0) st.life = 1;
     closeModal();
     cancelScene(); var epoch = sceneEpoch;
@@ -1078,14 +1151,35 @@
   function chapterMenu() {
     var html = '<h3>目次</h3><p class="km-m-lead">読み終えた章から、もう一度始められます。途中の章から始めるときは、それまでを史記どおりに選んだものとします。</p><div class="km-chaps">';
     K.chapters.forEach(function (c, i) {
-      var open = meta.classroom || i === 0 || meta.cleared[K.chapters[i - 1].id] || meta.cleared[c.id];
-      if (c.part2 && !meta.classroom) open = !!meta.endings.T1 && (c.id === 'c8' || meta.cleared.c8);
+      var open = chapterOpen(i);
       html += '<button class="km-chap" data-km="chap" data-c="' + c.id + '"' + (open ? '' : ' disabled') + '>' +
         '<span class="km-chap-no">' + esc(c.no) + '</span><b>' + (open ? esc(c.title) : '？？？') + '</b><small>' + (open ? esc(c.sub) : 'まだ開いていない') + '</small>' +
         (meta.cleared[c.id] ? '<span class="km-chap-done">読了</span>' : '') + '</button>';
     });
-    html += '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
+    html += '</div>';
+    if (meta.classroom) html += '<div class="km-chaplink"><b>授業で場面を指定する</b><p class="km-m-small">ページのURLの末尾に「#c3」のように付けて開くと、その場面から始まります。生徒と同じ場所（学校のWebページや共有フォルダ）に置いたファイルで使ってください。</p>' +
+      '<label>はじめる場面 <select data-chaplink>' + [['intro', '鴻門前夜（七場面の導入）']].concat(K.chapters.map(function (c) { return [c.id, c.no + '　' + c.title]; }), [['ai', '范増として考える（AI活動）'], ['review', '読み直し帳']]).map(function (o) {
+        return '<option value="' + o[0] + '">' + esc(o[1]) + '　#' + o[0] + '</option>';
+      }).join('') + '</select></label><button class="km-btn" data-km="copychaplink">リンクをコピー</button><span class="km-m-small" role="status" id="km-chaplink-status"></span></div>';
+    html += '<div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
     modal(html, 'km-m-menu');
+  }
+  function chapterOpen(i) {
+    var c = K.chapters[i];
+    if (c.part2 && !meta.classroom) return !!meta.endings.T1 && (c.id === 'c8' || !!meta.cleared.c8);
+    return !!(meta.classroom || i === 0 || meta.cleared[K.chapters[i - 1].id] || meta.cleared[c.id]);
+  }
+  function chapterLink(id) { return location.href.split('#')[0] + '#' + id; }
+  /** URLの #c3・#intro などから、その場面を開く。挑戦モードでまだ開いていない章は表紙のまま。 */
+  function startFromHash() {
+    var id = decodeURIComponent((location.hash || '').replace(/^#/, ''));
+    if (!id) return;
+    if (id === 'intro' && window.KoumonClassroom) return intro();
+    if (id === 'ai') return aiScreen();
+    if (id === 'review') return review();
+    if (id === 'book') return bookMenu();
+    var i = K.chapters.map(function (c) { return c.id; }).indexOf(id);
+    if (i >= 0 && chapterOpen(i)) startNew(id);
   }
   function bookMenu(openId, back) {
     var ids = Object.keys(K.genbun);
@@ -1126,6 +1220,9 @@
       '<p><b>決断</b>　沛公としての判断です。史記と違う道を選ぶと、<b>異聞の結末</b>にたどり着くことがあります。結末からは、原因になった選択へ戻って選び直せます。戻り先はボタンに表示されます。</p>' +
       '<p><b>項王の怒気・范増の殺気</b>　言葉づかい一つで上下します。どちらも満ちれば命はありません。</p>' +
       '<p><b>策</b>　「子房に問う」でヒントがもらえます。数には限りがあります。</p>' +
+      '<p><b>授業モード</b>　読み違えても命は減らず、一度目はヒントを添えて選び直せます。怒気・殺気は参考として表示されます（授業設定で切り替え）。</p>' +
+      '<p><b>読み直し帳</b>　読み違えた問いが集まり、表紙や結末からあとで解き直せます。読み解くと帳から外れます。</p>' +
+      '<p><b>あなたの道と史記の道</b>　結末で、あなたの決断と史記の記述を並べて振り返れます。「学習記録」でテキストに書き出せます。</p>' +
       '<p><b>原文帳</b>　物語で読んだ史記の原文（白文・書き下し・現代語訳・注）が綴じられます。読んだ字数は「学びの記録」にも加算されます。</p>' +
       '<p><b>絵を見る</b>　本文を隠して場面の絵だけを眺められます（H キー）。</p>' +
       '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>', 'km-m-howto');
@@ -1153,7 +1250,9 @@
     function done(ok) {
       var b = el.modal.querySelector('[data-km="copyai"]');
       if (b) b.textContent = ok ? 'コピーしました' : '選択して手動でコピーしてください';
-      if (!ok && ta) { ta.focus(); ta.select(); }
+      var status = document.getElementById('km-ai-copy-status');
+      if (status) status.textContent = ok ? '次は ① 授業で使うAIの入力欄に貼り付けて送信 → ② 范増として5回まで話す → ③ このページに戻り「対話を振り返る」へ。' : '指示文の欄を開いて全体を選び、コピーしてください。';
+      if (!ok && ta) { var d = ta.closest('details'); if (d) d.open = true; ta.focus(); ta.select(); }
     }
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(window.KoumonClassroom.buildPrompt(aiSources)).then(function () { done(true); }, function () { done(false); });
     else done(false);
@@ -1162,6 +1261,7 @@
   function settings() {
     modal('<h3>授業に合わせる</h3><p class="km-m-lead">設定はこのブラウザーに保存されます。</p><div class="km-settings">' +
       '<label><input type="checkbox" data-pref="classroom"' + (meta.classroom?' checked':'') + '><span><b>授業モード</b><small>命を減らさず、時間制限なし。全章・全原文へ移動できます。</small></span></label>' +
+      '<label><input type="checkbox" data-pref="meters"' + (meta.meters?' checked':'') + '><span><b>怒気・殺気を示す</b><small>授業モードでも、言葉づかいで項王の怒気・范増の殺気がどう動くかを表示します。</small></span></label>' +
       '<label><input type="checkbox" data-pref="projection"' + (meta.projection?' checked':'') + '><span><b>投影して、みんなで読む</b><small>本文・選択肢を大きく表示。個人学習ではオフに。</small></span></label>' +
       '<label><input type="checkbox" data-pref="instant"' + (meta.instant?' checked':'') + '><span><b>文字を一度に表示</b><small>オフにすると、台詞を少しずつ表示します。</small></span></label></div>' +
       '<div class="km-viewsel"><span>舞台</span><button class="km-btn" data-km="view3d"' + (window.KoumonStage3D && window.KoumonStage3D.supported()?'':' disabled') + '>3D</button><button class="km-btn" data-km="view2d">影絵（軽量）</button></div>' +
@@ -1179,8 +1279,99 @@
   function exportReflection() {
     var labels = {quote:'根拠にした本文',reason:'考えと伝えた言葉',difference:'AIと本文の違い',next:'読み直して気づいたこと'};
     var content = '鴻門の会 — 振り返り\n\n' + Object.keys(labels).map(function(k){return labels[k]+'\n'+(meta.reflection[k]||'（未記入）');}).join('\n\n');
-    var url = URL.createObjectURL(new Blob([content], {type:'text/plain;charset=utf-8'}));
-    var a = document.createElement('a'); a.href=url; a.download='鴻門の会_振り返り.txt'; a.click(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
+    downloadText('鴻門の会_振り返り.txt', content);
+  }
+
+  /* ============================ 読み直し帳 ============================ */
+  function missedIds() { return ORDER.filter(function (id) { return meta.missed[id]; }); }
+  var reviewS = null;
+  function review() { reviewS = { ids: missedIds(), i: 0, cleared: 0, answered: null }; renderReview(); }
+  function kuhoHTML(n) {
+    var k = n.kuho && window.KUHO ? window.KUHO.filter(function (x) { return x.id === n.kuho; })[0] : null;
+    return k ? '<div class="km-kuho"><span class="km-kuho-tag">句法</span><b>' + esc(k.form) + '</b>　' + esc(k.read || '') + '<br><small>' + esc(k.mean || '') + '</small></div>' : '';
+  }
+  function renderReview() {
+    var ids = reviewS.ids, close = '<button class="km-btn" data-km="closemodal">閉じる</button>';
+    if (!ids.length) return modal('<h3>読み直し帳</h3><p class="km-m-lead">読み違えた「読み解け」の問いが、ここに集まります。いまは読み直す問いがありません。</p><div class="km-nav"><span></span>' + close + '</div>', 'km-m-review');
+    if (reviewS.i >= ids.length) {
+      var left = missedIds().length;
+      return modal('<h3>読み直し帳</h3><p class="km-m-lead">' + ids.length + ' 問を読み直し、' + reviewS.cleared + ' 問を読み解いた。' + (left ? 'まだ ' + left + ' 問が残っています。' : '読み直す問いは、すべて読み解きました。') + '</p>' +
+        '<div class="km-nav">' + (left ? '<button class="km-btn gold" data-km="review">残りをもう一度</button>' : '<span></span>') + close + '</div>', 'km-m-review');
+    }
+    var id = ids[reviewS.i], n = NODES[id].n, answered = reviewS.answered;
+    var order = shuffle(n.o.map(function (o, i) { return i; }), 'review' + id);
+    var html = '<h3>読み直し帳 <small>' + (reviewS.i + 1) + ' / ' + ids.length + '</small></h3>' +
+      '<p class="km-m-lead">' + esc(chap(NODES[id].ch).no + '　' + chap(NODES[id].ch).title) + '　·　読み違えた回数 ' + (meta.missed[id] || 0) + '</p>' +
+      '<div class="km-ask-h"><span class="km-ask-tag read">読み解け</span><span class="km-ask-q">' + esc(n.q) + '</span></div>' +
+      (n.stem ? '<div class="km-stem-wrap"><div class="km-vt km-stem">' + kanbunHTML(n.stem) + '</div></div>' : '') +
+      '<div class="km-opts">' + order.map(function (i, k) {
+        var o = n.o[i], cls = answered === null ? '' : o.ok ? ' ok' : i === answered ? ' ng' : '';
+        return '<button class="km-opt' + cls + '" data-km="revpick" data-i="' + i + '"' + (answered === null ? '' : ' disabled') + '><span class="km-opt-n">' + '一二三四'.charAt(k) + '</span><span>' + esc(o.x) + '</span></button>';
+      }).join('') + '</div>';
+    if (answered !== null) {
+      var ok = !!n.o[answered].ok;
+      html += '<div class="km-fb ' + (ok ? 'ok' : 'ng') + '"><div class="km-fb-h">' + (ok ? '◯ 読み解いた。読み直し帳から外します' : '✕ まだ読み違えている') + '</div>' +
+        '<span class="km-evidence-label">読解の解説 · 本文の理解と解釈</span><p>' + esc(n.exp || '') + '</p>' + kuhoHTML(n) + '</div>';
+    } else if (n.hint) html += '<details class="km-review-hint"><summary>ヒントを見る</summary><p>' + esc(n.hint) + '</p></details>';
+    html += '<div class="km-nav">' + close + (answered !== null ? '<button class="km-btn gold" data-km="revnext">' + (reviewS.i + 1 < ids.length ? '次の問いへ ▶' : '結果を見る ▶') + '</button>' : '<span></span>') + '</div>';
+    modal(html, 'km-m-review');
+  }
+  function reviewPick(i) {
+    if (!reviewS || reviewS.answered !== null) return;
+    var id = reviewS.ids[reviewS.i], o = NODES[id].n.o[i];
+    if (!o) return;
+    reviewS.answered = i;
+    if (o.ok) { delete meta.missed[id]; reviewS.cleared++; } else meta.missed[id] = (meta.missed[id] || 0) + 1;
+    saveMeta();
+    renderReview();
+  }
+
+  /* ============================ 学習記録 ============================ */
+  function recordText() {
+    var L = ['鴻門の会 — 学習記録', '書き出した日時：' + new Date().toLocaleString('ja-JP'), '（提出するときは、先生の指示に従って名前や番号を書き加えてください）', ''];
+    L.push('■ 進み具合', 'モード：' + (meta.classroom ? '授業モード' : '挑戦モード'));
+    var read = K.chapters.filter(function (c) { return meta.cleared[c.id]; });
+    L.push('読み終えた章：' + (read.length ? read.map(function (c) { return c.no; }).join('・') : 'まだない') + '（' + read.length + ' / ' + K.chapters.length + '）');
+    L.push('原文帳：' + Object.keys(meta.gen).filter(function (g) { return K.genbun[g]; }).length + ' / ' + Object.keys(K.genbun).length + ' 段', '');
+    L.push('■ 結末（' + Object.keys(meta.endings).filter(function (e) { return K.endings[e]; }).length + ' / ' + Object.keys(K.endings).length + '）');
+    Object.keys(K.endings).forEach(function (e) { var E = K.endings[e]; L.push((meta.endings[e] ? '◯ ' : '－ ') + (E.kind === 'true' ? '正史' : '異聞') + '「' + (meta.endings[e] ? E.title : '？？？') + '」'); });
+    L.push('', '■ 読解');
+    if (meta.best) L.push('結末までの最高の読解率：' + meta.best.rate + '%（' + meta.best.q + ' 問）');
+    if (st && st.q) L.push('今回の記録：' + st.ok + ' / ' + st.q + ' 問を一度で読み解いた（策を用いた回数 ' + st.hints + '）');
+    if (!meta.best && !(st && st.q)) L.push('まだ記録がない');
+    var differ = st ? st.picks.filter(function (p) { return p.hist && !p.same; }) : [];
+    if (differ.length) {
+      L.push('', '■ 今回、史記と違う道を選んだ決断');
+      differ.forEach(function (p) { L.push('・' + p.q, '　あなた：' + p.a, '　史記：' + p.hist); });
+    }
+    var interp = st ? st.picks.filter(function (p) { return p.interp; }) : [];
+    if (interp.length) { L.push('', '■ あなたの読み'); interp.forEach(function (p) { L.push('・' + p.q, '　' + p.a); }); }
+    var miss = missedIds();
+    L.push('', '■ 読み直し帳（まだ読み解けていない問い ' + miss.length + ' 問）');
+    if (miss.length) miss.forEach(function (id) { L.push('・' + NODES[id].n.q + '（' + chap(NODES[id].ch).no + '、読み違え ' + meta.missed[id] + ' 回）'); });
+    else L.push('なし');
+    var labels = { quote: '根拠にした本文', reason: '考えと伝えた言葉', difference: 'AIと本文の違い', next: '読み直して気づいたこと' };
+    if (Object.keys(labels).some(function (k) { return meta.reflection[k]; })) {
+      L.push('', '■ 振り返り');
+      Object.keys(labels).forEach(function (k) { L.push(labels[k] + '：' + (meta.reflection[k] || '（未記入）')); });
+    }
+    return L.join('\n');
+  }
+  function recordScreen() {
+    modal('<h3>学習記録を書き出す</h3><p class="km-m-lead">結末・原文帳・読解・史記と違う決断・読み直し帳・振り返りを、テキストにまとめます。コピーして提出フォームに貼るか、ファイルで保存してください。</p>' +
+      '<textarea class="km-record" readonly rows="12" aria-label="学習記録">' + esc(recordText()) + '</textarea>' +
+      '<p class="km-m-small" role="status" id="km-record-status">記録はこの端末のブラウザーにだけ保存されています。</p>' +
+      '<div class="km-nav"><button class="km-btn" data-km="closemodal">閉じる</button><button class="km-btn" data-km="saverecord">ファイルで保存</button><button class="km-btn gold" data-km="copyrecord">コピー</button></div>', 'km-m-record');
+  }
+  function downloadText(name, content) {
+    var url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
+    var a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  function copyText(text, statusId, okMsg) {
+    var status = document.getElementById(statusId);
+    function done(ok) { if (status) status.textContent = ok ? okMsg : 'コピーできませんでした。文字を選んでコピーしてください。'; }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+    else done(false);
   }
 
   function updateSoundChip() {
@@ -1247,6 +1438,16 @@
         else close();
         break;
       case 'retry': retry(); break;
+      case 'review': review(); break;
+      case 'revpick': reviewPick(Number(t.getAttribute('data-i'))); break;
+      case 'revnext': reviewS.i++; reviewS.answered = null; renderReview(); break;
+      case 'record': recordScreen(); break;
+      case 'copyrecord': copyText(recordText(), 'km-record-status', 'コピーしました。提出フォームなどに貼り付けてください。'); break;
+      case 'saverecord': downloadText('鴻門の会_学習記録.txt', recordText()); break;
+      case 'copychaplink':
+        var sel = el.modal.querySelector('[data-chaplink]');
+        if (sel) copyText(chapterLink(sel.value), 'km-chaplink-status', 'コピーしました：' + chapterLink(sel.value));
+        break;
       case 'part2': closeModal(); startNew('c8'); break;
       case 'ai': aiScreen(); break;
       case 'copyai': copyAI(); break;
@@ -1303,9 +1504,10 @@
     if (modalOpen) return;
     if (e.key === 'h' || e.key === 'H') { $root.classList.toggle('km-view'); e.preventDefault(); return; }
     if (mode === 'ask') {
+      // 番号は画面に並んだ順。読み直しで無効になった選択肢があっても番号はずらさない。
       var k = '1234'.indexOf(e.key);
-      var btns = $root.querySelectorAll('.km-opt:not([disabled])');
-      if (k >= 0 && btns[k]) { e.preventDefault(); btns[k].click(); }
+      var btns = $root.querySelectorAll('.km-opts .km-opt');
+      if (k >= 0 && btns[k] && !btns[k].disabled) { e.preventDefault(); btns[k].click(); }
       return;
     }
     if (e.key === 'Enter' || e.key === ' ') {

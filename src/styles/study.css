@@ -1,0 +1,34 @@
+/* 学習・授業運営の画面部品（読み直し・史記との比較・学習記録・場面リンク）。色や質感は classroom.css に合わせる。 */
+
+/* 長いパネルでも「次へ」を常に見える位置に残す */
+.km-panel .km-nav-sticky { position: sticky; bottom: -19px; z-index: 2; margin: 10px -30px -19px; padding: 12px 30px 19px; background: #0c1e22f2; border-top: 1px solid var(--line); }
+@media (max-width:900px) { .km-panel .km-nav-sticky { bottom: -20px; margin: 10px -20px -20px; padding: 12px 20px 20px; } }
+@media (max-width:580px) { .km-panel .km-nav-sticky { bottom: -16px; margin: 10px -16px -16px; padding: 10px 16px 16px; } }
+@media (hover:none) { .km-key-hint { display: none; } }
+
+/* 授業モードの読み直し */
+.km-fb-retry { margin: 10px 0 0; border-color: #d9b46a; background: #3b3220cc; color: #f3e6c4; }
+.km-fb-retry .km-fb-h { font-weight: 700; margin-bottom: 4px; }
+
+/* あなたの道と史記の道 */
+.km-end-picks summary small { margin-left: 12px; font: 12px var(--gothic); color: #bdd3cc; }
+.km-route-h { font: 12px var(--gothic); color: #d8c397; margin: 14px 0 4px; }
+.km-route-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+.km-route-list li { border: 1px solid var(--line); border-left: 3px solid #82998e; border-radius: 5px; padding: 10px 12px; font: 13px/1.7 var(--gothic); color: #e7dcc2; }
+.km-route-list li.differ { border-left-color: #e59a87; }
+.km-route-list li.same { border-left-color: #98d9bd; }
+.km-route-list li.interp { border-left-color: #d9b46a; }
+.km-route-list li > span { display: block; color: #acc6c4; font-size: 12px; }
+.km-route-list b { display: inline-block; min-width: 3.5em; color: #d8c397; font-weight: 600; }
+.km-route-mark { color: #98d9bd; font-size: 12px; }
+
+/* 読み直し帳・学習記録・場面リンク */
+.km-m-review h3 small { font: 13px var(--gothic); color: #bdd3cc; margin-left: 8px; }
+.km-m-review .km-opts { margin-bottom: 12px; }
+.km-review-hint { margin: 10px 0; font: 14px/1.8 var(--gothic); color: #e7dcc2; }
+.km-review-hint summary { cursor: pointer; color: #d8c397; }
+.km-record { width: 100%; box-sizing: border-box; padding: 14px; background: #0b2026; color: #ced9ca; border: 1px solid var(--line); border-radius: 5px; font: 13px/1.7 var(--gothic); resize: vertical; }
+.km-chaplink { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 5px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-family: var(--gothic); color: #e7dcc2; }
+.km-chaplink > b, .km-chaplink > p { flex-basis: 100%; margin: 0; }
+.km-chaplink select { margin-left: 6px; padding: 8px; background: #0b2026; color: #f0e7d5; border: 1px solid var(--line); border-radius: 4px; font: 13px var(--gothic); max-width: 100%; }
+.km-home-links button small { margin-left: 4px; padding: 0 6px; border-radius: 99px; background: #973d2e; color: #fff1d4; font-size: 10px; }

@@ -29,7 +29,8 @@
       '<div class="km-home-actions"><button class="km-btn gold" data-km="intro"><span>01</span> 鴻門前夜をみる <small>7つの場面で背景をつかむ</small><b>→</b></button>' +
       '<button class="km-btn" data-km="' + (meta.save?'continue':'new') + '"><span>02</span> ' + (meta.save?'物語の続きから':'物語をはじめる') + '<small>原文と決断で宴を体験</small><b>→</b></button>' +
       '<button class="km-btn" data-km="ai"><span>03</span> 范増として考える <small>原文を根拠にAIと対話</small><b>→</b></button></div>' +
-      '<div class="km-home-links"><button data-km="menu">章を選ぶ</button><button data-km="book">原文帳</button><button data-km="characters">人物相関</button><button data-km="reflection">振り返り</button><button data-km="endings">結末帳</button></div>' +
+      '<div class="km-home-links"><button data-km="menu">章を選ぶ</button><button data-km="book">原文帳</button><button data-km="characters">人物相関</button><button data-km="reflection">振り返り</button><button data-km="endings">結末帳</button>' +
+      '<button data-km="review">読み直し帳' + (meta.missed && Object.keys(meta.missed).length ? '<small>' + Object.keys(meta.missed).length + '</small>' : '') + '</button><button data-km="record">学習記録</button></div>' +
       '<div class="km-home-footer"><span>' + (meta.classroom?'授業モード · 時間制限なし':'挑戦モード · 命と決断') + '</span><button data-km="settings">表示・授業設定</button><span>' + (is3D?'3Dの舞台':'影絵の舞台') + '</span></div>' +
       '<p class="km-art-note">表紙・舞台は学習のためのイメージ表現です。</p></div></div>';
   }
