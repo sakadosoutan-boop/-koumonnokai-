@@ -1,0 +1,84 @@
+{
+  "date": "2026-10-26",
+  "runtimeCanonicalLF": {
+    "koumon-head-assets": "7f63ebd02e6c89bee8ea0a64c4ccf6555e35c894f1fc3fe004594bacf655031a",
+    "koumon-heads": "fd4bbee01da2961c0c55f9f7d7a717c1e733a5d7f7e9c8e43251b69b91b598e5",
+    "koumon-cast3d": "294282443cc8ecde4a95554ea78a0087d0c5dadad23a0ca41013f072ed5e813d",
+    "koumon-banquet-props": "e2c0287b81bcb3bce72617e612efbf3ca95d8ce8b8dd78681424d7619540977a",
+    "koumon-costume": "06a23e5919f725aec3f4f851862685e2b396522c30cfd2ace0de4d943673e74f",
+    "koumon-lighting": "423b2f83df02ce90c9f393927d2dc1cd3dfd743832bed3439899d549aafee9ae",
+    "koumon-3d": "b47519932220284c0c6f57b2ec11da7c9b13b85c13cf741f01d18c1d40326f88"
+  },
+  "nativeSources": {
+    "banquet-props.blend": "732f854dac67059a0f9dcc2f8c005752e6310cfa10310059eb09500c77b980db",
+    "costumes.blend": "a64e6f4103ddd7569506e5cf461a10526d3d4bac87d2f49c20e223ad0ef4a450",
+    "hands.blend": "4c4f8c73ed94e969ad81aaee4a0849f4bd90328b7cf2386205cc9df611056c4c",
+    "heads.blend": "1b6f7bad6e8bb7128ce898adef6b3c68eb82ea27a7bad3b22c8b7cdf6c23c990"
+  },
+  "tests": {
+    "npmPassed": 45,
+    "poseLodGeometry": 360,
+    "representativeMotionCases": 192,
+    "denseMotionCases": 2884,
+    "outOfOrderCases": 2884,
+    "maxima": {
+      "gripGap": 2.5066604164831255e-16,
+      "solverContact": 8.169055794461054e-16,
+      "wristBend": 1.1167834184405405,
+      "forearmTwist": 1.48,
+      "elbowFlex": 2.580235785377631,
+      "shoulderShieldGap": 0.00010287964571331631,
+      "bladePierceGap": 8.688869536365456e-16,
+      "shoulderSupportGap": 4.0053709487069576e-16,
+      "shoulderBiteGap": 0.008191383863865217,
+      "cupSupportGap": 9.070215317923003e-16,
+      "cupTilt": 0.83,
+      "cupRimGap": 0.01059324821704854,
+      "localQuaternionStep": 0.0504122720822777,
+      "worldQuaternionStep": 0.03940487559829655,
+      "shoulderReturnGap": 0,
+      "cycleQuaternionGap": 5.960464477539063e-08,
+      "outOfOrderMatrixDelta": 0
+    },
+    "minima": {
+      "bladeToThumb": 0.9999999999999998,
+      "shoulderElbowDrop": 0.05422114942801515,
+      "bladeLipClearance": 0.1800724795503025,
+      "cupForward": 0.0903488372093022
+    }
+  },
+  "groom": {
+    "bytes": 15959334,
+    "nativeBytes": 23436670,
+    "parts": 60,
+    "max": 42240,
+    "bad": 0,
+    "indexDifferences": 0,
+    "attributeDifferences": 0,
+    "anchorChanges": 0,
+    "skinChanges": 0
+  },
+  "bundle": {
+    "bytes": 25181780,
+    "inlineScripts": 18,
+    "pngDataUris": 2
+  },
+  "browser": {
+    "engine": "Actual WebGL in in-app browser",
+    "scope": [
+      "Kai high/low beard silhouette",
+      "U, Hai, Zo, Ryo high groom and cloth",
+      "drink front-of-lips, quarter and profile at raise/full tilt/lower",
+      "whole shoulder cut on flipped shield and upper-edge bite in profile",
+      "warm banquet lighting, metal/cloth/lacquer separation and attached curtain cords",
+      "bundled HTML title/chapter selection/chapter five start and text display"
+    ],
+    "evidence": "docs/model-preview/hearty-*.png",
+    "consoleErrors": 0
+  },
+  "limits": [
+    "Creative portrait/costume adaptation",
+    "Whole-shoulder-on-sword action supplements textual cutting/eating",
+    "No cloth physics simulation or device-specific FPS benchmark"
+  ]
+}

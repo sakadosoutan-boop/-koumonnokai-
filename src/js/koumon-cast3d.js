@@ -971,9 +971,10 @@
       ['L', 'R'].forEach(function (k) { arms[k].heldHandle = null; arms[k].wr.rotation.set(0,0,0); });
       state.pose = pose;
       state.motionPhase='';state.motionProgress=0;state.contactErrors={};state.ikDetails={};state.cupRotation=null;state.actionStart=null;
+      delete state.actionProgress;
       root.visible = pose !== 'gone';
       body.rotation.set(0, 0, 0); body.position.set(0, 0, 0);
-      spine.rotation.set(0, 0, 0); neck.rotation.set(0, 0, 0); headPiv.rotation.set(0, 0, 0);
+      spine.rotation.set(0, 0, 0); neck.rotation.set(0, 0, 0); headPiv.rotation.set(0, 0, 0);headPiv.position.set(0,0,0);
       var seated = pose === 'sit' || pose === 'raise', kneel = pose === 'kneel' || pose === 'eat';
       if (pose === 'stand' || seated || kneel) spine.rotation.x = c.restLean || 0;
       skirtStand.visible = !seated && !kneel;
@@ -1000,11 +1001,13 @@
       if (pose === 'strike') { setArm('R', .9, .1, .2); spine.rotation.x = .25; }
       if (pose === 'eat') {
         setArm('R', .85, .1, 1.2); setArm('L', .75, -.1, 1.0); spine.rotation.x = .32;
-        if (props.shield) { root.add(props.shield); props.shield.position.set(0, .055*s, .50*s); props.shield.rotation.set(-PI / 2, 0, 0); props.shield.visible = true; }
-        root.add(props.meat); props.meat.scale.setScalar(s); props.meat.position.set(0, .145*s, .50*s); props.meat.visible = true;
+        // 覆其盾: the boss faces the floor and the broad curved back is the tray.
+        if (props.shield) { root.add(props.shield); props.shield.position.set(0, .090*s, .50*s); props.shield.rotation.set(PI / 2, 0, 0); props.shield.visible = true; }
+        root.add(props.meat); props.meat.scale.setScalar(s);props.meat.rotation.set(0,0,0); props.meat.position.set(0, (.1195-(props.meat.userData.placementBaseY||-.071))*s, .50*s); props.meat.visible = true;
         if (props.morsel && props.sword) { props.sword.add(props.morsel); props.morsel.position.fromArray(props.sword.userData.spearPoint); props.morsel.visible=false; }
       }
-      if (pose === 'drink') { setArm('R', 1.0, .18, 1.5, .15); hpz.R = 'grasp'; hpz.L = 'hold'; holdIn('R', props.cup, [0, 0, .3], [0, -.1 * s, .06]); }
+      if (pose === 'drink') { setArm('R', 1.0, .18, 1.5, .15); hpz.R = 'grasp'; hpz.L = 'hold'; holdIn('R', props.cup, [0, 0, 0], [0, -.1 * s, .06]); }
+      if(pose==='eat')hpz.L='hold';
       if (pose === 'glare') { setArm('L', .2, .38, .32); setArm('R', .2, .38, .32); hpz = { L: 'grasp', R: 'grasp' }; legs.L.hip.rotation.z = .12; legs.R.hip.rotation.z = -.12; }
       if (pose === 'charge') { spine.rotation.x = .3; setArm('L', 1.3, .2, .3); hpz.L = 'grasp'; legs.L.hip.rotation.x = -.5; legs.L.knee.rotation.x = .5; legs.R.hip.rotation.x = .4; }
       if ((pose === 'glare' || pose === 'charge' || pose === 'stand' || pose === 'run') && props.shield) holdIn('L', props.shield, [0, PI / 2, 0], [-.05, -.12 * s, .1]);
@@ -1048,68 +1051,68 @@
       p.needsUpdate = true; g.computeVertexNormals();
     }
 
-    // Position-and-direction IK is solved in chest space. Only shoulder motion,
-    // a one-way elbow hinge and bounded forearm pronation are used: the wrist
-    // remains continuous with the forearm instead of being flipped to a prop.
-    function solveArm(sideKey, target, offset, localAxis, aim) {
+    // A single authored elbow plane is projected onto the two-bone reach circle.
+    // There is no per-frame search, previous-frame state or competing elbow
+    // branch: scrubbing either direction produces the same continuous pose.
+    function solveHandContact(sideKey, target, offset, wristRootQ, forearmHint) {
       var A=arms[sideKey],sd=sideKey==='L'?1:-1;
       chest.updateWorldMatrix(true,false);root.updateWorldMatrix(true,false);
       var toChest=new THREE.Matrix4().copy(chest.matrixWorld).invert().multiply(root.matrixWorld);
-      target=target.clone().applyMatrix4(toChest);aim=aim.clone().transformDirection(toChest);
-      var shoulder=A.sh.position.clone(),upperLength=A.el.position.length();
-      // The forearm and held tool are one rigid distal link. Intersecting its
-      // reach sphere with the upper arm sphere gives an exact contact circle.
-      var distal=A.wr.position.clone().add(offset.clone().applyQuaternion(A.wr.quaternion)),distalLength=distal.length();
-      localAxis=localAxis.clone().applyQuaternion(A.wr.quaternion);
-      var toward=target.clone().sub(shoulder),wantedDistance=toward.length();toward.normalize();
-      var distance=clamp(wantedDistance,Math.abs(upperLength-distalLength)+.00001,upperLength+distalLength-.00001);
-      var reachable=shoulder.clone().addScaledVector(toward,distance);
-      var along=(upperLength*upperLength+distance*distance-distalLength*distalLength)/(2*distance);
-      var radius=Math.sqrt(Math.max(0,upperLength*upperLength-along*along));
-      var outside=new V3(sd,0,0).addScaledVector(toward,-sd*toward.x);
-      if(outside.lengthSq()<.001)outside.set(0,0,1).addScaledVector(toward,-toward.z);
-      outside.normalize();var cross=new V3().crossVectors(toward,outside).normalize();
-      var localDistal=distal.clone().normalize(),best=null,bestScore=Infinity;
-      for(var sample=0;sample<64;sample++){
-        var angle=sample/64*PI*2;
-        var elbow=shoulder.clone().addScaledVector(toward,along).addScaledVector(outside,Math.cos(angle)*radius).addScaledVector(cross,Math.sin(angle)*radius);
-        var U=elbow.clone().sub(shoulder).normalize(),D=reachable.clone().sub(elbow).normalize();
-        var foreQ=new THREE.Quaternion().setFromUnitVectors(localDistal,D);
-        var axis=localAxis.clone().applyQuaternion(foreQ),a=axis.clone().addScaledVector(D,-axis.dot(D)),b0=aim.clone().addScaledVector(D,-aim.dot(D));
-        if(a.lengthSq()>.000001&&b0.lengthSq()>.000001){a.normalize();b0.normalize();var rollToward=Math.atan2(D.dot(new V3().crossVectors(a,b0)),a.dot(b0));foreQ.premultiply(new THREE.Quaternion().setFromAxisAngle(D,rollToward));}
-        var preferred=foreQ.clone();
-        for(var orientation=0;orientation<9;orientation++){
-        var freeRoll=(orientation-4)*PI/4;
-        foreQ.copy(preferred).premultiply(new THREE.Quaternion().setFromAxisAngle(D,freeRoll));
-        var F=new V3(0,-1,0).applyQuaternion(foreQ),flex=Math.acos(clamp(U.dot(F),-1,1));
-        var zAxis=F.clone().addScaledVector(U,-F.dot(U));if(zAxis.lengthSq()<1e-8)continue;zAxis.normalize();
-        var yAxis=U.clone().negate(),xAxis=new V3().crossVectors(yAxis,zAxis).normalize();
-        var shoulderQ=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis,yAxis,zAxis));
-        var relative=shoulderQ.clone().invert().multiply(foreQ);
-        relative.premultiply(new THREE.Quaternion().setFromAxisAngle(new V3(1,0,0),flex));
-        var twist=2*Math.atan2(relative.y,relative.w);while(twist>PI)twist-=2*PI;while(twist<-PI)twist+=2*PI;
-        var outward=sd*(elbow.x-shoulder.x),behind=Math.max(0,shoulder.z-.06*s-elbow.z);
-        var score=80*Math.pow(Math.max(0,Math.abs(twist)-1.48),2)+80*Math.pow(Math.max(0,flex-2.65),2)+80*Math.pow(Math.max(0,.08-flex),2);
-        score+=12*Math.pow(Math.max(0,.025*s-outward),2)+12*behind*behind;
-        score+=4*elbow.distanceToSquared(shoulder.clone().add(new V3(sd*.14*s,-.19*s,.10*s)));
-        score+=.035*(1-localAxis.clone().applyQuaternion(foreQ).dot(aim));
-        if(Math.abs(twist)<=1.50 && flex<=2.67 && flex>=.08)score-=1000;
-        if(score<bestScore){bestScore=score;best={shoulder:shoulderQ,flex:flex,twist:twist};}
-        }
-      }
-      if(!best)return;
-      A.sh.quaternion.copy(best.shoulder);A.el.rotation.set(-best.flex,best.twist,0);
-      var euler=new THREE.Euler().setFromQuaternion(best.shoulder);A.cur=[-euler.x,sd*euler.z,best.flex,-sd*euler.y];
-      var solved=distal.clone().applyQuaternion(A.el.quaternion).applyQuaternion(A.sh.quaternion).add(A.el.position.clone().applyQuaternion(A.sh.quaternion)).add(shoulder);
-      state.contactErrors=state.contactErrors||{};state.contactErrors[sideKey]=solved.distanceTo(target);
-      state.ikDetails=state.ikDetails||{};state.ikDetails[sideKey]={flex:best.flex,forearmTwist:best.twist,score:bestScore};
+      var rootToChest=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().extractRotation(toChest));
+      var wristQ=rootToChest.clone().multiply(wristRootQ),contact=target.clone().applyMatrix4(toChest);
+      var shoulder=A.sh.position.clone(),upper=A.el.position.length(),fore=A.wr.position.length();
+      var wrist=contact.clone().sub(offset.clone().applyQuaternion(wristQ));
+      var toward=wrist.clone().sub(shoulder),wanted=toward.length();toward.normalize();
+      var distance=clamp(wanted,Math.abs(upper-fore)+.001,upper+fore-.001);
+      wrist.copy(shoulder).addScaledVector(toward,distance);
+      var along=(upper*upper+distance*distance-fore*fore)/(2*distance),radius=Math.sqrt(Math.max(0,upper*upper-along*along));
+      var circle=shoulder.clone().addScaledVector(toward,along);
+      var hint=forearmHint.clone().applyQuaternion(rootToChest).normalize();
+      var preferred=wrist.clone().addScaledVector(hint,-fore).sub(circle).normalize();
+      var pole=new V3(sd*(sideKey==='L'?1:.75),-1,sideKey==='L'?.8:state.pose==='drink'?.65:-.75).applyQuaternion(rootToChest).addScaledVector(preferred,.10);
+      pole.addScaledVector(toward,-pole.dot(toward));
+      if(pole.lengthSq()<.000001)pole.set(sd,-1,.3).addScaledVector(toward,-pole.dot(toward));
+      var elbow=circle.clone().addScaledVector(pole.normalize(),radius);
+      var U=elbow.clone().sub(shoulder).normalize(),D=wrist.clone().sub(elbow).normalize();
+      var flex=Math.acos(clamp(U.dot(D),-1,1));
+      var yAxis=U.clone().negate(),zAxis=D.clone().addScaledVector(U,-D.dot(U)).normalize();
+      var xAxis=new V3().crossVectors(yAxis,zAxis).normalize();
+      var shoulderQ=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis,yAxis,zAxis));
+      var foreQ=shoulderQ.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new V3(1,0,0),-flex));
+      var relative=foreQ.clone().invert().multiply(wristQ);
+      var twist=2*Math.atan2(relative.y,relative.w);while(twist>PI)twist-=2*PI;while(twist<-PI)twist+=2*PI;
+      var wantedTwist=twist;twist=clamp(twist,-1.48,1.48);
+      A.sh.quaternion.copy(shoulderQ);A.el.rotation.set(-flex,twist,0);
+      foreQ.copy(shoulderQ).multiply(A.el.quaternion);
+      A.wr.quaternion.copy(foreQ.invert().multiply(wristQ)).normalize();
+      var euler=new THREE.Euler().setFromQuaternion(shoulderQ);A.cur=[-euler.x,sd*euler.z,flex,-sd*euler.y];
+      var solved=A.wr.position.clone().add(offset.clone().applyQuaternion(A.wr.quaternion)).applyQuaternion(A.el.quaternion).add(A.el.position).applyQuaternion(A.sh.quaternion).add(shoulder);
+      state.contactErrors[sideKey]=solved.distanceTo(contact);
+      state.ikDetails[sideKey]={flex:flex,forearmTwist:twist,wristBend:2*Math.acos(clamp(Math.abs(A.wr.quaternion.w),0,1)),wantedTwist:wantedTwist,elbow:elbow.toArray(),analytic:true};
+    }
+    function wristBasis(fingers, thumb) {
+      var z=thumb.clone().normalize(),y=fingers.clone().negate();
+      y.addScaledVector(z,-y.dot(z)).normalize();
+      var x=new V3().crossVectors(y,z).normalize();
+      return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z));
+    }
+    function supportWrist(cupQ) {
+      // Source hand: +Y fingers, +Z dorsal. The left palm faces the load,
+      // with fingers reaching inward and the wrist outside the vessel/meat.
+      var normal=new V3(0,1,0).applyQuaternion(cupQ).add(new V3(.2,0,-.8)).normalize(),fingers=new V3(-1,0,-.2);
+      var x=normal.negate(),y=fingers.negate(),z=new V3().crossVectors(x,y).normalize();
+      y.crossVectors(z,x).normalize();
+      return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z));
+    }
+    function restingLeftWrist() {
+      return new THREE.Quaternion();
     }
     function gripOffset(k){var A=arms[k];return new V3().fromArray(A.hand.children[0].userData.gripCenter).multiplyScalar(s).applyQuaternion(A.hand.quaternion);}
     function actionMotion(t) {
-      var pose=state.pose,cycle=pose==='eat'?10:pose==='drink'?6:8;
+      var pose=state.pose,cycle=window.KM_BANQUET&&window.KM_BANQUET.cycles[pose]||(pose==='eat'?12:pose==='drink'?8:8);
       if(state.actionStart==null)state.actionStart=t;
       var elapsed=t-state.actionStart;
-      var u=typeof state.actionProgress==='number'?clamp(state.actionProgress,0,.999999):((elapsed%cycle)+cycle)%cycle/cycle;
+      var u=typeof state.actionProgress==='number'?clamp(state.actionProgress,0,1):((elapsed%cycle)+cycle)%cycle/cycle;
       state.motionProgress=u;
       state.contactErrors={};state.ikDetails={};
       if(pose==='dance'){
@@ -1123,43 +1126,71 @@
         if(armored){legs.L.hip.rotation.x=.10*Math.sin(u*PI*2);legs.R.hip.rotation.x=-.10*Math.sin(u*PI*2);legs.L.knee.rotation.x=Math.max(0,-Math.sin(u*PI*2))*.12;legs.R.knee.rotation.x=Math.max(0,Math.sin(u*PI*2))*.12;}
         state.motionPhase=['構え','斜めに上げる','外へ払う','構えへ戻す'][beat];
       } else if(pose==='eat' && props.sword && window.KM_BANQUET){
-        spine.rotation.x=.13;headPiv.rotation.x=.12;headPiv.rotation.y=.10;
+        var lift=sstep(.34,.62,u)*(1-sstep(.85,.99,u));
+        var brace=sstep(.43,.57,u)*(1-sstep(.86,.96,u));
+        var bite=sstep(.61,.67,u)*(1-sstep(.77,.84,u));
+        pelvis.position.y=(.46-.025*sstep(.28,.39,u)*(1-sstep(.48,.62,u))+.015*lift)*s;
+        spine.rotation.set(lerp(.24,.075,lift),0,0);neck.rotation.set(0,0,0);
+        headPiv.rotation.set(lerp(.16,.035,lift)+.018*bite,0,0);headPiv.position.set(0,0,.014*s*bite);
         alignHeldHandle('R');root.updateMatrixWorld(true);
         var mouth=root.worldToLocal(headG.localToWorld(new V3(0,-.038,.073)));
-        var lift=sstep(.39,.62,u)*(1-sstep(.81,.98,u));
-        arms.R.wr.rotation.set(-.85*lift,0,0);arms.L.wr.rotation.set(0,0,0);
-        var cut=new V3(lerp(-.095,.045,sstep(.12,.30,u))*s,(.195+.07*(1-sstep(.06,.22,u)))*s,(.51-.04*sstep(.12,.28,u))*s);
-        var bite=mouth.clone().add(new V3(.030*s,-.018*s,.035*s));
-        var target=cut.lerp(bite,lift),aim=new V3(.05,-.97,.24).lerp(new V3(.98,.06,-.19),lift).normalize();
-        target.x+=.18*s*Math.sin(PI*lift);
-        var bladePoint=new V3().fromArray(props.sword.userData.spearPoint);
-        var offset=bladePoint.multiplyScalar(s).applyQuaternion(props.sword.quaternion).add(props.sword.position);
-        solveArm('R',target,offset,new V3(0,0,1),aim);
-        setArm('L',.65,.50,1.2,-.1);
-        if(props.morsel){props.morsel.visible=u>.35&&u<.91;props.morsel.scale.setScalar(u>.74?lerp(1,.13,sstep(.74,.84,u)):1);}
-        state.motionPhase=u<.12?'盾に載せた生肉へ':u<.28?'剣で切る':u<.40?'切った一片を刺す':u<.62?'口元へ運ぶ':u<.81?'一片を食べる':'剣を戻す';
+        var meatQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(.045*lift,0,-.055*lift));
+        var floorCenter=new V3(0,(.1195-(props.meat.userData.placementBaseY||-.104))*s,.50*s);
+        var biteLocal=new V3().fromArray(props.meat.userData.biteContact||[0,.100,-.126]);
+        var biteTarget=mouth.clone().add(new V3(0,-.003*s,.007*s));
+        var carriedCenter=biteTarget.clone().sub(biteLocal.clone().multiplyScalar(s).applyQuaternion(meatQ));
+        var meatCenter=floorCenter.clone().lerp(carriedCenter,lift);
+        // The same complete shoulder remains visible through cutting, lifting,
+        // biting and lowering; the blade gradually enters more deeply as it rises.
+        props.meat.position.copy(meatCenter);props.meat.quaternion.copy(meatQ);props.meat.scale.setScalar(s);
+        var pierce=new V3().fromArray(props.meat.userData.pierceContact||[-.10,.012,.005]).multiplyScalar(s).applyQuaternion(meatQ).add(meatCenter);
+        var cutLocal=new V3().fromArray(props.meat.userData.cutContact||[-.015,.077,.012]);
+        cutLocal.x+=lerp(-.055,.025,sstep(.08,.24,u)*(1-sstep(.94,1,u)));cutLocal.y+=.055*(1-sstep(.03,.15,u)+sstep(.94,1,u));
+        var cut=cutLocal.multiplyScalar(s).add(floorCenter);
+        var target=cut.lerp(pierce,sstep(.25,.34,u)*(1-sstep(.94,1,u)));
+        var direction=new V3(.74,-.60,.30).lerp(new V3(1,-.055,.025),sstep(.02,.68,lift)).normalize();
+        var groundInsertion=lerp(.66,.70,sstep(.25,.34,u)*(1-sstep(.94,1,u)));
+        var insertion=lerp(groundInsertion,.48,sstep(.08,.82,lift));
+        var shoulder=root.worldToLocal(arms.R.sh.getWorldPosition(new V3()));
+        var fingers=target.clone().addScaledVector(direction,-insertion*s).sub(shoulder).add(new V3(0,0,.08*s));
+        fingers.addScaledVector(direction,-fingers.dot(direction)).normalize();
+        var wristQ=wristBasis(fingers,direction);
+        var offset=new V3(0,-insertion,0).multiplyScalar(s).applyQuaternion(props.sword.quaternion).add(props.sword.position);
+        solveHandContact('R',target,offset,wristQ,fingers.clone().add(new V3(-.12,.18,.05)).normalize());
+        var support=new V3().fromArray(props.meat.userData.supportContact||[.065,-.099,0]).multiplyScalar(s).applyQuaternion(meatQ).add(meatCenter);
+        var leftTarget=new V3(.18*s,.46*s,.25*s).lerp(support,brace);
+        var leftQ=restingLeftWrist().slerp(supportWrist(meatQ),brace),palm=new V3(-.012*s,-.075*s,0);
+        solveHandContact('L',leftTarget,palm,leftQ,new V3(-.75,.54,.30));
+        props.meat.userData.contactState={wholeShoulder:true,lift:lift,brace:brace,bite:bite,bladePoint:[0,-insertion,0],pierceTarget:pierce.toArray(),biteTarget:biteTarget.toArray(),supportTarget:support.toArray()};
+        if(props.morsel)props.morsel.visible=false;
+        state.motionPhase=u<.08?'盾に載せた生彘肩へ':u<.25?'剣で肩肉を切る':u<.34?'肩肉の塊へ剣を刺す':u<.58?'重い肩肉を丸ごと持ち上げる':u<.66?'左手を添えて口元へ':u<.79?'肩肉の塊にかぶりつく':u<.85?'塊を支えて口から離す':'肩肉を盾へ戻す';
       } else if(pose==='drink' && window.KM_BANQUET){
-        arms.R.wr.rotation.set(0,0,0);arms.L.wr.rotation.set(0,0,0);
-        var raised=sstep(0,.28,u)*(1-sstep(.70,.98,u));
-        headPiv.rotation.x=-.13*raised;neck.rotation.x=-.06*raised;
+        var raised=sstep(.03,.28,u)*(1-sstep(.82,.99,u));
+        var tilted=sstep(.31,.56,u)*(1-sstep(.69,.81,u));
+        var pitch=-.83*tilted;
+        spine.rotation.set(-.018*tilted,0,0);neck.rotation.set(-.055*tilted,0,0);
+        headPiv.rotation.set(-.155*tilted,0,0);headPiv.position.set(0,0,0);
         root.updateMatrixWorld(true);
         var mouth=root.worldToLocal(headG.localToWorld(new V3(0,-.038,.073)));
-        var cupQ=new THREE.Quaternion().setFromAxisAngle(new V3(0,0,1),-.63*raised).multiply(new THREE.Quaternion().setFromAxisAngle(new V3(0,1,0),PI));
-        var rimTarget=mouth.clone().add(new V3(0,-.010*s,.018*s));
-        var liftedCenter=rimTarget.sub(new V3().fromArray(props.cup.userData.drinkContact).multiplyScalar(s).applyQuaternion(cupQ));
-        var center=new V3(-.14*s,1.13*s,.28*s).lerp(liftedCenter,raised);
+        var cupQ=new THREE.Quaternion().setFromAxisAngle(new V3(1,0,0),pitch).multiply(new THREE.Quaternion().setFromAxisAngle(new V3(0,1,0),PI));
+        var rimTarget=mouth.clone().add(new V3(0,-.004*s,.009*s));
+        var liftedCenter=rimTarget.clone().sub(new V3().fromArray(props.cup.userData.drinkContact).multiplyScalar(s).applyQuaternion(cupQ));
+        var center=new V3(0,1.27*s,.31*s).lerp(liftedCenter,raised);
         state.cupRotation=root.getWorldQuaternion(new THREE.Quaternion()).multiply(cupQ);
         var handle=center.clone().add(new V3().fromArray(props.cup.userData.handleGrip).multiplyScalar(s).applyQuaternion(cupQ));
-        solveArm('R',handle,gripOffset('R'),new V3(0,0,1),new V3(0,1,0));
-        var bottom=center.clone().add(new V3(0,-.079*s,0).applyQuaternion(cupQ));
-        var palm=new V3(-.012*s,-.075*s,0);
-        solveArm('L',bottom,palm,new V3(-1,0,0),new V3(0,1,0).applyQuaternion(cupQ));
-        state.motionPhase=u<.28?'両手で卮を上げる':u<.70?'立ったまま飲む':'卮を下ろす';
+        var thumb=new V3(-.32,1,0).normalize().applyQuaternion(new THREE.Quaternion().setFromAxisAngle(new V3(1,0,0),pitch));
+        var rightQ=wristBasis(new V3(.86,0,.51),thumb);
+        solveHandContact('R',handle,gripOffset('R'),rightQ,new V3(.78,.57,.24));
+        var bottom=center.clone().add(new V3().fromArray(props.cup.userData.baseSupport||[0,-.075,0]).multiplyScalar(s).applyQuaternion(cupQ));
+        solveHandContact('L',bottom,new V3(-.012*s,-.075*s,0),supportWrist(cupQ),new V3(-.76,.57,.28));
+        props.cup.userData.contactState={raised:raised,tilted:tilted,pitch:pitch,rimTarget:rimTarget.toArray(),center:center.toArray()};
+        state.motionPhase=u<.17?'両手で卮を上げる':u<.31?'口縁を唇へ寄せる':u<.69?'底を上げて卮酒を飲み干す':u<.82?'卮と頭を静かに戻す':'卮を胸元へ下ろす';
       }
       ['L','R'].forEach(alignHeldHandle);
+      if(pose==='drink'&&window.KM_BANQUET.updateLiquid){root.updateMatrixWorld(true);window.KM_BANQUET.updateLiquid(props.cup,lerp(.72,.05,sstep(.34,.70,u)),.15);}
     }
     function update(dt, t) {
-      var p = state.pose, br = Math.sin(t * 1.3 + id.length) * .012;
+      var p = state.pose, br = p==='eat'||p==='drink'?0:Math.sin(t * 1.3 + id.length) * .012;
       chest.scale.set(1, 1 + br * .35, 1 + br);
       // 視線：話し手のほうへ首を向ける
       var targetYaw = 0, targetPitch = 0;

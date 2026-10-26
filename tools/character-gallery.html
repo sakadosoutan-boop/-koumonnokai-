@@ -14,16 +14,16 @@
 <div class="buttons"><button id="hands">手元を拡大</button><button id="food">肉と盾を拡大</button><button id="play">一時停止</button></div>
 <label for="timeline">動作を見比べる<input id="timeline" type="range" min="0" max="1000" value="0" step="1" style="width:100%"></label><output id="phase" aria-live="off"></output>
 <div class="portrait" id="portrait"></div><p class="caption">ゲーム内の創作肖像</p><p><a href="../index.html">ゲームへ戻る</a></p></aside>
-<script src="../src/vendor/three.min.js"></script><script src="../src/js/koumon-figkit.js?v=20261026c"></script><script src="../src/js/koumon-head-assets.js?v=20261026c"></script><script src="../src/js/koumon-heads.js?v=20261026c"></script><script src="../src/js/koumon-hand-assets.js?v=20261026c"></script><script src="../src/js/koumon-hands.js?v=20261026c"></script><script src="../src/js/koumon-costume.js?v=20261026c"></script><script src="../src/js/koumon-banquet-props.js?v=20261026c"></script><script src="../src/js/koumon-cast3d.js?v=20261026c"></script>
+<script src="../src/vendor/three.min.js"></script><script src="../src/js/koumon-lighting.js?v=20261026f"></script><script src="../src/js/koumon-figkit.js?v=20261026f"></script><script src="../src/js/koumon-head-assets.js?v=20261026f"></script><script src="../src/js/koumon-heads.js?v=20261026f"></script><script src="../src/js/koumon-hand-assets.js?v=20261026f"></script><script src="../src/js/koumon-hands.js?v=20261026f"></script><script src="../src/js/koumon-costume.js?v=20261026f"></script><script src="../src/js/koumon-banquet-props.js?v=20261026f"></script><script src="../src/js/koumon-cast3d.js?v=20261026f"></script>
 <script>
 (function(){'use strict';
 const $=id=>document.getElementById(id),canvas=$('view'),scene=new THREE.Scene();scene.background=new THREE.Color(0x343b42);
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.92;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const camera=new THREE.PerspectiveCamera(30,1,.02,60),target=new THREE.Vector3(0,.95,0),cache=new Map();let figure,yaw=.55,pitch=.12,distance=3.7,close=false,turn=false;
 let mode='body',playing=true,actionTime=0;
-scene.add(new THREE.HemisphereLight(0xd5dceb,0x30261e,.48));
-function light(color,power,x,y,z,shadow){const l=new THREE.DirectionalLight(color,power);l.position.set(x,y,z);l.castShadow=!!shadow;if(shadow){l.shadow.mapSize.set(2048,2048);Object.assign(l.shadow.camera,{left:-2,right:2,top:3,bottom:-1,near:.1,far:12});l.shadow.bias=-.0003;l.shadow.normalBias=.015;}scene.add(l);}
-light(0xffe1c9,1.15,-2,4,4,true);light(0xd4e3ff,.30,3,2,2);light(0xf4dec4,.7,0,3,-3);
+KM_LIGHTING.install(scene,renderer,'neutral');scene.add(new THREE.HemisphereLight(0xd5dceb,0x30261e,.25));
+function light(color,power,x,y,z,shadow){const l=new THREE.DirectionalLight(color,power);l.position.set(x,y,z);l.castShadow=!!shadow;if(shadow){l.shadow.mapSize.set(2048,2048);Object.assign(l.shadow.camera,{left:-2,right:2,top:3,bottom:-1,near:.1,far:12});l.shadow.bias=-.00015;l.shadow.normalBias=.004;}scene.add(l);}
+light(0xffe1c9,1.15,-2,4,4,true);light(0xd4e3ff,.18,3,2,2);light(0xf4dec4,.7,0,3,-3);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshStandardMaterial({color:0x10151b,roughness:.95}));ground.rotation.x=-Math.PI/2;ground.position.y=-.012;ground.receiveShadow=true;scene.add(ground);
 const ids=['hai','u','ryo','zo','haku','kai','sou','chin'];
 function load(){
