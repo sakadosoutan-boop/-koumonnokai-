@@ -65,7 +65,7 @@
   function material(kind, asset) {
     var skin = kind === 'skin';
     return new T.MeshStandardMaterial({color: 0xffffff, vertexColors: true,
-      roughness: skin ? (asset.age > .5 ? .63 : .53) : kind === 'hair' ? .48 : .72,
+      roughness: skin ? (asset.age > .5 ? .63 : .53) : kind === 'hair' ? .78 : .82,
       metalness: 0, bumpMap: detail(!skin), bumpScale: skin ? .00016 : .00030});
   }
   function irisTexture(doublePupil) {
@@ -108,8 +108,24 @@
   }
   var ALIAS = {ko:'hai',ou:'hai',tei:'zo',rba:'u',msg:'sou',ei:'sou'};
   function fittedHeadwear(id, asset) {
+    if (['hai','zo','haku','chin'].indexOf(id) >= 0) {
+      var cap=new T.Group();cap.name=id+'-fitted-folded-cloth-crown';cap.userData.part='headwear';
+      var h=id==='zo'?.058:.070,w=id==='haku'?.030:.027;
+      var profile=[[-.022,0],[-.018,h*.83],[-.010,h],[.011,h*.96],[.025,h*.72],[.024,0]];
+      var pos=[],ix=[];[-w,w].forEach(function(x){profile.forEach(function(p){pos.push(x,p[1],p[0]);});});
+      var n=profile.length;for(var j=0;j<n;j++){var k=(j+1)%n;ix.push(j,k,n+j,k,n+k,n+j);}
+      for(var j=1;j<n-1;j++){ix.push(0,j+1,j,n,n+j,n+j+1);}
+      var geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(pos,3));geometry.setIndex(ix);geometry.computeVertexNormals();
+      var cloth=new T.MeshStandardMaterial({color:new T.Color(0x211b19).convertSRGBToLinear(),roughness:.86});
+      var crown=new T.Mesh(geometry,cloth);cap.add(crown);cap.position.set(0,.132,-.027);
+      var seat=new T.Mesh(new T.CylinderGeometry(.025,.026,.012,32),cloth);seat.scale.z=.84;seat.position.y=.003;cap.add(seat);
+      var brass=new T.MeshStandardMaterial({color:new T.Color(0x9b7b48).convertSRGBToLinear(),roughness:.56,metalness:.55});
+      [-1,1].forEach(function(side){var points=profile.slice(0,5).map(function(p){return new T.Vector3(side*w*.78,p[1]+.0005,p[0]+.001);});var seam=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points),24,.00085,5,false),brass);cap.add(seam);});
+      var pin=new T.Mesh(new T.CylinderGeometry(.0015,.0015,.116,8),brass);pin.rotation.z=PI/2;pin.position.set(0,.018,-.004);cap.add(pin);
+      cap.traverse(function(o){if(o.isMesh){o.userData.part='headwear';o.castShadow=o.receiveShadow=true;}});return cap;
+    }
     if (['ryo','u','kai','sou'].indexOf(id) < 0) return null;
-    var knot = {ryo:.025,u:.037,kai:.034,sou:.033}[id], crown = id === 'u';
+    var knot = {ryo:.025,u:.037,kai:.038,sou:.033}[id], crown = id === 'u';
     var group = new T.Group(); group.name = id + '-fitted-headwear'; group.userData.part = 'headwear';
     var color = crown ? 0x8a6c36 : id === 'sou' ? 0x71432d : id === 'kai' ? 0x243a3c : 0x1b1a18;
     var mat = new T.MeshStandardMaterial({color:new T.Color(color).convertSRGBToLinear(),roughness:crown?.4:.86,metalness:crown?.62:0});

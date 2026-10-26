@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-26",
+  "license": "MIT (original project meshes)",
+  "generator": "src/js/koumon-banquet-props.js; src/js/koumon-heads.js",
+  "contents": [
+    "double-edged jian and lacquer scabbard",
+    "single-ring-ear lacquer zhi",
+    "raw pork shoulder and pierced morsel",
+    "eight fitted crowns and hair wraps"
+  ],
+  "historicalReference": "https://img.dpm.org.cn/Uploads/File/2020/12/29/u5feaced521ab7.pdf",
+  "note": "Creative reconstruction after Western Han examples. Motion is authored separately in koumon-cast3d.js."
+}

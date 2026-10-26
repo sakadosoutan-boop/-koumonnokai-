@@ -14,7 +14,7 @@ const ids=(process.argv[3]||'hai,u').split(','),quality=process.argv[4]||'low';
 fs.mkdirSync(out,{recursive:true});
 const context={console,performance,document:{createElement(tag){if(tag!=='canvas')throw Error(tag);return createCanvas(1,1);}},setTimeout,clearTimeout};
 context.window=context;vm.createContext(context);
-const modules=['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-cast3d.js'];
+const modules=['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-banquet-props.js','src/js/koumon-cast3d.js'];
 const optional=new Set(modules.slice(2,-1));
 for(const file of modules){
   let source;
@@ -165,7 +165,9 @@ for(const id of ids){
     const entry={id,quality,vertices:model.vertices,triangles:model.triangles,bounds:box,seconds:Math.round((performance.now()-started)/100)/10};
     report.push(entry);console.log(JSON.stringify(entry));continue;
   }
-  const started=performance.now(),figure=context.KM_CAST3D.makeFigure(id);figure.userData.setPose(pose);figure.userData.update(0,0);figure.updateMatrixWorld(true);
+  const started=performance.now(),figure=context.KM_CAST3D.makeFigure(id);figure.userData.setPose(pose);
+  const phaseArg=process.argv.find(a=>a.startsWith('--phase='));if(phaseArg)figure.userData.state.actionProgress=Number(phaseArg.slice(8));
+  figure.userData.update(0,0);figure.updateMatrixWorld(true);
   const model=collect(figure),box=new T.Box3().setFromObject(figure),center=box.getCenter(new V());
   const span=Math.max(box.max.y-box.min.y,(box.max.x-box.min.x)/(360/690),(box.max.z-box.min.z)/(360/690));
   const head=figure.userData.rig.headPiv.getWorldPosition(new V());head.y+=.08;

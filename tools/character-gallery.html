@@ -7,33 +7,42 @@
 <main><canvas id="view"></canvas><div id="status">人物を準備しています…</div><div class="badge">ドラッグで回転・ホイールで拡大</div></main>
 <aside><h1>楚漢の章　人物モデル</h1><p>顔、衣装、姿勢を自由な角度から確認できます。</p>
 <label>人物<select id="character"><option value="hai">劉邦</option><option value="u">項羽（項王）</option><option value="ryo" selected>張良</option><option value="zo">范増</option><option value="haku">項伯</option><option value="kai">樊噲</option><option value="sou">項荘</option><option value="chin">陳平</option></select></label>
-<label>姿勢<select id="pose"><option value="stand">立つ</option><option value="sit">座る</option><option value="kneel">跪く</option><option value="drink">酒を飲む</option><option value="dance">剣舞</option><option value="run">走る</option><option value="glare">睨む</option></select></label>
+<label for="pose">姿勢<select id="pose"><option value="stand">立つ</option><option value="sit">座る</option><option value="kneel">跪く</option><option value="drink">卮酒を飲む</option><option value="dance">剣舞</option><option value="eat">盾の上で肉を切って食べる</option><option value="run">走る</option><option value="glare">睨む</option></select></label>
 <label>表示<select id="quality"><option value="high">精細</option><option value="low">軽量</option></select></label>
 <div class="buttons"><button data-view="front">正面</button><button data-view="side">横顔</button><button data-view="quarter">斜め</button><button data-view="back">背面</button><button data-view="top">上方</button></div>
 <div class="buttons"><button id="focus">顔を拡大</button><button id="rotate">自動回転</button></div>
+<div class="buttons"><button id="hands">手元を拡大</button><button id="food">肉と盾を拡大</button><button id="play">一時停止</button></div>
+<label for="timeline">動作を見比べる<input id="timeline" type="range" min="0" max="1000" value="0" step="1" style="width:100%"></label><output id="phase" aria-live="off"></output>
 <div class="portrait" id="portrait"></div><p class="caption">ゲーム内の創作肖像</p><p><a href="../index.html">ゲームへ戻る</a></p></aside>
-<script src="../src/vendor/three.min.js"></script><script src="../src/js/koumon-figkit.js"></script><script src="../src/js/koumon-head-assets.js"></script><script src="../src/js/koumon-heads.js"></script><script src="../src/js/koumon-hand-assets.js"></script><script src="../src/js/koumon-hands.js"></script><script src="../src/js/koumon-costume.js"></script><script src="../src/js/koumon-cast3d.js"></script>
+<script src="../src/vendor/three.min.js"></script><script src="../src/js/koumon-figkit.js?v=20261026c"></script><script src="../src/js/koumon-head-assets.js?v=20261026c"></script><script src="../src/js/koumon-heads.js?v=20261026c"></script><script src="../src/js/koumon-hand-assets.js?v=20261026c"></script><script src="../src/js/koumon-hands.js?v=20261026c"></script><script src="../src/js/koumon-costume.js?v=20261026c"></script><script src="../src/js/koumon-banquet-props.js?v=20261026c"></script><script src="../src/js/koumon-cast3d.js?v=20261026c"></script>
 <script>
 (function(){'use strict';
 const $=id=>document.getElementById(id),canvas=$('view'),scene=new THREE.Scene();scene.background=new THREE.Color(0x343b42);
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=.92;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const camera=new THREE.PerspectiveCamera(30,1,.02,60),target=new THREE.Vector3(0,.95,0),cache=new Map();let figure,yaw=.55,pitch=.12,distance=3.7,close=false,turn=false;
-scene.add(new THREE.HemisphereLight(0xe1e9f4,0x504237,.65));
+let mode='body',playing=true,actionTime=0;
+scene.add(new THREE.HemisphereLight(0xd5dceb,0x30261e,.48));
 function light(color,power,x,y,z,shadow){const l=new THREE.DirectionalLight(color,power);l.position.set(x,y,z);l.castShadow=!!shadow;if(shadow){l.shadow.mapSize.set(2048,2048);Object.assign(l.shadow.camera,{left:-2,right:2,top:3,bottom:-1,near:.1,far:12});l.shadow.bias=-.0003;l.shadow.normalBias=.015;}scene.add(l);}
-light(0xffe1bf,1.45,-2,4,4,true);light(0xd4e3ff,.55,3,2,2);light(0xf4dec4,.8,0,3,-3);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshStandardMaterial({color:0x353a40,roughness:.95}));ground.rotation.x=-Math.PI/2;ground.position.y=-.012;ground.receiveShadow=true;scene.add(ground);
+light(0xffe1c9,1.15,-2,4,4,true);light(0xd4e3ff,.30,3,2,2);light(0xf4dec4,.7,0,3,-3);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshStandardMaterial({color:0x10151b,roughness:.95}));ground.rotation.x=-Math.PI/2;ground.position.y=-.012;ground.receiveShadow=true;scene.add(ground);
 const ids=['hai','u','ryo','zo','haku','kai','sou','chin'];
 function load(){
+  actionTime=0;
   $('status').textContent='人物を準備しています…';
-  requestAnimationFrame(()=>{try{if(figure)scene.remove(figure);const id=$('character').value,q=$('quality').value,key=id+q;KM_CAST3D.setQuality(q);if(!cache.has(key))cache.set(key,KM_CAST3D.makeFigure(id));figure=cache.get(key);scene.add(figure);figure.userData.setPose($('pose').value);figure.userData.update(0,0);figure.updateMatrixWorld(true);
+  requestAnimationFrame(()=>{try{if(figure)scene.remove(figure);const id=$('character').value,q=$('quality').value,key=id+q;const swordOption=$('pose').querySelector('[value="dance"]'),eatOption=$('pose').querySelector('[value="eat"]');swordOption.disabled=!KM_CAST3D.CAST[id].sword;eatOption.disabled=id!=='kai';if($('pose').selectedOptions[0].disabled)$('pose').value='stand';KM_CAST3D.setQuality(q);if(!cache.has(key))cache.set(key,KM_CAST3D.makeFigure(id));figure=cache.get(key);scene.add(figure);figure.userData.setPose($('pose').value);figure.userData.update(0,0);figure.updateMatrixWorld(true);
+    if(!playing)figure.userData.state.actionProgress=Number($('timeline').value)/1000;
     const i=ids.indexOf(id);$('portrait').style.backgroundPosition=(i%4/3*100)+'% '+(Math.floor(i/4)*100)+'%';renderer.shadowMap.enabled=q!=='low';$('status').textContent='';
   }catch(e){$('status').textContent='表示できません: '+e.message;console.error(e);}});
 }
-['character','quality'].forEach(id=>$(id).addEventListener('change',load));$('pose').addEventListener('change',()=>figure&&figure.userData.setPose($('pose').value));
-$('focus').onclick=()=>{close=!close;distance=close?.74:3.7;$('focus').textContent=close?'全身を表示':'顔を拡大';};$('rotate').onclick=()=>{turn=!turn;$('rotate').textContent=turn?'回転を停止':'自動回転';};
+['character','quality'].forEach(id=>$(id).addEventListener('change',load));$('pose').addEventListener('change',()=>{actionTime=0;if(figure)figure.userData.setPose($('pose').value);});
+$('focus').onclick=()=>{mode=mode==='face'?'body':'face';distance=mode==='face'?1.18:3.7;$('focus').textContent=mode==='face'?'全身を表示':'顔を拡大';};$('rotate').onclick=()=>{turn=!turn;$('rotate').textContent=turn?'回転を停止':'自動回転';};
+$('hands').onclick=()=>{mode='hand';distance=.95;};$('food').onclick=()=>{mode='food';distance=1.35;pitch=.55;};
+$('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'一時停止':'再生';if(figure){if(playing){const cycle=KM_BANQUET.cycles[$('pose').value]||8;actionTime=Number($('timeline').value)/1000*cycle;figure.userData.state.actionStart=0;delete figure.userData.state.actionProgress;}else figure.userData.state.actionProgress=Number($('timeline').value)/1000;}};
+$('timeline').oninput=()=>{playing=false;$('play').textContent='再生';if(figure)figure.userData.state.actionProgress=Number($('timeline').value)/1000;};
+$('timeline').onchange=$('timeline').oninput;
 document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{const view=button.dataset.view;yaw=({front:0,side:Math.PI/2,quarter:.6,back:Math.PI,top:.6})[view];pitch=view==='top'?.7:.05;});
 let drag=null;canvas.onpointerdown=e=>{drag=[e.clientX,e.clientY,yaw,pitch];canvas.setPointerCapture(e.pointerId);};canvas.onpointermove=e=>{if(drag){yaw=drag[2]-(e.clientX-drag[0])*.008;pitch=Math.max(-.15,Math.min(1.05,drag[3]+(e.clientY-drag[1])*.006));}};canvas.onpointerup=()=>drag=null;canvas.onpointercancel=()=>drag=null;canvas.onwheel=e=>{e.preventDefault();distance=Math.max(.28,Math.min(7,distance*Math.exp(e.deltaY*.001)));};
-let previous=performance.now();function draw(t){requestAnimationFrame(draw);const dt=Math.min(.05,(t-previous)/1000);previous=t;if(figure){figure.userData.update(dt,t/1000);figure.updateMatrixWorld(true);if(close){figure.userData.rig.headPiv.getWorldPosition(target);target.y+=.07;}else target.set(0,$('pose').value==='sit'?.6:.95,0);}
+let previous=performance.now();function draw(t){requestAnimationFrame(draw);const dt=Math.min(.05,(t-previous)/1000);previous=t;if(playing)actionTime+=dt;if(figure){figure.userData.update(playing?dt:0,actionTime);figure.updateMatrixWorld(true);const rig=figure.userData.rig;if(mode==='face'){rig.headPiv.getWorldPosition(target);target.y+=.08;}else if(mode==='hand'){rig.arms.R.wr.getWorldPosition(target);target.z+=.025;}else if(mode==='food'){if(rig.props.meat.parent)rig.props.meat.getWorldPosition(target);else target.set(0,.22,.60);}else target.set(0,['sit','eat'].includes($('pose').value)?.65:.95,0);if(playing)$('timeline').value=Math.round((figure.userData.state.motionProgress||0)*1000);$('phase').textContent=figure.userData.state.motionPhase||'';}
   if(turn)yaw+=dt*.25;const rect=canvas.parentElement.getBoundingClientRect();if(canvas.width!==Math.floor(rect.width*renderer.getPixelRatio())||canvas.height!==Math.floor(rect.height*renderer.getPixelRatio())){renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(rect.width,rect.height,false);camera.aspect=rect.width/rect.height;camera.updateProjectionMatrix();}
   camera.position.set(target.x+Math.sin(yaw)*Math.cos(pitch)*distance,target.y+Math.sin(pitch)*distance,target.z+Math.cos(yaw)*Math.cos(pitch)*distance);camera.lookAt(target);renderer.render(scene,camera);
 }load();requestAnimationFrame(draw);
