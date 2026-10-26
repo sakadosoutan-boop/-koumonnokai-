@@ -64,3 +64,4 @@
 ![項羽・実WebGL](model-preview/banquet-u.png)
 ![樊噲・実WebGL](model-preview/banquet-kai.png)
 ![翼蔽・実WebGL](model-preview/banquet-block.png)
+![天幕内から見た翼蔽の位置関係・実WebGL](model-preview/banquet-overhead.png)
