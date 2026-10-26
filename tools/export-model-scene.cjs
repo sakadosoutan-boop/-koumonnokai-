@@ -9,14 +9,16 @@ const root=path.resolve(__dirname,'..'),out=path.resolve(process.argv[2]||'model
 const id=process.argv[3]||'ryo',pose=process.argv[4]||'idle',quality=process.argv[5]||'high';
 fs.mkdirSync(out,{recursive:true});
 const context={console,performance,document:{createElement(){return createCanvas(1,1);}},setTimeout,clearTimeout};context.window=context;vm.createContext(context);
-for(const file of ['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-cast3d.js']){
+for(const file of ['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-banquet-props.js','src/js/koumon-cast3d.js']){
   let source;
   if(process.env.MODEL_REF){try{source=execFileSync('git',['show',process.env.MODEL_REF+':'+file],{cwd:root,encoding:'utf8',maxBuffer:50000000,stdio:['ignore','pipe','ignore']});}catch(error){if(file.endsWith('three.min.js')||file.endsWith('koumon-figkit.js')||file.endsWith('koumon-cast3d.js'))throw error;continue;}}
   else{const target=path.join(root,file);if(!fs.existsSync(target))continue;source=fs.readFileSync(target,'utf8');}
   vm.runInContext(source,context,{filename:file});
 }
 const T=context.THREE;context.KM_CAST3D.setQuality(quality);
-const figure=context.KM_CAST3D.makeFigure(id);figure.userData.setPose(pose);figure.userData.update(0,0);figure.updateMatrixWorld(true);
+const figure=context.KM_CAST3D.makeFigure(id);figure.userData.setPose(pose);
+const phaseArg=process.argv.find(a=>a.startsWith('--phase='));if(phaseArg)figure.userData.state.actionProgress=Number(phaseArg.slice(8));
+figure.userData.update(0,0);figure.updateMatrixWorld(true);
 const positions=[],colors=[],uv=[],faces=[],materialIndices=[],materials=[],registry=new Map();
 function materialIndex(m){
   if(registry.has(m.uuid))return registry.get(m.uuid);

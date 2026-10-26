@@ -51,7 +51,16 @@
   var BODY = [[-.34,.159,.112],[-.27,.155,.108],[-.16,.164,.117],[-.04,.178,.127],[.065,.187,.128],[.13,.193,.116],[.17,.184,.099],[.195,.150,.078],[.214,.097,.061],[.235,.052,.048]];
   function bodySize(y, b) {
     var v = BODY[0];
-    for (var i = 1; i < BODY.length; i++) { var q = BODY[i]; if (y <= q[0]) { var u = ease(v[0], q[0], y); return [mix(v[1],q[1],u) * (1 + (b - 1) * .72), mix(v[2],q[2],u) * (1 + (b - 1) * .45)]; } v = q; }
+    // Continuous tangents through the tailoring stations avoid a horizontal
+    // highlight/ridge at every shoulder and chest sample of a smoothstep loft.
+    for (var i = 1; i < BODY.length; i++) { var q = BODY[i]; if (y <= q[0]) {
+      var u=sat((y-v[0])/(q[0]-v[0])),previous=BODY[Math.max(0,i-2)],next=BODY[Math.min(BODY.length-1,i+1)],span=q[0]-v[0];
+      var shape=[];for(var k=1;k<=2;k++){
+        var m0=(q[k]-previous[k])/(q[0]-previous[0])*span,m1=(next[k]-v[k])/(next[0]-v[0])*span;
+        shape.push((2*u*u*u-3*u*u+1)*v[k]+(u*u*u-2*u*u+u)*m0+(-2*u*u*u+3*u*u)*q[k]+(u*u*u-u*u)*m1);
+      }
+      return [shape[0]*(1+(b-1)*.72),shape[1]*(1+(b-1)*.45)];
+    } v = q; }
     return [v[1],v[2]];
   }
   function chestFront(x, y, b) {
@@ -130,16 +139,16 @@
     var under=pts(-1,true),over=pts(1,false);
     // The facing continues up behind the neck-side lapels. A lower top edge
     // exposed the hollow interior between the shirt and the anatomical neck.
-    var facing=sheet(16,12,function(u,v){var y=mix(.112,.222,u)-.014*ease(.65,1,u)*Math.pow(v*2-1,2),half=mix(.007,.046,u),x=(v*2-1)*half,z=chestFront(x,y,b)+.002-.022*ease(.55,1,u);return [x*s,y*s,z*s];},.002*s,false,true);
-    group.add(object(facing,material(c.robe,.92,0,{side:T.DoubleSide}),'underrobe-throat-facing'));
-    group.add(ribbon(under,function(u){return mix(.043,.053,u);},.007,broad,'under-collar',function(u,v){return .009*Math.sin(v*PI)*(1-.5*u);},s));
-    group.add(ribbon(over,function(u){return mix(.048,armored?.053:.061,u);},.008,broad,'rolled-over-lapel',function(u,v){return (.012-.006*u)*Math.sin(v*PI)+.003*bell(v-.13,.15);},s));
+    var facing=sheet(16,12,function(u,v){var y=mix(.095,.190,u)-.009*ease(.65,1,u)*Math.pow(v*2-1,2),half=mix(.009,.029,u),x=(v*2-1)*half,z=mix(chestFront(x,y,b)-.008,.026,ease(.35,1,u));return [x*s,y*s,z*s];},.0016*s,false,true);
+    group.add(object(facing,lining,'underrobe-throat-facing'));
+    group.add(ribbon(under,function(u){return mix(.033,.046,u);},.004,broad,'under-collar',function(u,v){return .003*Math.sin(v*PI)*(1-.5*u);},s));
+    group.add(ribbon(over,function(u){return mix(.035,armored?.048:.052,u);},.004,broad,'rolled-over-lapel',function(u,v){return .004*Math.sin(v*PI);},s));
     // The pale underrobe is a separate sewn layer, visible only inside the V.
     [under.slice(0,4),over.slice(0,4)].forEach(function(path,k){
       path=path.map(function(p,i,all){var q0=all[Math.max(0,i-1)],q1=all[Math.min(all.length-1,i+1)],d=new V(q1[0]-q0[0],q1[1]-q0[1],0).normalize(),q=new V(-d.y,d.x,0).multiplyScalar(k?-.020:.018);return [p[0]+q.x,p[1]+q.y,p[2]-.003];});
       // A broad flat facing sits under the outer lapel. Recomputing its Z from
       // the chest would pull the neck end forward into a floating white loop.
-      group.add(ribbon(path,.026,.002,lining,'overlapped-linen-inner-collar',function(u,v){return .0007*Math.sin(v*PI);},s));
+      group.add(ribbon(path,.014,.002,lining,'overlapped-linen-inner-collar',function(u,v){return .0007*Math.sin(v*PI);},s));
     });
     // Back collar has a stand, with a folded top. It bridges both lapels at the nape.
     var back=sheet(32,6,function(u,v){var a=mix(PI*.47,PI*1.53,u),r=.054+(v-.5)*.010;return [Math.sin(a)*r*s,(.217+(v-.5)*.031)*s,Math.cos(a)*r*.86*s];},.004*s,false,true);
@@ -199,10 +208,13 @@
     for(var layer=0;layer<2;layer++)for(var i=0;i<=nu;i++)for(var j=0;j<=nv;j++){var u=i/nu,a=j/nv*PI*2;baseU.push(u);baseA.push(a);pos.push(0,0,0);uv.push(j/nv*2,u*2);}
     for(i=0;i<nu;i++)for(j=0;j<nv;j++){var a0=i*(nv+1)+j,b0=a0+nv+1;idx.push(a0,b0,a0+1,a0+1,b0,b0+1,a0+N,a0+1+N,b0+N,a0+1+N,b0+1+N,b0+N);}
     for(j=0;j<nv;j++){var e=nu*(nv+1)+j;idx.push(j,j+N,j+1,j+1,j+N,j+1+N,e,e+1,e+N,e+1,e+1+N,e+N);}
+    // The padded shoulder root continues beneath the armhole when raised.
+    // Closing this root avoids an exposed hollow cylinder at the armpit.
+    if(o.upper)for(j=1;j<nv-1;j++)idx.push(0,j,j+1);
     var g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);
     var m=object(g,mat,o.upper?'sewn-shoulder-and-upper-sleeve':'gravity-draped-bag-sleeve'),def=(o.def||new V(-side*.5,0,-.86)).clone().normalize();
     var base=new T.Color(o.color),trim=new T.Color(o.trim==null?o.color:o.trim);
-    paint(g,function(k,x,y,z,c){c.copy(baseU[k]>.90?trim:base).multiplyScalar(k>=N?.57:1);});
+    paint(g,function(k,x,y,z,c){c.copy(baseU[k]>.90?trim:base).multiplyScalar(k>=N?.75:1);});
     m.userData.bag=function(down){
       var along=-down.y,L=Math.sqrt(down.x*down.x+down.z*down.z),t=ease(.05,.40,L),bx=mix(def.x,L>1e-5?down.x/L:def.x,t),bz=mix(def.z,L>1e-5?down.z/L:def.z,t),bl=Math.sqrt(bx*bx+bz*bz)||1;bx/=bl;bz/=bl;
       var raised=o.slide?Math.max(0,-along):0,hang=.70+.30*ease(.1,.65,L),p=g.attributes.position;

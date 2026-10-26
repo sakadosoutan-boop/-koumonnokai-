@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-26",
+  "runtimeCanonicalLF": {
+    "heads": "353816f0aba73219379e55c64e1f84c98045c4edc223166ea7f6b85027265c8a",
+    "factory": "0e5035f8ad6834ddeae9eb89fefc596dcc63223379adac95c8235fc234fee5e1",
+    "cast": "25fd5f538e7eb649effd78d00f94defc82620d060136d3ae0b5b65a72874a623",
+    "props": "b70b8f2685f1edd6e7bb14fa9465bf3934d949446de26fb579a92f7e9135a4f7",
+    "costume": "281fe8d07a852b707dd035f88348e883fd954606905ab6f3b4ac0cae20501295"
+  },
+  "nativeSources": {
+    "heads.blend": "a4c0b61d469c8228e74de1bc8cb7ee773b60a06875d39663e42cc20d44efddb4",
+    "hands.blend": "4c4f8c73ed94e969ad81aaee4a0849f4bd90328b7cf2386205cc9df611056c4c",
+    "costumes.blend": "a44db9c50d77c1140957956943a7ea024ce9ee818490e43fb7f7cab24fe38621",
+    "banquet-props.blend": "a678f177e0e6c18c351cdacf38f3247e49c6031971ea0cae485d5b18e575bb51"
+  },
+  "tests": {
+    "npmPassed": 39,
+    "poseLodGeometry": 360,
+    "motionCases": 192,
+    "maxGripGap": 2.3055512673781017e-16,
+    "maxContactError": 5.393176891694564e-16,
+    "maxForearmTwistRad": 1.47774669190011,
+    "maxElbowFlexRad": 2.598732907644785
+  },
+  "browser": {
+    "engine": "Actual WebGL in in-app browser",
+    "faceViews": 20,
+    "swordDanceOverheadPhases": 8,
+    "contacts": [
+      "sword grip",
+      "raw pork on shield",
+      "bite",
+      "zhi and supporting palm"
+    ],
+    "bundledHtml": "PC title, chapter selection and chapter start; console error log empty",
+    "evidence": "docs/model-preview/banquet-*.png"
+  },
+  "limits": [
+    "Creative portrait and costume adaptation",
+    "Spear-to-mouth detail supplements the textual cutting/eating sequence",
+    "No cloth physics simulation or device-specific FPS measurement"
+  ]
+}

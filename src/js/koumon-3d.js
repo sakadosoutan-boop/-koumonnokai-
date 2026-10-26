@@ -506,7 +506,7 @@
     },
     feast: {
       pos: { u: [-2.3, -.2, PI / 2, 'sit'], haku: [-2.3, -1.25, PI / 2, 'sit'], zo: [0, -2.4, 0, 'sit'], hai: [0, 2.3, PI, 'sit'], ryo: [2.3, .2, -PI / 2, 'kneel'],
-             sou: [0, .5, PI, 'dance'], kai: [1.7, 1.1, -PI / 2, 'glare'] },
+             sou: [0, .35, 0, 'dance'], kai: [1.7, 1.1, -PI / 2, 'glare'] },
       wide: [[1.3, 2.7, 6.4], [-.2, .8, -.6]], light: 'day', indoor: true,
       build: function (sc, S) {
         var day = S.lightId === 'day';
@@ -824,6 +824,7 @@
       f.rotation.set(0, p[2] || 0, 0);
       f.userData.setPose(poses[id] || (p[3] === 'ride' ? 'sit' : p[3]) || 'stand');
       f.userData.home = { x: p[0], z: p[1], yaw: p[2] || 0 };
+      placeDancer(f, id);
       sc.add(f);
       S.cast[id] = f;
       if (p[3] === 'ride') {
@@ -877,7 +878,18 @@
   function setPose(id, pose) {
     var f = S.cast[id]; if (!f) return;
     f.userData.setPose(pose);
+    if (id === 'haku' && S.stageId === 'feast') placeDancer(f,id);
     if (id === 'ei' && S.cast.ei2) S.cast.ei2.userData.setPose(pose);
+  }
+
+  function placeDancer(figure, id) {
+    var home=figure.userData.home;if(!home)return;
+    if(id==='haku' && S.stageId==='feast' && figure.userData.state.pose==='dance') {
+      // 項伯が沛公と項荘の間に立つ。「翼蔽」を席の位置でも読めるように。
+      figure.position.set(-.20,0,1.30);figure.rotation.y=PI;
+    } else {
+      figure.position.x=home.x;figure.position.z=home.z;figure.rotation.y=home.yaw;
+    }
   }
 
   /* ---------- 粒子（雪・火の粉・塵・閃光の火花・玉の破片） ---------- */
@@ -1100,12 +1112,14 @@
     var t = S.t;
     S.anim.forEach(function (o) { if (o.userData.update) o.userData.update(dt, t); });
     Object.keys(S.cast).forEach(function (k) { var f = S.cast[k]; f.userData.update(dt, t + k.length); });
-    // 剣舞の項荘は沛公の席へ寄っていく
-    var sou = S.cast.sou;
-    if (sou && sou.userData.state.pose === 'dance' && sou.userData.home && !S.reduced) {
-      sou.position.x = sou.userData.home.x + Math.sin(t * .8) * 1.1;
-      sou.position.z = sou.userData.home.z + (Math.sin(t * .37) * .5 + .4);
-    }
+    // 足の接地を保つ。踏み替えと重心移動は人物の剣舞リグへ任せ、
+    // 舞台が別周期の平行移動を重ねて滑走・隣席への貫通を起こさない。
+    Object.keys(S.cast).forEach(function (id) {
+      var dancer = S.cast[id];
+      if (dancer.userData.state.pose === 'dance' && dancer.userData.home) {
+        placeDancer(dancer,id);
+      }
+    });
     if (S.horse && S.horse.parent) S.horse.userData.update(dt, t, !!st.travel);
     updateParticles(dt);
     // 閃光・赤い脈

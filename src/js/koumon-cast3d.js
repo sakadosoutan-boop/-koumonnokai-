@@ -546,6 +546,7 @@
 
   /* ============================ 持ち物 ============================ */
   function swordMesh(drawn) {
+    if (window.KM_BANQUET) return window.KM_BANQUET.sword(drawn);
     var g = new THREE.Group();
     var bladeM = std(0xd8dce4, .18, .95), jade = std(0xa8d8b8, .25, .1), sheathM = std(0x120a08, .35, .1);
     var bg = new THREE.BoxGeometry(.034, .82, .006, 1, 1, 1);
@@ -565,6 +566,7 @@
     return g;
   }
   function cupMesh() {
+    if (window.KM_BANQUET) return window.KM_BANQUET.zhi();
     var g = new THREE.Group();
     var outer = mesh(new THREE.CylinderGeometry(.065, .058, .15, 20, 1, true), std(0x120a08, .3, .05, { side: THREE.FrontSide })); g.add(outer);
     var inner = mesh(new THREE.CylinderGeometry(.062, .055, .148, 20, 1, true), std(0x9a2014, .3, 0, { side: THREE.BackSide })); g.add(inner);
@@ -595,6 +597,7 @@
     return g;
   }
   function meatMesh() {
+    if (window.KM_BANQUET) return window.KM_BANQUET.porkShoulder();
     var g = new THREE.SphereGeometry(.09, 14, 10); var p = g.attributes.position, R = rng(3);
     for (var i = 0; i < p.count; i++) { var k = .85 + R() * .3; p.setXYZ(i, p.getX(i) * k * 1.5, p.getY(i) * k * .6, p.getZ(i) * k); }
     g.computeVertexNormals();
@@ -749,6 +752,7 @@
     if (!c) return null;
     var costume = window.KM_COSTUME;
     if (costume && costume.setQuality) costume.setQuality(Q);
+    if (window.KM_BANQUET) window.KM_BANQUET.setQuality(Q);
     if (costume) c = costume.resolveStyle(id, c);
     var s = c.h / 1.72, b = c.build || 1, armored = !!c.armor, lady = !!c.lady;
     var root = new THREE.Group(); root.name = 'fig-' + id;
@@ -839,7 +843,7 @@
         var ball = mesh(new THREE.SphereGeometry(.058 * s * b, 18, 12), cloth); ball.scale.set(1, .92, 1);
         paintGeo(ball.geometry, function (x, y, z, i, t) { t.set(armored ? laceColor : robeColor); }); ball.position.y = -.01 * s; sh.add(ball);
       }
-      var Hel = armored ? 0 : (lady ? .08 : .06) * s, Hmx = armored ? 0 : (lady ? .32 : .25) * s;
+      var Hel = armored ? 0 : (lady ? .06 : .04) * s, Hmx = armored ? 0 : (lady ? .25 : .17) * s;
       var upper = bagTube({ upper: true, fitted: armored, side: sd, scale: s, len: .31 * s, y0: .005 * s, r: function (u) { return lerp((costume ? (armored ? .062 : .069) : .06) * b, costume ? (armored ? .049 : .062) : .066, u) * s; }, H: function (u) { return Hel * sstep(.2, 1, u); }, def: def, color: armC }, cloth);
       sh.add(upper);
       if (armored) { var sp3 = costume ? costume.armor(c, s, b, 'shoulder', sd) : armorPlates(c.armor, s, b, shoulderPlateRows(s, b), c.gold, [.03, .042]); if (!costume && sd < 0) { sp3.scale.x = -1; sp3.material = sp3.material.clone(); sp3.material.side = THREE.DoubleSide; } sh.add(sp3); }
@@ -847,8 +851,8 @@
       upper.userData.elbowJoint = el;
       var fore = armored
         ? bagTube({ fitted: true, side: sd, scale: s, len: .25 * s, y0: .01 * s, rings: 8, segs: 20, r: function (u) { return lerp(costume ? .052 : .058, .045, u) * s; }, def: def, color: armC }, cloth)
-        : bagTube({ side: sd, scale: s, len: (costume ? .285 : .32) * s, y0: .016 * s, slide: true, def: def, color: armC, trim: c.trim, sag: (lady ? .17 : .11) * s,
-            r: function (u) { return (u < .55 ? lerp(.068, .078, u / .55) : lerp(.078, costume ? .046 : .055, (u - .55) / .45)) * s; },
+        : bagTube({ side: sd, scale: s, len: (costume ? .270 : .32) * s, y0: .016 * s, slide: true, def: def, color: armC, trim: c.trim, sag: (lady ? .12 : .065) * s,
+            r: function (u) { return (u < .55 ? lerp(.060, .068, u / .55) : lerp(.068, costume ? .043 : .055, (u - .55) / .45)) * s; },
             H: function (u) { return Hel + (Hmx - Hel) * sstep(0, .62, u) - Hmx * .82 * sstep(.62, 1, u); } }, cloth);
       el.add(fore);
       fore.userData.elbowJoint = el;
@@ -867,7 +871,12 @@
       if (!hm) { hm = mesh(new THREE.BoxGeometry(.07, .17, .03), skinM); hm.position.y = .06; }
       hm.scale.setScalar(s);
       var g = new THREE.Group(); g.add(hm);
-      g.rotation.z = PI; g.rotation.y = k === 'L' ? -PI / 2 : PI / 2;
+      // Fingers continue down the forearm. In a neutral hanging arm the thumb
+      // faces anteriorly, and the back of the hand faces away from the body.
+      // Explicit bases avoid the reversed palm caused by the old Euler order.
+      var side = k === 'L' ? 1 : -1;
+      g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(
+        new V3(0, 0, side), new V3(0, -1, 0), new V3(side, 0, 0)));
       A.wr.add(g); A.hand = g; A.handPose = pose;
       g.visible = pose !== 'hidden';
     }
@@ -913,8 +922,9 @@
     if (c.jue) { props.jue = jueMesh(); props.jueHang = jueMesh(); props.jueHang.scale.setScalar(.8); props.jueHang.position.set(.12 * s, -.36 * s, .1 * s); props.jueHang.rotation.x = PI / 2; chest.add(props.jueHang); }
     props.cup = cupMesh(); props.cup.visible = false;
     props.meat = meatMesh(); props.meat.visible = false;
+    if (window.KM_BANQUET) { props.morsel = window.KM_BANQUET.morsel(); props.morsel.visible = false; }
 
-    var rig = { root: root, body: body, pelvis: pelvis, spine: spine, chest: chest, neck: neck, headPiv: headPiv, arms: arms, legs: legs, headTop: headTop, props: props, s: s, armored: armored, hat: hat };
+    var rig = { root: root, body: body, pelvis: pelvis, spine: spine, chest: chest, neck: neck, headPiv: headPiv, head: headG, arms: arms, legs: legs, headTop: headTop, props: props, s: s, armored: armored, hat: hat };
 
     /** p: 腕を前へ上げる / r: 横へ開く / e: 肘を曲げる / yaw: 前腕を体の前へ寄せる（上腕のひねり） */
     function setArm(k, p, r, e, yaw) {
@@ -937,37 +947,44 @@
       if (!obj || !hand || !hand.userData.gripCenter) return;
       var center = new V3().fromArray(hand.userData.gripCenter).multiplyScalar(s).applyQuaternion(A.hand.quaternion);
       if (obj === props.cup) {
-        root.updateMatrixWorld(true);
-        var gripWorld = A.wr.localToWorld(center.clone());
-        var mouthWorld = headG.localToWorld(new V3(0, -.038, .073));
-        var towardMouth = mouthWorld.sub(gripWorld).normalize();
-        var worldRotation = new THREE.Quaternion().setFromUnitVectors(new V3(-.07, .075, 0).normalize(), towardMouth);
-        var wristRotation = A.wr.getWorldQuaternion(new THREE.Quaternion());
-        obj.quaternion.copy(wristRotation.invert().multiply(worldRotation)); obj.scale.setScalar(s);
-        obj.position.copy(center).sub(new V3(.07 * s, 0, 0).applyQuaternion(obj.quaternion));
+        var worldRotation = state.cupRotation || new THREE.Quaternion().setFromAxisAngle(new V3(0,1,0),PI);
+        var wristRotation = A.wr.getWorldQuaternion(new THREE.Quaternion()).normalize();
+        obj.quaternion.copy(wristRotation.invert().multiply(worldRotation)).normalize(); obj.scale.setScalar(s);
+        obj.position.copy(center).sub(new V3().fromArray(obj.userData.handleGrip || [.07,0,0]).multiplyScalar(s).applyQuaternion(obj.quaternion));
         return;
       }
       var axis = new V3().fromArray(hand.userData.gripAxis).applyQuaternion(A.hand.quaternion).normalize();
-      obj.position.copy(center); obj.quaternion.setFromUnitVectors(new V3(0, 1, 0), axis);
+      // Hilt AND blade plane are constrained. The blade leaves the index/thumb
+      // side, while the pommel leaves the little-finger side of a closed fist.
+      if (obj === props.halberd) axis.negate();
+      var normal = new V3(0,0,1).applyQuaternion(A.hand.quaternion);
+      normal.addScaledVector(axis,-normal.dot(axis)).normalize();
+      var across = new V3().crossVectors(axis,normal).normalize();
+      obj.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(across,axis,normal));
+      obj.scale.setScalar(s);
+      var anchor = obj === props.halberd ? new V3(0,.85,0) : new V3().fromArray(obj.userData.gripCenter || [0,0,0]);
+      obj.position.copy(center).sub(anchor.multiplyScalar(s).applyQuaternion(obj.quaternion));
     }
 
     var state = { pose: 'stand', look: null, lookW: 0, talk: 0, yaw: 0 };
     function setPose(pose) {
-      ['L', 'R'].forEach(function (k) { arms[k].heldHandle = null; });
+      ['L', 'R'].forEach(function (k) { arms[k].heldHandle = null; arms[k].wr.rotation.set(0,0,0); });
       state.pose = pose;
+      state.motionPhase='';state.motionProgress=0;state.contactErrors={};state.ikDetails={};state.cupRotation=null;state.actionStart=null;
       root.visible = pose !== 'gone';
       body.rotation.set(0, 0, 0); body.position.set(0, 0, 0);
       spine.rotation.set(0, 0, 0); neck.rotation.set(0, 0, 0); headPiv.rotation.set(0, 0, 0);
-      var seated = pose === 'sit' || pose === 'raise', kneel = pose === 'kneel';
+      var seated = pose === 'sit' || pose === 'raise', kneel = pose === 'kneel' || pose === 'eat';
       if (pose === 'stand' || seated || kneel) spine.rotation.x = c.restLean || 0;
       skirtStand.visible = !seated && !kneel;
       skirtSit.visible = seated; skirtKneel.visible = kneel;
+      skirtKneel.scale.y = pose === 'eat' ? .74 : 1;
       if (skirtPlates) { skirtPlates.visible = true; skirtPlates.position.y = seated ? .02 * s : kneel ? .0 : 0; skirtPlates.scale.y = seated ? .55 : kneel ? .8 : 1; }
       shoesR.visible = !seated && !kneel;
-      pelvis.position.y = seated ? .4 * s : kneel ? .62 * s : .95 * s;
+      pelvis.position.y = seated ? .4 * s : pose === 'eat' ? .46*s : kneel ? .62 * s : .95 * s;
       ['L', 'R'].forEach(function (k) { legs[k].hip.visible = armored && !seated && !kneel; legs[k].hip.rotation.set(0, 0, 0); legs[k].knee.rotation.set(0, 0, 0); });
       if (props.sword) { props.sword.visible = false; if (props.sword.parent) props.sword.parent.remove(props.sword); if (props.sheath) props.sheath.visible = true; }
-      ['shield', 'halberd', 'jue', 'cup', 'meat'].forEach(function (k) { if (props[k] && props[k].parent) props[k].parent.remove(props[k]); });
+      ['shield', 'halberd', 'jue', 'cup', 'meat', 'morsel'].forEach(function (k) { if (props[k] && props[k].parent) props[k].parent.remove(props[k]); });
       if (props.jueHang) props.jueHang.visible = true;
       var hpz = { L: 'relax', R: 'relax' };
       setArm('L', .1, .12, .18); setArm('R', .1, .12, .18);
@@ -983,16 +1000,18 @@
       if (pose === 'strike') { setArm('R', .9, .1, .2); spine.rotation.x = .25; }
       if (pose === 'eat') {
         setArm('R', .85, .1, 1.2); setArm('L', .75, -.1, 1.0); spine.rotation.x = .32;
-        if (props.shield) { root.add(props.shield); props.shield.position.set(0, .04, .5); props.shield.rotation.set(-PI / 2, 0, 0); props.shield.visible = true; }
-        root.add(props.meat); props.meat.position.set(0, .12, .52); props.meat.visible = true;
+        if (props.shield) { root.add(props.shield); props.shield.position.set(0, .055*s, .50*s); props.shield.rotation.set(-PI / 2, 0, 0); props.shield.visible = true; }
+        root.add(props.meat); props.meat.scale.setScalar(s); props.meat.position.set(0, .145*s, .50*s); props.meat.visible = true;
+        if (props.morsel && props.sword) { props.sword.add(props.morsel); props.morsel.position.fromArray(props.sword.userData.spearPoint); props.morsel.visible=false; }
       }
-      if (pose === 'drink') { setArm('R', 1.30, .18, 2.10, .45); hpz.R = window.KM_HANDS ? 'grasp' : 'hold'; holdIn('R', props.cup, [0, 0, .3], [0, -.1 * s, .06]); headPiv.rotation.x = -.18; neck.rotation.x = -.08; }
+      if (pose === 'drink') { setArm('R', 1.0, .18, 1.5, .15); hpz.R = 'grasp'; hpz.L = 'hold'; holdIn('R', props.cup, [0, 0, .3], [0, -.1 * s, .06]); }
       if (pose === 'glare') { setArm('L', .2, .38, .32); setArm('R', .2, .38, .32); hpz = { L: 'grasp', R: 'grasp' }; legs.L.hip.rotation.z = .12; legs.R.hip.rotation.z = -.12; }
       if (pose === 'charge') { spine.rotation.x = .3; setArm('L', 1.3, .2, .3); hpz.L = 'grasp'; legs.L.hip.rotation.x = -.5; legs.L.knee.rotation.x = .5; legs.R.hip.rotation.x = .4; }
       if ((pose === 'glare' || pose === 'charge' || pose === 'stand' || pose === 'run') && props.shield) holdIn('L', props.shield, [0, PI / 2, 0], [-.05, -.12 * s, .1]);
       if (props.halberd && pose !== 'down') { holdIn('R', props.halberd, [0, 0, 0], [0, -.62, .02]); setArm('R', .45, .05, .9); hpz.R = 'grasp'; }
       if (pose === 'down') { body.rotation.x = -PI / 2; body.position.set(0, .14, .9 * s); setArm('L', 2.8, .4, .2); setArm('R', .3, .6, .4); }
       if (pose === 'run') hpz = { L: 'grasp', R: 'grasp' };
+      if(seated||kneel){arms.R.el.rotation.y=1.25;arms.L.el.rotation.y=-1.25;}
       ['L', 'R'].forEach(function (k) { if (arms[k].handPose !== hpz[k]) attachHand(k, hpz[k]); alignHeldHandle(k); });
       state.base = { L: arms.L.cur.slice(), R: arms.R.cur.slice(), hL: hpz.L, hR: hpz.R };
     }
@@ -1029,6 +1048,116 @@
       p.needsUpdate = true; g.computeVertexNormals();
     }
 
+    // Position-and-direction IK is solved in chest space. Only shoulder motion,
+    // a one-way elbow hinge and bounded forearm pronation are used: the wrist
+    // remains continuous with the forearm instead of being flipped to a prop.
+    function solveArm(sideKey, target, offset, localAxis, aim) {
+      var A=arms[sideKey],sd=sideKey==='L'?1:-1;
+      chest.updateWorldMatrix(true,false);root.updateWorldMatrix(true,false);
+      var toChest=new THREE.Matrix4().copy(chest.matrixWorld).invert().multiply(root.matrixWorld);
+      target=target.clone().applyMatrix4(toChest);aim=aim.clone().transformDirection(toChest);
+      var shoulder=A.sh.position.clone(),upperLength=A.el.position.length();
+      // The forearm and held tool are one rigid distal link. Intersecting its
+      // reach sphere with the upper arm sphere gives an exact contact circle.
+      var distal=A.wr.position.clone().add(offset.clone().applyQuaternion(A.wr.quaternion)),distalLength=distal.length();
+      localAxis=localAxis.clone().applyQuaternion(A.wr.quaternion);
+      var toward=target.clone().sub(shoulder),wantedDistance=toward.length();toward.normalize();
+      var distance=clamp(wantedDistance,Math.abs(upperLength-distalLength)+.00001,upperLength+distalLength-.00001);
+      var reachable=shoulder.clone().addScaledVector(toward,distance);
+      var along=(upperLength*upperLength+distance*distance-distalLength*distalLength)/(2*distance);
+      var radius=Math.sqrt(Math.max(0,upperLength*upperLength-along*along));
+      var outside=new V3(sd,0,0).addScaledVector(toward,-sd*toward.x);
+      if(outside.lengthSq()<.001)outside.set(0,0,1).addScaledVector(toward,-toward.z);
+      outside.normalize();var cross=new V3().crossVectors(toward,outside).normalize();
+      var localDistal=distal.clone().normalize(),best=null,bestScore=Infinity;
+      for(var sample=0;sample<64;sample++){
+        var angle=sample/64*PI*2;
+        var elbow=shoulder.clone().addScaledVector(toward,along).addScaledVector(outside,Math.cos(angle)*radius).addScaledVector(cross,Math.sin(angle)*radius);
+        var U=elbow.clone().sub(shoulder).normalize(),D=reachable.clone().sub(elbow).normalize();
+        var foreQ=new THREE.Quaternion().setFromUnitVectors(localDistal,D);
+        var axis=localAxis.clone().applyQuaternion(foreQ),a=axis.clone().addScaledVector(D,-axis.dot(D)),b0=aim.clone().addScaledVector(D,-aim.dot(D));
+        if(a.lengthSq()>.000001&&b0.lengthSq()>.000001){a.normalize();b0.normalize();var rollToward=Math.atan2(D.dot(new V3().crossVectors(a,b0)),a.dot(b0));foreQ.premultiply(new THREE.Quaternion().setFromAxisAngle(D,rollToward));}
+        var preferred=foreQ.clone();
+        for(var orientation=0;orientation<9;orientation++){
+        var freeRoll=(orientation-4)*PI/4;
+        foreQ.copy(preferred).premultiply(new THREE.Quaternion().setFromAxisAngle(D,freeRoll));
+        var F=new V3(0,-1,0).applyQuaternion(foreQ),flex=Math.acos(clamp(U.dot(F),-1,1));
+        var zAxis=F.clone().addScaledVector(U,-F.dot(U));if(zAxis.lengthSq()<1e-8)continue;zAxis.normalize();
+        var yAxis=U.clone().negate(),xAxis=new V3().crossVectors(yAxis,zAxis).normalize();
+        var shoulderQ=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis,yAxis,zAxis));
+        var relative=shoulderQ.clone().invert().multiply(foreQ);
+        relative.premultiply(new THREE.Quaternion().setFromAxisAngle(new V3(1,0,0),flex));
+        var twist=2*Math.atan2(relative.y,relative.w);while(twist>PI)twist-=2*PI;while(twist<-PI)twist+=2*PI;
+        var outward=sd*(elbow.x-shoulder.x),behind=Math.max(0,shoulder.z-.06*s-elbow.z);
+        var score=80*Math.pow(Math.max(0,Math.abs(twist)-1.48),2)+80*Math.pow(Math.max(0,flex-2.65),2)+80*Math.pow(Math.max(0,.08-flex),2);
+        score+=12*Math.pow(Math.max(0,.025*s-outward),2)+12*behind*behind;
+        score+=4*elbow.distanceToSquared(shoulder.clone().add(new V3(sd*.14*s,-.19*s,.10*s)));
+        score+=.035*(1-localAxis.clone().applyQuaternion(foreQ).dot(aim));
+        if(Math.abs(twist)<=1.50 && flex<=2.67 && flex>=.08)score-=1000;
+        if(score<bestScore){bestScore=score;best={shoulder:shoulderQ,flex:flex,twist:twist};}
+        }
+      }
+      if(!best)return;
+      A.sh.quaternion.copy(best.shoulder);A.el.rotation.set(-best.flex,best.twist,0);
+      var euler=new THREE.Euler().setFromQuaternion(best.shoulder);A.cur=[-euler.x,sd*euler.z,best.flex,-sd*euler.y];
+      var solved=distal.clone().applyQuaternion(A.el.quaternion).applyQuaternion(A.sh.quaternion).add(A.el.position.clone().applyQuaternion(A.sh.quaternion)).add(shoulder);
+      state.contactErrors=state.contactErrors||{};state.contactErrors[sideKey]=solved.distanceTo(target);
+      state.ikDetails=state.ikDetails||{};state.ikDetails[sideKey]={flex:best.flex,forearmTwist:best.twist,score:bestScore};
+    }
+    function gripOffset(k){var A=arms[k];return new V3().fromArray(A.hand.children[0].userData.gripCenter).multiplyScalar(s).applyQuaternion(A.hand.quaternion);}
+    function actionMotion(t) {
+      var pose=state.pose,cycle=pose==='eat'?10:pose==='drink'?6:8;
+      if(state.actionStart==null)state.actionStart=t;
+      var elapsed=t-state.actionStart;
+      var u=typeof state.actionProgress==='number'?clamp(state.actionProgress,0,.999999):((elapsed%cycle)+cycle)%cycle/cycle;
+      state.motionProgress=u;
+      state.contactErrors={};state.ikDetails={};
+      if(pose==='dance'){
+        var keys=[[.28,.34,.68,-.34],[.88,.42,.62,-.42],[.52,.86,.27,-.46],[.25,.54,.75,-.30],[.28,.34,.68,-.34]];
+        var beat=Math.min(3,Math.floor(u*4)),f=sstep(0,1,u*4-beat),a=keys[beat],b0=keys[beat+1];
+        setArm('R',lerp(a[0],b0[0],f),lerp(a[1],b0[1],f),lerp(a[2],b0[2],f),lerp(a[3],b0[3],f));
+        arms.R.el.rotation.y=-.16+.20*Math.sin(u*PI*2);arms.R.wr.rotation.set(0,0,0);
+        setArm('L',.35+.20*Math.sin(u*PI*2),.60,.55,.04);
+        spine.rotation.y=.24*Math.sin(u*PI*2);spine.rotation.x=.06;
+        body.position.y=-.014*Math.pow(Math.sin(u*PI*2),2);
+        if(armored){legs.L.hip.rotation.x=.10*Math.sin(u*PI*2);legs.R.hip.rotation.x=-.10*Math.sin(u*PI*2);legs.L.knee.rotation.x=Math.max(0,-Math.sin(u*PI*2))*.12;legs.R.knee.rotation.x=Math.max(0,Math.sin(u*PI*2))*.12;}
+        state.motionPhase=['構え','斜めに上げる','外へ払う','構えへ戻す'][beat];
+      } else if(pose==='eat' && props.sword && window.KM_BANQUET){
+        spine.rotation.x=.13;headPiv.rotation.x=.12;headPiv.rotation.y=.10;
+        alignHeldHandle('R');root.updateMatrixWorld(true);
+        var mouth=root.worldToLocal(headG.localToWorld(new V3(0,-.038,.073)));
+        var lift=sstep(.39,.62,u)*(1-sstep(.81,.98,u));
+        arms.R.wr.rotation.set(-.85*lift,0,0);arms.L.wr.rotation.set(0,0,0);
+        var cut=new V3(lerp(-.095,.045,sstep(.12,.30,u))*s,(.195+.07*(1-sstep(.06,.22,u)))*s,(.51-.04*sstep(.12,.28,u))*s);
+        var bite=mouth.clone().add(new V3(.030*s,-.018*s,.035*s));
+        var target=cut.lerp(bite,lift),aim=new V3(.05,-.97,.24).lerp(new V3(.98,.06,-.19),lift).normalize();
+        target.x+=.18*s*Math.sin(PI*lift);
+        var bladePoint=new V3().fromArray(props.sword.userData.spearPoint);
+        var offset=bladePoint.multiplyScalar(s).applyQuaternion(props.sword.quaternion).add(props.sword.position);
+        solveArm('R',target,offset,new V3(0,0,1),aim);
+        setArm('L',.65,.50,1.2,-.1);
+        if(props.morsel){props.morsel.visible=u>.35&&u<.91;props.morsel.scale.setScalar(u>.74?lerp(1,.13,sstep(.74,.84,u)):1);}
+        state.motionPhase=u<.12?'盾に載せた生肉へ':u<.28?'剣で切る':u<.40?'切った一片を刺す':u<.62?'口元へ運ぶ':u<.81?'一片を食べる':'剣を戻す';
+      } else if(pose==='drink' && window.KM_BANQUET){
+        arms.R.wr.rotation.set(0,0,0);arms.L.wr.rotation.set(0,0,0);
+        var raised=sstep(0,.28,u)*(1-sstep(.70,.98,u));
+        headPiv.rotation.x=-.13*raised;neck.rotation.x=-.06*raised;
+        root.updateMatrixWorld(true);
+        var mouth=root.worldToLocal(headG.localToWorld(new V3(0,-.038,.073)));
+        var cupQ=new THREE.Quaternion().setFromAxisAngle(new V3(0,0,1),-.63*raised).multiply(new THREE.Quaternion().setFromAxisAngle(new V3(0,1,0),PI));
+        var rimTarget=mouth.clone().add(new V3(0,-.010*s,.018*s));
+        var liftedCenter=rimTarget.sub(new V3().fromArray(props.cup.userData.drinkContact).multiplyScalar(s).applyQuaternion(cupQ));
+        var center=new V3(-.14*s,1.13*s,.28*s).lerp(liftedCenter,raised);
+        state.cupRotation=root.getWorldQuaternion(new THREE.Quaternion()).multiply(cupQ);
+        var handle=center.clone().add(new V3().fromArray(props.cup.userData.handleGrip).multiplyScalar(s).applyQuaternion(cupQ));
+        solveArm('R',handle,gripOffset('R'),new V3(0,0,1),new V3(0,1,0));
+        var bottom=center.clone().add(new V3(0,-.079*s,0).applyQuaternion(cupQ));
+        var palm=new V3(-.012*s,-.075*s,0);
+        solveArm('L',bottom,palm,new V3(-1,0,0),new V3(0,1,0).applyQuaternion(cupQ));
+        state.motionPhase=u<.28?'両手で卮を上げる':u<.70?'立ったまま飲む':'卮を下ろす';
+      }
+      ['L','R'].forEach(alignHeldHandle);
+    }
     function update(dt, t) {
       var p = state.pose, br = Math.sin(t * 1.3 + id.length) * .012;
       chest.scale.set(1, 1 + br * .35, 1 + br);
@@ -1055,16 +1184,11 @@
         }
         var cur = arms.R.cur, kk = Math.min(1, dt * 5);
         setArm('R', lerp(cur[0], tgt[0], kk), lerp(cur[1], tgt[1], kk), lerp(cur[2], tgt[2], kk), lerp(cur[3], tgt[3], kk));
+        arms.R.el.rotation.y=state.talk?-.9:(p==='sit'||p==='kneel'?1.25:0);
         var want = state.talk ? 'hold' : state.base.hR;
         if (arms.R.handPose !== want) attachHand('R', want);
       }
-      if (p === 'dance') {
-        var ph = t * 2.2;
-        setArm('R', 1.6 + Math.sin(ph) * 1.1, .3 + Math.cos(ph) * .4, .3 + Math.sin(ph * .5) * .3, 0);
-        setArm('L', .6 + Math.cos(ph) * .5, .7, .9);
-        spine.rotation.y = Math.sin(ph) * .5; spine.rotation.x = .1 + Math.cos(ph * 2) * .06;
-        body.position.y = Math.abs(Math.sin(ph)) * .03;
-      } else if (p === 'run') {
+      if (p === 'run') {
         var r = t * 9;
         if (legs.L.hip.visible) {
           legs.L.hip.rotation.x = Math.sin(r) * .8; legs.L.knee.rotation.x = Math.max(0, -Math.sin(r + .8)) * 1.2;
@@ -1073,6 +1197,7 @@
         setArm('R', -Math.sin(r) * .7 + .2, .15, .9); setArm('L', Math.sin(r) * .7 + .2, .15, .9);
         body.position.y = Math.abs(Math.sin(r)) * .05; spine.rotation.x = .18;
       }
+      if(p==='dance'||p==='eat'||p==='drink')actionMotion(t);
       if (hat.userData.tassel) hat.userData.tassel.rotation.z = Math.sin(t * 1.7) * .06 + (p === 'run' || p === 'dance' ? Math.sin(t * 8) * .1 : 0);
       updateSleeves();
       updateCape(t, p === 'run' || p === 'dance' || p === 'charge');
