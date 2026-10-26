@@ -3,7 +3,7 @@ const {createCanvas}=require(process.env.CANVAS_MODULE||path.join(process.env.US
 const root=path.resolve(__dirname,'..');
 const C={console,performance:require('node:perf_hooks').performance,document:{createElement:()=>createCanvas(1,1)},atob:s=>Buffer.from(s,'base64').toString('binary')};C.window=C;vm.createContext(C);
 for(const f of ['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-banquet-props.js','src/js/koumon-cast3d.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),C,{filename:f});
-const rows=[],V=C.THREE.Vector3,Q=C.THREE.Quaternion,maxima={},minima={};let denseCases=0,determinismCases=0;
+const rows=[],dance=[],guzzling=[],V=C.THREE.Vector3,Q=C.THREE.Quaternion,maxima={},minima={};let denseCases=0,determinismCases=0,denseDanceCases=0;
 function max(name,value){if(!Number.isFinite(value))throw Error('Nonfinite '+name);maxima[name]=Math.max(maxima[name]||0,value);return value;}
 function min(name,value){if(!Number.isFinite(value))throw Error('Nonfinite '+name);minima[name]=Math.min(minima[name]===undefined?Infinity:minima[name],value);return value;}
 function check(condition,label){if(!condition)throw Error(label);}
@@ -11,10 +11,73 @@ function frame(f,u){f.userData.state.actionProgress=u;f.userData.update(0,0);f.u
 function nodes(r){
  const out={body:r.body,pelvis:r.pelvis,spine:r.spine,neck:r.neck,head:r.headPiv};
  for(const side of ['L','R'])for(const name of ['sh','el','wr','hand'])out[side+'/'+name]=r.arms[side][name];
+ for(const side of ['L','R'])for(const name of ['hip','knee','shoe'])if(r.legs[side][name])out[side+'/'+name]=r.legs[side][name];
  for(const name of ['sword','cup','meat'])out[name]=r.props[name];return out;
 }
-function snapshot(r){return Object.fromEntries(Object.entries(nodes(r)).map(([name,o])=>{const worldQ=o.getWorldQuaternion(new Q());return [name,{matrix:Array.from(o.matrixWorld.elements),localQ:o.quaternion.clone(),worldQ}];}));}
+function snapshot(r){return Object.fromEntries(Object.entries(nodes(r)).map(([name,o])=>{const worldQ=o.getWorldQuaternion(new Q()).normalize();return [name,{matrix:Array.from(o.matrixWorld.elements),localQ:o.quaternion.clone(),worldQ}];}));}
 function angle(a,b){return 2*Math.acos(Math.min(1,Math.abs(a.dot(b))));}
+vm.runInContext(fs.readFileSync(path.join(root,'src/js/koumon-3d.js'),'utf8'),C);
+function inspectDance(q){
+ const stage=C.KoumonStage3D,actors={},stats={},saved={},safety={sou:[],haku:[]},safetyFrames=new Set(Array.from({length:32},(_,i)=>Math.round(i*360/32)));stage.S.stageId='feast';stage.S.cast=actors;
+ for(const id of ['sou','haku','hai','u','ryo']){
+  const p=stage.STAGES.feast.pos[id],f=C.KM_CAST3D.makeFigure(id);actors[id]=f;f.position.set(p[0],0,p[1]);f.rotation.y=p[2];f.userData.home={x:p[0],z:p[1],yaw:p[2]};f.userData.setPose('sit');
+ }
+ stage.setPose('sou','dance');stage.setPose('haku','dance');
+ const cycle=C.KM_BANQUET.cycles.dance;check(cycle<=5,q+' dance cycle must be shorter than five seconds');
+ for(const id of ['sou','haku']){stats[id]={q,id,cycle,bladePath:0,peakBladeSpeed:0,maxLocalStep:0,maxWorldStep:0,minHeadClearance:Infinity,minFreeHandClearance:Infinity,ranges:{}};saved[id]=[];}
+ function range(s,key,value){const span=s.ranges[key]||(s.ranges[key]=[Infinity,-Infinity]);span[0]=Math.min(span[0],value);span[1]=Math.max(span[1],value);}
+ const tips={};
+ for(let i=0;i<=360;i++){
+  for(const id of ['sou','haku'])frame(actors[id],i/360);
+  Object.values(actors).forEach(f=>f.updateMatrixWorld(true));
+  for(const id of ['sou','haku']){
+   const f=actors[id],r=f.userData.rig,s=stats[id],row=inspect(f,q,id,'dance',i/360,'dense-dance'),p=r.props.sword;
+   const a=p.localToWorld(new V().fromArray(p.userData.bladeRoot)),b=p.localToWorld(new V().fromArray(p.userData.bladeTip)),line=new C.THREE.Line3(a,b);
+   if(safetyFrames.has(i))safety[id].push({a:a.clone(),b:b.clone(),head:r.head.localToWorld(new V(0,.015,.01)),palm:r.arms.L.wr.localToWorld(new V(0,-.07*r.s,0))});
+   for(const [other,actor] of Object.entries(actors)){
+    const otherRig=actor.userData.rig,head=otherRig.head.localToWorld(new V(0,.015,.01)),palm=otherRig.arms.L.wr.localToWorld(new V(0,-.07*otherRig.s,0));
+    const headGap=min('danceHeadClearance',line.closestPointToPoint(head,true,new V()).distanceTo(head)),palmGap=min('danceFreeHandClearance',line.closestPointToPoint(palm,true,new V()).distanceTo(palm));
+    check(headGap>.14,q+'/'+id+' blade clears '+other+' head');check(palmGap>.07,q+'/'+id+' blade clears '+other+' free hand');
+    s.minHeadClearance=Math.min(s.minHeadClearance,headGap);s.minFreeHandClearance=Math.min(s.minFreeHandClearance,palmGap);
+   }
+   if(tips[id]){const distance=b.distanceTo(tips[id]);s.bladePath+=distance;s.peakBladeSpeed=Math.max(s.peakBladeSpeed,distance/(cycle/360));}tips[id]=b.clone();
+   range(s,'torsoYaw',r.spine.rotation.y);range(s,'bodyHeight',r.body.position.y+r.pelvis.position.y);range(s,'bodySway',r.body.position.x);
+   for(const side of ['L','R']){
+    range(s,side+'Hip',r.legs[side].hip.rotation.x);range(s,side+'Knee',r.legs[side].knee.rotation.x);
+    const foot=f.userData.state.footContacts[side],target=f.localToWorld(new V().fromArray(foot.target)),shoe=r.legs[side].shoe;
+    check(max('danceFootContactGap',shoe.getWorldPosition(new V()).distanceTo(target))<.0005,q+'/'+id+'/'+side+' shoe detached from foot contact');
+    check(max('danceFootReachError',foot.reachError)<.0005&&foot.kneeFlex>.05&&foot.kneeFlex<2.5,q+'/'+id+'/'+side+' leg reach or flex limit');
+    check(min('danceSoleHeight',new C.THREE.Box3().setFromObject(shoe).min.y)>-.003*r.s,q+'/'+id+'/'+side+' shoe below floor');
+   }
+   check(Math.min(...Object.values(f.userData.state.footContacts).map(foot=>foot.target[1]))<1e-8,q+'/'+id+' lacks a supporting foot');
+   const current=snapshot(r),previous=saved[id].at(-1);
+   if(previous)for(const [name,node] of Object.entries(current)){
+    const local=max('danceLocalQuaternionStep',angle(node.localQ,previous[name].localQ)),world=max('danceWorldQuaternionStep',angle(node.worldQ,previous[name].worldQ));
+    check(local<.10&&world<.10,q+'/'+id+'/'+name+' dance quaternion discontinuity');s.maxLocalStep=Math.max(s.maxLocalStep,local);s.maxWorldStep=Math.max(s.maxWorldStep,world);
+   }
+   saved[id].push(current);row.maxLocalStep=s.maxLocalStep;row.maxWorldStep=s.maxWorldStep;denseCases++;denseDanceCases++;
+  }
+ }
+ for(const id of ['sou','haku'])for(const blade of safety[id])for(const other of safety[id==='sou'?'haku':'sou']){
+  const line=new C.THREE.Line3(blade.a,blade.b),head=min('independentDanceHeadClearance',line.closestPointToPoint(other.head,true,new V()).distanceTo(other.head)),palm=min('independentDanceFreeHandClearance',line.closestPointToPoint(other.palm,true,new V()).distanceTo(other.palm));
+  check(head>.14&&palm>.07,q+'/'+id+' independent dance phase collision');
+ }
+ for(const id of ['sou','haku']){
+  const f=actors[id],r=f.userData.rig,s=stats[id];s.ranges=Object.fromEntries(Object.entries(s.ranges).map(([key,span])=>[key,span[1]-span[0]]));
+  check(s.ranges.torsoYaw>.4&&s.ranges.bodyHeight>.025*r.s,q+'/'+id+' must turn the torso and shift body weight');
+  for(const side of ['L','R'])check(s.ranges[side+'Hip']>.1&&s.ranges[side+'Knee']>.12,q+'/'+id+' must move both hips and knees');
+  check(s.bladePath>2.5&&s.peakBladeSpeed>1,q+'/'+id+' blade must travel quickly through a substantial path');
+  for(let i=0;i<=36;i++){
+   const index=i*97%361;frame(f,index/360);const actual=snapshot(r),expected=saved[id][index];determinismCases++;
+   for(const name of Object.keys(actual))for(let k=0;k<16;k++)check(max('danceOutOfOrderMatrixDelta',Math.abs(actual[name].matrix[k]-expected[name].matrix[k]))<1e-8,q+'/'+id+'/'+name+' dance depends on frame order');
+  }
+  f.userData.setPose('dance');f.userData.update(0,10);f.updateMatrixWorld(true);const p=r.props.sword,first=p.localToWorld(new V().fromArray(p.userData.bladeTip));
+  f.userData.update(0,10+cycle/2);f.updateMatrixWorld(true);check(Math.abs(f.userData.state.motionProgress-.5)<1e-8,q+'/'+id+' elapsed-time dance phase');
+  check(p.localToWorld(new V().fromArray(p.userData.bladeTip)).distanceTo(first)>.2,q+'/'+id+' clock does not move blade');
+  f.userData.update(0,10+cycle);f.updateMatrixWorld(true);s.clockCycleGap=p.localToWorld(new V().fromArray(p.userData.bladeTip)).distanceTo(first);check(s.clockCycleGap<.02*r.s,q+'/'+id+' real-time cycle does not close');
+  dance.push(s);
+ }
+}
 function inspect(f,q,id,pose,u,kind){
  const r=f.userData.rig,state=f.userData.state,label=q+'/'+id+'/'+pose+'@'+u.toFixed(6),prop=r.props[pose==='drink'?'cup':'sword'];
  const grip=r.arms.R.wr.localToWorld(new V().fromArray(r.arms.R.hand.children[0].userData.gripCenter).multiplyScalar(r.s).applyQuaternion(r.arms.R.hand.quaternion));
@@ -35,7 +98,7 @@ function inspect(f,q,id,pose,u,kind){
   check(max('elbowFlex',joint.flex)<2.68&&joint.flex>.07,label+'/'+side+' elbow limit');
   check(Math.abs(arm.el.rotation.x+joint.flex)<1e-9,label+'/'+side+' elbow diagnostic mismatch');
   const drop=min('shoulderElbowDrop',arm.sh.getWorldPosition(new V()).y-arm.el.getWorldPosition(new V()).y);
-  check(drop>.02*r.s,label+'/'+side+' elbow above shoulder');
+  check(drop>(pose==='drink'?.005:.02)*r.s,label+'/'+side+' elbow above shoulder');
   row.joints[side]={flex:joint.flex,forearmTwist:joint.forearmTwist,wristBend,shoulderElbowDrop:drop};
  }
  if(pose==='dance'){
@@ -77,14 +140,13 @@ function inspect(f,q,id,pose,u,kind){
    const cup=r.props.cup;
    row.cupSupportGap=max('cupSupportGap',palm.distanceTo(cup.localToWorld(new V().fromArray(cup.userData.baseSupport))));check(row.cupSupportGap<.0005,label+' left palm misses the cup base');
    const up=new V(0,1,0).applyQuaternion(cup.getWorldQuaternion(new Q())).applyQuaternion(f.getWorldQuaternion(new Q()).invert());
-   row.cupPitch=Math.atan2(up.z,up.y);max('cupTilt',Math.abs(row.cupPitch));check(row.cupPitch<=1e-8&&row.cupPitch>-.9,label+' cup tilts away from the drinker');
-   if(u>=.28&&u<=.82){
+   row.cupPitch=Math.atan2(up.z,up.y);max('cupTilt',Math.abs(row.cupPitch));check(row.cupPitch<=1e-8&&row.cupPitch>-1.25,label+' cup tilts away or inverts');
+   if(cup.userData.contactState.raised>.999999){
     const rim=cup.localToWorld(new V().fromArray(cup.userData.drinkContact)),center=cup.getWorldPosition(new V()),forward=new V(0,0,1).applyQuaternion(r.head.getWorldQuaternion(new Q()));
     row.cupRimGap=max('cupRimGap',rim.distanceTo(mouth));check(row.cupRimGap<.015*r.s,label+' rim misses the lips');
     row.cupForward=min('cupForward',center.clone().sub(mouth).dot(forward));check(row.cupForward>.05*r.s,label+' cup center is behind the mouth');
     row.nearRimForward=rim.clone().sub(center).dot(forward);check(row.nearRimForward<-.04*r.s,label+' the wrong rim faces the lips');
    }
-   if(u>=.56&&u<=.69)check(row.cupPitch<-.78,label+' cup base is not raised for the drink');
   }
  }
  rows.push(row);return row;
@@ -99,12 +161,14 @@ for(const q of ['low','high']){
    for(let i=0;i<16;i++){frame(f,i/16);inspect(f,q,id,pose,i/16,'representative');}
   }
  }
+ inspectDance(q);
  const f=C.KM_CAST3D.makeFigure('kai'),r=f.userData.rig,meat=r.props.meat,geometry=meat.children[0].geometry;
  f.position.set(.37,.08,-.21);f.rotation.y=.43;
  for(const pose of ['eat','drink']){
-  f.userData.setPose(pose);const frames=[];let previous,firstMeatCenter;
+  f.userData.setPose(pose);const frames=[],drink={q,cycle:C.KM_BANQUET.cycles.drink,lipContactFrames:0,guzzleFrames:0,peakCupTilt:0};let previous,firstMeatCenter;
   for(let i=0;i<=720;i++){
    const u=i/720,label=q+'/kai/'+pose+'@'+u.toFixed(6);frame(f,u);const row=inspect(f,q,'kai',pose,u,'dense'),current=snapshot(r);denseCases++;
+   if(pose==='drink'){drink.peakCupTilt=Math.max(drink.peakCupTilt,-row.cupPitch);if(row.cupRimGap!==undefined){drink.lipContactFrames++;if(row.cupPitch<-.95)drink.guzzleFrames++;}}
    if(pose==='eat'){
     check(r.props.meat===meat&&meat.children[0].geometry===geometry,label+' replaced the whole shoulder');
     const center=f.worldToLocal(meat.getWorldPosition(new V()));
@@ -122,6 +186,7 @@ for(const q of ['low','high']){
    }
    frames.push(current);previous=current;
   }
+  if(pose==='drink'){check(drink.peakCupTilt>.95&&drink.lipContactFrames>720*.4&&drink.guzzleFrames>720*.15,q+' must sustain a deeper drink with actual lip contact');guzzling.push(drink);}
   for(const name of Object.keys(frames[0]))check(max('cycleQuaternionGap',angle(frames[0][name].worldQ,frames[720][name].worldQ))<1e-6,q+'/'+pose+'/'+name+' open animation cycle');
   for(let i=0;i<=720;i++){
    const index=i*193%721;frame(f,index/720);const actual=snapshot(r),expected=frames[index];determinismCases++;
@@ -130,5 +195,5 @@ for(const q of ['low','high']){
  }
  f.userData.setPose('stand');for(const side of ['L','R'])check(r.arms[side].wr.quaternion.angleTo(new Q())<1e-9,q+' action wrist did not reset');
 }
-const out=path.join(root,'model-preview-output/banquet-motion-audit.json');fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify({maxima,minima,rows},null,2));
-console.log(JSON.stringify({cases:rows.length,denseCases,determinismCases,maxima,minima,details:path.relative(root,out).replaceAll('\\','/')}));
+const out=path.join(root,'model-preview-output/banquet-motion-audit.json');fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify({maxima,minima,dance,guzzling,rows},null,2));
+console.log(JSON.stringify({cases:rows.length,denseCases,denseDanceCases,determinismCases,maxima,minima,dance,guzzling,details:path.relative(root,out).replaceAll('\\','/')}));

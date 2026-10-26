@@ -51,7 +51,7 @@ src/styles/                画面のスタイル
 src/vendor/three.min.js    Three.js r128（MIT）
 tools/build.mjs            一枚にまとめる（node tools/build.mjs → dist/index.html）
 tools/character-gallery.html 人物を回転・拡大して確認するページ
-tools/banquet-scenes.html   剣舞・翼蔽・飲酒・食事を再生／一時停止するページ
+tools/banquet-scenes.html   乗り込み・剣舞・翼蔽・飲酒・食事を再生／巻き戻しするページ
 tools/verify-banquet.cjs    握り・接触・関節範囲・動きの連続性の検査
 ```
 

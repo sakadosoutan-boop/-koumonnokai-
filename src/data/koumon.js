@@ -548,8 +548,8 @@
       { x: '噲即ち剣を帯び盾を擁して軍門より入らんとす。交戟の衛士、止めて内れざらんと欲す。', at: 'ei', pose: { kai: 'charge' } },
       { x: '樊噲其の盾を側てて以つて撞く。――衛士、地に仆る。', at: 'ei', pose: { ei: 'down' }, fx: 'shake', sfx: 'thud' },
       { t: 'gen', g: 'g12' },
-      { t: 'scene', stage: 'feast', light: 'day', cast: ['u', 'haku', 'hai', 'ryo', 'kai'], fade: 'black', set: { meters: true } },
-      { x: '帷が裂けるように開いた。樊噲、西嚮して立ち、目を瞋らして項王を視る。頭髪上指し、目眥尽く裂く。', at: 'kai', pose: { kai: 'glare' }, fx: 'shake' },
+      { t: 'scene', stage: 'feast', light: 'day', cast: ['u', 'haku', 'hai', 'ryo', 'kai'], pose: { kai: 'enter' }, set: { meters: true } },
+      { x: '帷が裂けるように開いた。樊噲、西嚮して立ち、目を瞋らして項王を視る。頭髪上指し、目眥尽く裂く。', at: 'kai', fx: 'shake' },
       { w: 'u', x: '客何為る者ぞ。', at: 'u', pose: { u: 'kneel' }, b: 'anger' },
       { t: 'ask', k: 'judge', w: 'you', q: '項王が剣に手をかけた。あなたは？',
         o: [
