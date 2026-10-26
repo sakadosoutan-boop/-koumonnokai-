@@ -886,7 +886,7 @@
     var home=figure.userData.home;if(!home)return;
     if(id==='haku' && S.stageId==='feast' && figure.userData.state.pose==='dance') {
       // 項伯が沛公と項荘の間に立つ。「翼蔽」を席の位置でも読めるように。
-      figure.position.set(-.20,0,1.30);figure.rotation.y=PI;
+      figure.position.set(.28,0,1.08);figure.rotation.y=PI;
     } else {
       figure.position.x=home.x;figure.position.z=home.z;figure.rotation.y=home.yaw;
     }

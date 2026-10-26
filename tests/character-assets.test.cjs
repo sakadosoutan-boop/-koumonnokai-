@@ -134,6 +134,10 @@ test('Xiang Bo interposes between the dancer and Liu Bang, with blades clear of 
       for(const [other,f] of Object.entries(actors))if(other!==id){
         const head=f.userData.rig.head.localToWorld(new V(0,.015,.01));
         assert.ok(line.closestPointToPoint(head,true,new V()).distanceTo(head)>.14,id+' blade clears '+other+' head');
+        if(other==='sou'||other==='haku'){
+          const otherRig=f.userData.rig,palm=otherRig.arms.L.wr.localToWorld(new V(0,-.07*otherRig.s,0));
+          assert.ok(line.closestPointToPoint(palm,true,new V()).distanceTo(palm)>.07,id+' blade clears '+other+' free hand');
+        }
       }
     }
   }
