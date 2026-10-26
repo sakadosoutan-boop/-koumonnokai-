@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..'),out=path.join(root,'model-preview-output
 const C={console,document:{createElement:()=>createCanvas(1,1)},atob:s=>Buffer.from(s,'base64').toString('binary')};C.window=C;vm.createContext(C);
 for(const f of ['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-banquet-props.js','src/js/koumon-cast3d.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),C,{filename:f});
 const T=C.THREE,B=C.KM_BANQUET,scene=new T.Group();B.setQuality('high');
-const props=[B.sword(true),B.sword(false),B.zhi(),B.porkShoulder(),B.morsel()];
+const props=[B.sword(true),B.sword(false),B.zhi(),B.porkShoulder()];
 props.forEach((o,i)=>{o.position.set((i-2)*.38,i<2?.88:.09,0);scene.add(o);});
 for(const [i,id] of ['hai','u','ryo','zo','haku','kai','sou','chin'].entries()){
  const h=C.KM_HEADS.build(id,C.KM_CAST3D.CAST[id].head,'high').group;
@@ -21,5 +21,5 @@ scene.traverse(o=>{if(o.isMesh)objects.push({name:o.name,geometry:geometry(o.geo
 const input=path.join(out,'banquet-assets.json'),blend=path.join(root,'source-assets/banquet-props.blend');fs.writeFileSync(input,JSON.stringify({geometries,materials,objects}));
 const blender=process.env.BLENDER_EXE||path.resolve(root,'../3d-runtime/blender-4.5.15/blender-4.5.15-windows-x64/blender.exe');
 execFileSync(blender,['-b','--factory-startup','--python',path.join(__dirname,'author-banquet-assets.py'),'--',input,blend],{stdio:'inherit'});
-fs.writeFileSync(path.join(root,'source-assets/banquet-props.manifest.json'),JSON.stringify({date:'2026-10-26',license:'MIT (original project meshes)',generator:'src/js/koumon-banquet-props.js; src/js/koumon-heads.js',contents:['double-edged jian and lacquer scabbard','single-ring-ear lacquer zhi','raw pork shoulder and pierced morsel','eight fitted crowns and hair wraps'],historicalReference:'https://img.dpm.org.cn/Uploads/File/2020/12/29/u5feaced521ab7.pdf',note:'Creative reconstruction after Western Han examples. Motion is authored separately in koumon-cast3d.js.'},null,2)+'\n');
+fs.writeFileSync(path.join(root,'source-assets/banquet-props.manifest.json'),JSON.stringify({date:'2026-10-26',license:'MIT (original project meshes)',generator:'src/js/koumon-banquet-props.js; src/js/koumon-heads.js',contents:['double-edged jian and lacquer scabbard','single-ring-ear lacquer zhi','whole raw pork shoulder with cut muscle, fat, fascia and bone','eight fitted crowns and hair wraps'],historicalReference:'https://img.dpm.org.cn/Uploads/File/2020/12/29/u5feaced521ab7.pdf',note:'Creative reconstruction after Western Han examples. Whole-shoulder-on-sword action supplements textual cutting/eating; motion authored separately in koumon-cast3d.js.'},null,2)+'\n');
 console.log(JSON.stringify({blend,bytes:fs.statSync(blend).size,objects:objects.length}));

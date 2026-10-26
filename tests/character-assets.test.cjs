@@ -81,37 +81,119 @@ test('a sword leaves the thumb side of the fist throughout the sword dance',()=>
   }
 });
 
-test('raw pork and wine contacts follow bounded human joints and reset between poses',()=>{
-  const V=C.THREE.Vector3;C.KM_CAST3D.setQuality('low');
-  const f=C.KM_CAST3D.makeFigure('kai'),r=f.userData.rig;
+function actionNodes(r){
+  const nodes={body:r.body,pelvis:r.pelvis,spine:r.spine,neck:r.neck,head:r.headPiv};
+  for(const side of ['L','R'])for(const name of ['sh','el','wr','hand'])nodes[side+'/'+name]=r.arms[side][name];
+  for(const name of ['sword','cup','meat'])nodes[name]=r.props[name];
+  return nodes;
+}
+function actionSnapshot(r){
+  return Object.fromEntries(Object.entries(actionNodes(r)).map(([name,node])=>{
+    // Detached, hidden props can retain the previous parent's cached matrix.
+    const worldQ=node.getWorldQuaternion(new C.THREE.Quaternion());
+    return [name,{matrix:Array.from(node.matrixWorld.elements),localQ:node.quaternion.clone(),worldQ}];
+  }));
+}
+function quaternionStep(a,b){return 2*Math.acos(Math.min(1,Math.abs(a.dot(b))));}
+function actionFrame(f,u){f.userData.state.actionProgress=u;f.userData.update(0,0);f.updateMatrixWorld(true);}
+
+for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder and drinks with continuous, deterministic joints ('+quality+')',()=>{
+  const V=C.THREE.Vector3,Q=C.THREE.Quaternion;C.KM_CAST3D.setQuality(quality);
+  const f=C.KM_CAST3D.makeFigure('kai'),r=f.userData.rig,meat=r.props.meat,geometry=meat.children[0].geometry;
+  // A stage translation and yaw exercise the world-space contacts as well as the isolated rig.
+  f.position.set(.37,.08,-.21);f.rotation.y=.43;
   for(const pose of ['eat','drink']){
     f.userData.setPose(pose);
-    for(let i=0;i<16;i++){
-      f.userData.state.actionProgress=i/16;f.userData.update(0,0);f.updateMatrixWorld(true);
-      for(const gap of Object.values(f.userData.state.contactErrors))assert.ok(gap<.0005,'contact stays within half a millimetre');
-      for(const joint of Object.values(f.userData.state.ikDetails)){
-        assert.ok(Math.abs(joint.forearmTwist)<1.51,'forearm does not reverse');
-        assert.ok(joint.flex>.07&&joint.flex<2.68,'elbow remains within the authored range');
+    const frames=[],endpoints=[];let previous;
+    for(let i=0;i<=720;i++){
+      const u=i/720,label=quality+'/'+pose+'@'+u.toFixed(5);actionFrame(f,u);
+      const state=f.userData.state,prop=r.props[pose==='drink'?'cup':'sword'];
+      const grip=r.arms.R.wr.localToWorld(new V().fromArray(r.arms.R.hand.children[0].userData.gripCenter).multiplyScalar(r.s).applyQuaternion(r.arms.R.hand.quaternion));
+      const handle=prop.localToWorld(new V().fromArray(prop.userData[pose==='drink'?'handleGrip':'gripCenter']));
+      assert.ok(grip.distanceTo(handle)<.0005,label+' handle stays inside the closed hand');
+      assert.equal(Object.keys(state.contactErrors).length,2,label+' solves both hands');
+      for(const gap of Object.values(state.contactErrors))assert.ok(Number.isFinite(gap)&&gap<.0005,label+' solver contact stays within half a millimetre');
+      for(const [side,joint] of Object.entries(state.ikDetails)){
+        const arm=r.arms[side],bend=2*Math.acos(Math.min(1,Math.abs(arm.wr.quaternion.w)));
+        assert.ok(joint.analytic,label+' uses the deterministic analytic solution');
+        assert.ok(Math.abs(joint.forearmTwist)<1.50,label+' forearm does not reverse');
+        assert.ok(joint.flex>.07&&joint.flex<2.68,label+' elbow stays in range');
+        assert.ok(bend<1.24,label+' wrist bend stays below 71 degrees');
+        assert.ok(Math.abs(arm.el.rotation.x+joint.flex)<1e-9,label+' elbow diagnostic matches the actual joint');
+        assert.ok(arm.sh.getWorldPosition(new V()).y-arm.el.getWorldPosition(new V()).y>.02*r.s,label+' elbow remains below the shoulder');
       }
-    }
-    f.userData.state.actionProgress=pose==='eat'?.24:.5;f.userData.update(0,0);f.updateMatrixWorld(true);
-    if(pose==='eat'){
-      const point=r.props.sword.localToWorld(new V().fromArray(r.props.sword.userData.spearPoint));
-      assert.ok(new C.THREE.Box3().setFromObject(r.props.meat).containsPoint(point),'cut contacts the actual raw shoulder');
-      f.userData.state.actionProgress=.7;f.userData.update(0,0);f.updateMatrixWorld(true);
-      const bite=r.props.morsel.getWorldPosition(new V()),mouth=r.head.localToWorld(new V(0,-.038,.073));
-      assert.ok(bite.distanceTo(mouth)<.075,'pierced piece reaches the mouth');
-      assert.equal(r.props.morsel.parent,r.props.sword);
-    }else{
-      const rim=r.props.cup.localToWorld(new V().fromArray(r.props.cup.userData.drinkContact));
       const mouth=r.head.localToWorld(new V(0,-.038,.073));
-      assert.ok(rim.distanceTo(mouth)<.035,'drinking edge reaches the lips');
       const palm=r.arms.L.wr.localToWorld(new V(-.012*r.s,-.075*r.s,0));
-      const bottom=r.props.cup.localToWorld(new V().fromArray(r.props.cup.userData.baseSupport));
-      assert.ok(palm.distanceTo(bottom)<.010,'left palm supports the base');
+      if(pose==='eat'){
+        const contact=meat.userData.contactState;
+        assert.equal(r.props.meat,meat,label+' retains the original full shoulder');
+        assert.equal(meat.children[0].geometry,geometry,label+' keeps the complete mesh');
+        assert.equal(meat.parent,f,label+' shoulder stays in the rig coordinate frame');
+        assert.ok(meat.visible&&(!r.props.morsel||!r.props.morsel.visible),label+' displays the whole shoulder without a substitute morsel');
+        assert.ok(meat.scale.distanceTo(new V(r.s,r.s,r.s))<1e-10,label+' does not shrink the meat');
+        assert.ok(contact.wholeShoulder,label+' marks the carried load as a whole shoulder');
+        const center=f.worldToLocal(meat.getWorldPosition(new V()));
+        if(i===0||i===720){
+          endpoints.push(center.clone());
+          const box=new C.THREE.Box3().setFromObject(meat),size=box.getSize(new V());
+          const meatCenter=meat.getWorldPosition(new V());
+          const hits=new C.THREE.Raycaster(new V(meatCenter.x,box.max.y+.1,meatCenter.z),new V(0,-1,0)).intersectObject(r.props.shield,true);
+          assert.ok(hits.length>0,label+' shoulder rests over the shield');
+          assert.ok(Math.abs(box.min.y-hits[0].point.y)<.003*r.s,label+' rests the shoulder on the actual shield surface');
+          assert.ok(size.x>.30*r.s&&size.z>.25*r.s,label+' retains the large shoulder silhouette');
+        }
+        if(u>=.34&&u<=.94){
+          const blade=prop.localToWorld(new V().fromArray(contact.bladePoint)),pierce=meat.localToWorld(new V().fromArray(meat.userData.pierceContact));
+          assert.ok(blade.distanceTo(pierce)<.0005,label+' blade remains embedded in the same full shoulder');
+          assert.ok(new C.THREE.Box3().setFromObject(meat).containsPoint(blade),label+' blade contact is inside the actual meat bounds');
+        }
+        if(u>=.67&&u<=.77){
+          const bite=meat.localToWorld(new V().fromArray(meat.userData.biteContact));
+          assert.ok(bite.distanceTo(mouth)<.015*r.s,label+' the whole shoulder cut face reaches the lips');
+          assert.ok(center.y>endpoints[0].y+.4*r.s,label+' lifts the full shoulder from the shield');
+          const line=new C.THREE.Line3(prop.localToWorld(new V().fromArray(prop.userData.bladeRoot)),prop.localToWorld(new V().fromArray(prop.userData.bladeTip)));
+          assert.ok(line.closestPointToPoint(mouth,true,new V()).distanceTo(mouth)>.14*r.s,label+' the blade clears the face during the bite');
+        }
+        if(u>=.57&&u<=.86){
+          const support=meat.localToWorld(new V().fromArray(meat.userData.supportContact));
+          assert.ok(palm.distanceTo(support)<.0005,label+' left palm supports the actual shoulder');
+        }
+      }else{
+        const cup=r.props.cup,bottom=cup.localToWorld(new V().fromArray(cup.userData.baseSupport));
+        assert.ok(palm.distanceTo(bottom)<.0005,label+' left palm supports the actual cup base');
+        const up=new V(0,1,0).applyQuaternion(cup.getWorldQuaternion(new Q())).applyQuaternion(f.getWorldQuaternion(new Q()).invert());
+        const pitch=Math.atan2(up.z,up.y);
+        assert.ok(pitch<=1e-8&&pitch>-.9,label+' cup tilts toward the drinker');
+        if(u>=.28&&u<=.82){
+          const rim=cup.localToWorld(new V().fromArray(cup.userData.drinkContact));
+          const center=cup.getWorldPosition(new V()),forward=new V(0,0,1).applyQuaternion(r.head.getWorldQuaternion(new Q()));
+          assert.ok(rim.distanceTo(mouth)<.015*r.s,label+' drinking edge reaches the lips');
+          assert.ok(center.clone().sub(mouth).dot(forward)>.05*r.s,label+' cup stays in front of the mouth');
+          assert.ok(rim.clone().sub(center).dot(forward)<-.04*r.s,label+' the near rim faces the lips');
+        }
+        if(u>=.56&&u<=.69)assert.ok(pitch<-.78,label+' raises the cup base for the sustained drink');
+      }
+      const current=actionSnapshot(r);frames.push(current);
+      for(const [name,node] of Object.entries(current)){
+        assert.ok(node.matrix.every(Number.isFinite),label+' '+name+' has a finite world transform');
+        if(previous){
+          assert.ok(quaternionStep(node.localQ,previous[name].localQ)<.10,label+' '+name+' local quaternion has no snap');
+          assert.ok(quaternionStep(node.worldQ,previous[name].worldQ)<.10,label+' '+name+' world quaternion has no snap');
+        }
+      }
+      previous=current;
+    }
+    if(pose==='eat')assert.ok(endpoints[0].distanceTo(endpoints[1])<1e-9,'the whole shoulder returns to its original place');
+    for(const name of Object.keys(frames[0]))assert.ok(quaternionStep(frames[0][name].worldQ,frames[720][name].worldQ)<1e-6,quality+'/'+pose+' '+name+' closes the animation cycle');
+    // The permutation jumps repeatedly across the cycle instead of warming up an incremental solver.
+    for(let i=0;i<=720;i++){
+      const index=i*193%721;actionFrame(f,index/720);const actual=actionSnapshot(r),expected=frames[index];
+      for(const name of Object.keys(actual))for(let k=0;k<16;k++)assert.ok(Math.abs(actual[name].matrix[k]-expected[name].matrix[k])<1e-8,quality+'/'+pose+' '+name+' is independent of frame order');
     }
   }
-  f.userData.setPose('stand');assert.equal(r.arms.R.wr.rotation.x,0,'eating wrist flexion is cleared');
+  f.userData.setPose('stand');
+  for(const side of ['L','R'])assert.ok(r.arms[side].wr.quaternion.angleTo(new Q())<1e-9,'action wrist flexion is cleared');
+  assert.ok(!r.props.meat.parent&&!r.props.cup.parent,'action props are removed on return to standing');
 });
 
 test('Xiang Bo interposes between the dancer and Liu Bang, with blades clear of heads',()=>{

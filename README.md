@@ -36,6 +36,7 @@ src/data/kuho.js           句法の解説（ヒントで使う）
 src/js/koumon.js           進行・画面・保存・小さな遊び・音
 src/js/koumon-classroom.js 導入の紙芝居・人物案内・資料付きAI指示文
 src/js/koumon-3d.js        3D の舞台（Three.js）
+src/js/koumon-lighting.js  肌・布・金属を照らす共有の環境反射
 src/js/koumon-cast3d.js    3D の人物（衣・甲冑・冠・持ち物・姿勢）と馬
 src/js/koumon-heads.js     人物別の人体ベース頭部・眼球・髪・髭
 src/js/koumon-hands.js     解剖メッシュによる手と握り
@@ -51,7 +52,7 @@ src/vendor/three.min.js    Three.js r128（MIT）
 tools/build.mjs            一枚にまとめる（node tools/build.mjs → dist/index.html）
 tools/character-gallery.html 人物を回転・拡大して確認するページ
 tools/banquet-scenes.html   剣舞・翼蔽・飲酒・食事を再生／一時停止するページ
-tools/verify-banquet.cjs    握りと接触・関節範囲の検査
+tools/verify-banquet.cjs    握り・接触・関節範囲・動きの連続性の検査
 ```
 
 ## 開発時の確認

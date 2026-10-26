@@ -318,7 +318,13 @@
     for (var i = 0; i < p.count; i++) {
       var x = p.getX(i), y = p.getY(i), u = (h / 2 - y) / h;
       var fold = Math.sin(x * 9 + ph + Math.sin(x * 2.1 + ph) * 1.4) * .07 + Math.sin(x * 23 + ph * 2) * .018;
-      p.setZ(i, fold * (.55 + u * .6) + (u > .96 ? (u - .96) * 2.2 : 0));
+      var gather = 0, gatheredX = x;
+      (o.ties || []).forEach(function (tx) {
+        var pull = Math.exp(-Math.pow((x - tx) / .48, 2) - Math.pow((y + h * .08) / .42, 2));
+        gather += pull; gatheredX += (tx - x) * pull * .58;
+      });
+      p.setX(i, gatheredX);
+      p.setZ(i, fold * (.55 + u * .6) * (1 - Math.min(.7, gather * .7)) + gather * .10 + (u > .96 ? (u - .96) * 2.2 : 0));
     }
     geo.computeVertexNormals();
     var tex = drapeTex(colr, seed || 3, o.band || null); tex = tex.clone(); tex.needsUpdate = true; tex.repeat.set(w / 2.2, 1);
@@ -333,8 +339,15 @@
     var val = mesh(vg, std(0xffffff, .85, 0, { map: vt, side: THREE.DoubleSide }), false, true); val.position.y = h / 2 - .2; g.add(val);
     // 束ね紐で寄せたところ（深いひだ）
     (o.ties || []).forEach(function (tx) {
-      var tie = mesh(new THREE.TorusGeometry(.12, .02, 6, 16), stdc(0xb08a3a, .4, .5)); tie.position.set(tx, -h * .08, .14); tie.scale.set(1, .4, 1); g.add(tie);
-      var tas = mesh(new THREE.ConeGeometry(.04, .3, 8, 1, true), stdc(0xa8281a, .8, 0, { side: THREE.DoubleSide })); tas.position.set(tx + .08, -h * .08 - .2, .16); g.add(tas);
+      var ropeM = stdc(0x523b2a, .94, 0), ty = -h * .08;
+      [-1, 1].forEach(function (side) {
+        var wrap = new THREE.CatmullRomCurve3([new THREE.Vector3(tx + side * .16, ty + .04, .025), new THREE.Vector3(tx + side * .09, ty, .08), new THREE.Vector3(tx, ty - .01, .115)]);
+        g.add(mesh(new THREE.TubeGeometry(wrap, 8, .009, 5, false), ropeM));
+      });
+      var tie = mesh(new THREE.TorusGeometry(.025, .011, 6, 16), ropeM); tie.position.set(tx, ty - .015, .12); tie.scale.set(.8, .65, 1); g.add(tie);
+      var cord = new THREE.CatmullRomCurve3([new THREE.Vector3(tx, ty - .027, .13), new THREE.Vector3(tx + .015, ty - .08, .15), new THREE.Vector3(tx, ty - .15, .14)]);
+      g.add(mesh(new THREE.TubeGeometry(cord, 8, .009, 5, false), ropeM));
+      var tas = mesh(new THREE.ConeGeometry(.035, .17, 8), stdc(0x762e23, .95, 0)); tas.position.set(tx, ty - .235, .14); g.add(tas);
     });
     return g;
   }
@@ -639,7 +652,7 @@
     S.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     S.camera = new THREE.PerspectiveCamera(38, 1, .05, 600);
     // 発言者の顔を灯火だけに頼らず読めるよう、弱い補助光をカメラと共に動かす。
-    S.faceFill = new THREE.DirectionalLight(0xffead2, .55);
+    S.faceFill = new THREE.DirectionalLight(0xffead2, .24);
     S.faceFill.position.set(-1.5, 2, 2);
     S.faceFill.target.position.set(0, 0, -3);
     S.camera.add(S.faceFill, S.faceFill.target);
@@ -701,18 +714,22 @@
   function applyLight(sc, L, indoor) {
     sc.fog = new THREE.FogExp2(col(L.fog[0]), L.fog[1]);
     S.renderer.toneMappingExposure = L.exp;
-    S.faceFill.intensity = indoor ? .7 : .45;
-    var hemi = new THREE.HemisphereLight(col(L.hemi[0]), col(L.hemi[1]), L.hemi[2]); sc.add(hemi);
+    S.faceFill.intensity = indoor ? .24 : .20;
+    if(window.KM_LIGHTING)window.KM_LIGHTING.install(sc,S.renderer,indoor?'warm':'neutral');
+    var hemi = new THREE.HemisphereLight(col(L.hemi[0]), col(L.hemi[1]), L.hemi[2]*.78); sc.add(hemi);
     var key = new THREE.DirectionalLight(col(L.sun[0]), L.sun[1]);
     key.position.set(L.sun[2][0], L.sun[2][1], L.sun[2][2]);
     key.castShadow = Q !== 'low';
     key.shadow.mapSize.set(Q === 'high' ? 2048 : 1024, Q === 'high' ? 2048 : 1024);
     var sc2 = key.shadow.camera; sc2.left = -7; sc2.right = 7; sc2.top = 7; sc2.bottom = -7; sc2.near = .5; sc2.far = 40;
-    key.shadow.bias = -.0006; key.shadow.normalBias = .02;
+    key.shadow.bias = -.00015; key.shadow.normalBias = .005;
     sc.add(key); sc.add(key.target);
     if (indoor && L.indoor) {
       // 灯火・天幕越しの光を、人物の正面から柔らかく当てる
       var fill = new THREE.PointLight(col(L.indoor[0]), L.indoor[1], 12, 1.6); fill.position.set(0, 2.4, 2.2); sc.add(fill);
+    }
+    if(indoor && L===LIGHTS.day){
+      var edge=new THREE.DirectionalLight(col(0xc7d4df),.32);edge.position.set(3.2,3.8,-2.5);sc.add(edge);
     }
     if (!indoor) {
       sc.add(skyDome(L));
