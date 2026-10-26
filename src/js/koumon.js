@@ -393,6 +393,7 @@
 
   function cancelScene() {
     sceneEpoch++; stopTimer(); clearTimeout(cardTimer); showCard.fin = null;
+    if (ST && ST.cancelPendingScene) ST.cancelPendingScene();
     if (typing) { clearInterval(typing.id); typing = null; }
     if (el.card) el.card.classList.remove('on');
     if (el.fade) el.fade.classList.remove('show');
@@ -545,9 +546,13 @@
     var epoch = sceneEpoch;
     var indoor = /tent|feast|nangong/.test(n.stage);
     if (meta.sound) ambience(indoor ? 'in' : 'out');
-    return Promise.resolve(ST.setScene(n.stage, n.light, n.cast || [], n.pose || {})).then(function () {
+    var poses = n.pose || {};
+    // 途中の台詞へ復帰するとき、すでに終えた入場をもう一度始めない。
+    if (quiet && poses.kai === 'enter') { poses = Object.assign({}, poses, { kai: 'glare' }); }
+    return Promise.resolve(ST.setScene(n.stage, n.light, n.cast || [], poses)).then(function () {
       if (epoch !== sceneEpoch) return;
       ST.focus('wide');
+      if (n.stage === 'gate' && ST.prewarm) ST.prewarm(['u', 'haku', 'hai']);
       if (!quiet && n.sfx) sfx(n.sfx);
     });
   }
@@ -605,7 +610,10 @@
     if (n.at) ST.focus(n.at);
     if (ST.speaker) ST.speaker(n.w && n.w !== 'you' ? n.w : null);
     if (typeof n.fx === 'string') ST.effect(n.fx);
-    if (n.sfx) sfx(n.sfx);
+    var impactSession = st;
+    if (n.sfx && !(n.pose && n.pose.ei === 'down' && ST.whenBreachImpact && ST.whenBreachImpact(function () {
+      if (st === impactSession && !$root.hidden && mode !== 'title' && ST.S.stageId === 'gate') sfx(n.sfx);
+    }))) sfx(n.sfx);
     if (n.b && n.w && n.w !== 'you') ST.showBubble(n.w, { anger: '！！', hush: '……', think: '（……）' }[n.b] || '……', n.b);
     else if (n.b === 'think' && n.at && n.at !== 'wide') ST.showBubble(n.at, '（……）', 'think');
     else ST.hideBubble();

@@ -263,6 +263,9 @@
 
   function figurePath(g, f, t) {
     var A = ATTIRE[f.id] || {}, b = A.build || 1, pose = f.pose || 'stand';
+    var entry = pose === 'enter', entryU = entry ? f.motionProgress || 0 : 0;
+    var planted = entry ? ease((entryU - .8) / .17) : 0;
+    var stride = entry ? Math.sin(Math.min(1, entryU / .8) * Math.PI * 4) * (1 - planted) : 0;
     var hunch = A.hunch ? .035 : 0, armored = !!A.armor;
     var seated = pose === 'sit' || pose === 'raise';
     var lean = 0, headY = -.905, shY = -.8, waistY = -.48;
@@ -273,7 +276,9 @@
     if (pose === 'charge') lean = .12;
     if (pose === 'run') lean = .09;
     if (pose === 'strike') lean = .1;
+    if (entry) lean = .1 * (1 - planted);
     var bob = pose === 'run' ? Math.abs(Math.sin(t * 9)) * .025 : (pose === 'stand' || pose === 'glare') ? Math.sin(t * 1.2 + f.x) * .003 : 0;
+    if (entry) bob = Math.abs(stride) * .014;
     var sh = .105 * b, cx = lean * .7 + hunch;
     var hx = .028 + lean + hunch * 1.4, hy = headY - bob + hunch;
     var top = shY - bob;
@@ -311,7 +316,7 @@
       var hemY = armored ? -.3 : 0;
       var spread = 0;
       if (pose === 'dance') spread = .05 + Math.sin(ph) * .03;
-      if (pose === 'glare' || pose === 'charge') spread = .05;
+      if (pose === 'glare' || pose === 'charge' || entry) spread = .05;
       var hemF = (armored ? .15 : .17 * (A.robe || 1)) * b + spread + (A.lady ? .07 : 0);
       var hemB = (armored ? .14 : .18 * (A.robe || 1)) * b + spread * .6 + (A.lady ? .1 : 0);
       g.moveTo(cx - sh, top + .015);
@@ -328,6 +333,7 @@
         g.lineTo(cx + sh * 1.12, top + .11); g.quadraticCurveTo(cx, top + .07, cx - sh * 1.12, top + .11); g.closePath();
         // 脚
         var st = { stand: [.04, .05], glare: [.1, .11], charge: [.16, .1], dance: [.08 + Math.sin(ph) * .06, .1 - Math.sin(ph) * .05], run: [Math.sin(t * 9) * .2, -Math.sin(t * 9) * .2], strike: [.1, .08], drink: [.05, .06], eat: [.1, .08] }[pose] || [.04, .05];
+        if (entry) st = [.1 + stride * .14, .11 - stride * .14];
         leg(g, .04, hemY - .04, .05 + st[0] * .5, -.15, st[0] + .03, 0, .032);
         leg(g, -.04, hemY - .04, -.05 - st[1] * .4, -.15, -st[1], 0, .032);
       }
@@ -361,7 +367,7 @@
       g.moveTo(hx - .074, hy + .005); g.quadraticCurveTo(hx - .02, hy - .13, hx + .074, hy - .005);
       g.lineTo(hx + .07, hy + .01); g.closePath();
       g.rect(hx - .005, hy - .15, .01, .06);
-      if (pose === 'glare') {
+      if (pose === 'glare' || entry && planted > .5) {
         for (k = -2; k <= 2; k++) { g.moveTo(hx + k * .025 - .01, hy - .07); g.lineTo(hx + k * .036, hy - .21 + Math.abs(k) * .02); g.lineTo(hx + k * .025 + .01, hy - .07); g.closePath(); }
       }
     } else if (cr === 'cap') {
@@ -400,6 +406,7 @@
     if (pose === 'charge') { a1 = .15; a2 = .05; b1 = .3; b2 = .2; }
     if (pose === 'glare') { a1 = 1.3; a2 = 1.15; b1 = 1.85; b2 = 1.95; }
     if (pose === 'run') { a1 = 1.1 + Math.sin(t * 9) * .7; a2 = .5; b1 = 1.9 - Math.sin(t * 9) * .7; b2 = 1.1; }
+    if (entry) { a1 = 1.3; a2 = 1.15; b1 = .75 + planted * 1.1; b2 = .35 + planted * 1.6; }
     var hand2 = arm(g, bx, sy, b1, b2, len, drop * .9, armored);
     var hand = arm(g, sx, sy, a1, a2, len, drop, armored);
     return { head: { x: hx, y: hy - .13 }, hand: hand, hand2: hand2, A: A, pose: pose, shY: shY };
@@ -407,10 +414,13 @@
 
   function drawFigure(g, f, t, L) {
     if (f.pose === 'gone') return null;
+    var fall = f.pose === 'down' && typeof f.fallProgress === 'number' ? f.fallProgress : null;
+    if (fall != null) f = Object.assign({}, f, { pose: 'stand' });
     var s = f.h, face = f.face || 1;
     g.save();
     g.translate(f.x, f.y);
     g.scale(s * face, s);
+    if (fall != null) g.rotate(ease(fall) * Math.PI / 2);
     // 足元の影
     var sg = g.createRadialGradient(0, 0, 0, 0, 0, .34);
     sg.addColorStop(0, 'rgba(0,0,0,.45)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
@@ -461,6 +471,7 @@
       g.fillStyle = L.ink;
       g.beginPath();
       if (p === 'eat') g.ellipse(.34, -.03, .17, .035, 0, 0, Math.PI * 2);
+      else if (p === 'enter') g.ellipse(info.hand2.hx, info.hand2.hy, .06, .21, -.1, 0, Math.PI * 2);
       else if (p === 'charge') g.ellipse(.24, -.52, .06, .21, -.1, 0, Math.PI * 2);
       else if (p === 'run') g.ellipse(-.02, -.56, .055, .19, .1, 0, Math.PI * 2);
       else g.ellipse(-.17, -.5, .055, .18, .12, 0, Math.PI * 2);
@@ -888,7 +899,7 @@
     stage: null, stageId: '', light: null, lightId: '', cast: {}, poses: {},
     cam: { x: 800, y: 450, z: 1 }, from: null, to: null, tStart: 0, tDur: 1.6, drift: 0,
     shake: 0, flash: 0, flashC: '255,255,255', pulse: 0,
-    parts: [], cache: {}, labels: {}, heads: {}, reduced: false, onFrame: null, bubble: null
+    parts: [], cache: {}, labels: {}, heads: {}, reduced: false, onFrame: null, bubble: null, entry: null, breach: null
   };
 
   function mount(canvas, overlay) {
@@ -924,10 +935,10 @@
     S.stage = STAGES[S.stageId];
     S.lightId = LIGHTS[lightId] ? lightId : 'night';
     S.light = LIGHTS[S.lightId];
-    S.cast = {};
+    S.cast = {}; S.entry = null; S.breach = null;
     (cast || []).forEach(function (id) {
       var p = S.stage.pos[id];
-      if (p) S.cast[id] = { id: id, x: p.x, y: p.y, h: p.h, face: p.face, pose: p.pose || 'stand', horse: p.horse, back: p.back, front: p.front, x0: p.x };
+      if (p) S.cast[id] = { id: id, x: p.x, y: p.y, h: p.h, face: p.face, pose: p.pose || 'stand', horse: p.horse, back: p.back, front: p.front, x0: p.x, y0: p.y };
     });
     S.poses = {};
     if (poses) Object.keys(poses).forEach(function (k) { setPose(k, poses[k]); });
@@ -941,13 +952,48 @@
   function setPose(id, pose) {
     var f = S.cast[id];
     if (!f) return;
+    if (S.stageId === 'gate' && id === 'ei' && pose === 'down' && S.breach) {
+      S.breach.impactRequested = true; S.breach.requestedAt = S.t; updateBreach(); return;
+    }
+    if (id === 'kai' && pose !== 'charge' && S.breach) {
+      f.x = S.breach.to; f.y = f.y0;
+      if (S.breach.impactRequested && S.cast.ei) { S.cast.ei.pose = 'down'; S.cast.ei.fallProgress = 1; }
+      S.breach = null;
+    }
+    if (id === 'kai' && pose !== 'enter' && S.entry) {
+      f.x = f.x0; f.y = f.y0;
+      S.entry.interrupted = !S.entry.finished; S.entry.active = false; S.entry.finished = true;
+      S.entry.progress = S.entry.travel = S.entry.curtainOpen = 1; S.entry.follow = false;
+    }
     f.pose = pose;
+    if (id === 'kai' && pose === 'charge' && S.stageId === 'gate') {
+      S.breach = { started: S.t, duration: 1.9, progress: 0, active: true, finished: false,
+        from: f.x, to: 830, follow: true, cameraFrom: { x: S.cam.x, y: S.cam.y, z: S.cam.z }, impactRequested: false, impactStart: null, impactCallbacks: [] };
+      S.from = null; S.to = null;
+    }
+    if (id === 'kai' && pose === 'enter' && S.stageId === 'feast') {
+      f.actionStart = S.t; delete f.actionProgress;
+      S.entry = { id: id, duration: 3.6, progress: 0, travel: 0, curtainOpen: 0, active: true, finished: false, interrupted: false, follow: true };
+      updateEntrance();
+    }
     if (id === 'sou' && pose === 'dance') f.x = f.x0;
   }
 
   /** カメラを寄せる。target は 'wide' か人物 id */
-  function focus(target, z) {
+  function focus(target, z, options) {
     var st = S.stage; if (!st) return;
+    if (S.breach) {
+      if ((!options || options.followEntry !== false) && (target === 'kai' || target === 'ei' || target === 'wide' || !target)) {
+        S.breach.follow = true; S.from = null; S.to = null; return;
+      }
+      S.breach.follow = false;
+    }
+    if (S.entry) {
+      if ((!options || options.followEntry !== false) && S.entry.active && (target === 'kai' || target === 'wide' || !target)) {
+        S.entry.follow = true; S.from = null; S.to = null; entranceCamera(); return;
+      }
+      S.entry.follow = false;
+    }
     var to;
     if (!target || target === 'wide' || !S.cast[target]) to = { x: st.wide.x, y: st.wide.y, z: st.wide.z };
     else {
@@ -962,8 +1008,67 @@
     S.tDur = S.reduced ? 0.001 : 1.7;
     S.drift = 0;
   }
+  function updateBreach() {
+    var b = S.breach, f = S.cast.kai;
+    if (!b || !f || S.stageId !== 'gate') return;
+    var u = S.reduced ? 1 : typeof b.actionProgress === 'number' ? b.actionProgress : (S.t - b.started) / b.duration;
+    u = Math.max(0, Math.min(1, u));
+    b.travel = entranceTravel(u); f.x = b.from + (b.to - b.from) * b.travel; b.progress = u; b.active = u < 1;
+    if (b.impactRequested && u >= 1 && b.impactStart == null) {
+      b.impactStart = Math.max(b.started + b.duration, b.requestedAt);
+      if (b.impactEffect) effect(b.impactEffect);
+      b.impactCallbacks.splice(0).forEach(function (callback) { callback(); });
+    }
+    b.fallProgress = b.impactStart == null ? 0 : S.reduced ? 1 : Math.max(0, Math.min(1, (S.t - b.impactStart) / .65));
+    if (b.impactStart != null && S.cast.ei) { S.cast.ei.pose = 'down'; S.cast.ei.fallProgress = b.fallProgress; }
+    b.finished = u >= 1 && (!b.impactRequested || b.fallProgress >= 1);
+    b.phase = u < 1 ? '盾を先に軍門へ進む' : b.fallProgress < 1 && b.impactRequested ? '盾で撞き、衛士が倒れる' : '軍門を押し通る';
+  }
+  function breachCamera() {
+    var b = S.breach;
+    if (!b || !b.follow || S.stageId !== 'gate') return false;
+    var u = S.reduced ? 1 : ease((S.t - b.started) / .5), from = b.cameraFrom;
+    S.cam.x = from.x + (820 - from.x) * u; S.cam.y = from.y + (520 - from.y) * u; S.cam.z = from.z + (1.05 - from.z) * u;
+    return true;
+  }
+  function whenBreachImpact(callback) {
+    var b = S.breach;
+    if (!b || !b.impactRequested || b.impactStart != null) return false;
+    b.impactCallbacks.push(callback); return true;
+  }
+  function entranceTravel(u) {
+    if (window.KM_CAST3D && window.KM_CAST3D.enterTravel) return window.KM_CAST3D.enterTravel(u);
+    var x = Math.max(0, Math.min(1, (u - .02) / .82)), ramp = .06 / .82;
+    return (x < ramp ? .5 * x * x / ramp : x > 1 - ramp ? 1 - ramp - .5 * (1 - x) * (1 - x) / ramp : x - .5 * ramp) / (1 - ramp);
+  }
+  function updateEntrance() {
+    var entry = S.entry, f = S.cast.kai;
+    if (!entry || !f || f.pose !== 'enter') return;
+    var u = S.reduced ? 1 : typeof f.actionProgress === 'number' ? f.actionProgress : (S.t - f.actionStart) / entry.duration;
+    u = Math.max(0, Math.min(1, u));
+    var travel = entranceTravel(u);
+    f.x = 1510 + (f.x0 - 1510) * travel; f.y = f.y0; f.motionProgress = u;
+    entry.progress = u; entry.travel = travel; entry.curtainOpen = ease((u - .015) / .24);
+    entry.active = u < 1; entry.finished = u >= 1;
+    entry.phase = u < .25 ? '帷を押し開く' : u < .8 ? '盾を先に進み入る' : u < .97 ? '踏み止まる' : '西嚮して立つ';
+  }
+  function entranceCamera() {
+    var entry = S.entry, f = S.cast.kai;
+    if (!entry || !entry.follow || !f || f.pose !== 'enter') return false;
+    S.cam.x = f.x - 130; S.cam.y = f.y - f.h * .52; S.cam.z = 1.15;
+    return true;
+  }
+  function drawEntranceCurtain(g, L, front) {
+    var open = S.entry ? S.entry.curtainOpen : 1;
+    if (!front) { g.fillStyle = '#130a09'; g.fillRect(1390, 240, 180, 540); return; }
+    var cloth = { cloth: ['#6a241c', '#4a1812', '#260e0a'] };
+    curtainWall(g, 1390, 1480 - open * 86, 240, 780, cloth, 4);
+    curtainWall(g, 1480 + open * 86, 1570, 240, 780, cloth, 4);
+    g.fillStyle = L.ink; g.fillRect(1382, 226, 196, 18);
+  }
 
   function effect(name) {
+    if (name === 'shake' && S.breach && S.breach.impactRequested && S.breach.impactStart == null) { S.breach.impactEffect = name; return; }
     if (S.reduced && (name === 'shake' || name === 'pulse')) { S.flash = .35; S.flashC = '255,255,255'; return; }
     if (name === 'flash') { S.flash = .85; S.flashC = '255,250,235'; spawnSparks(); }
     if (name === 'red') { S.flash = .6; S.flashC = '170,30,20'; }
@@ -1086,18 +1191,23 @@
   function frame(now) {
     if (!S.running) return;
     S.raf = requestAnimationFrame(frame);
+    if (document.hidden) { S.tLast = 0; return; }
     var t = now / 1000;
-    var dt = S.t ? Math.min(.05, t - S.tLast) : .016;
+    var dt = S.tLast ? Math.min(.05, t - S.tLast) : .016;
     S.tLast = t;
-    S.t = (S.t || 0) + dt;
     draw(dt);
   }
 
   function draw(dt) {
     var g = S.g, st = S.stage, L = S.light;
     if (!g || !st) return;
+    S.t += dt;
+    updateBreach();
+    updateEntrance();
     // カメラ
-    if (S.to) {
+    if (breachCamera() || entranceCamera()) {
+      S.drift = 0;
+    } else if (S.to) {
       var u = ease((S.t - S.tStart) / S.tDur);
       S.cam.x = S.from.x + (S.to.x - S.from.x) * u;
       S.cam.y = S.from.y + (S.to.y - S.from.y) * u;
@@ -1127,12 +1237,13 @@
       if (layer.st) g.drawImage(layerCanvas(li, layer), -M, -M, W + 2 * M, H + 2 * M);
       if (layer.dy) layer.dy(g, L, S.t);
       if (layer.fig) {
+        if (S.stageId === 'feast') drawEntranceCurtain(g, L, false);
         // 壁に落ちる影（幕舎の灯）
         if (layer.shadow) {
           g.save(); g.globalAlpha = .28;
           Object.keys(S.cast).forEach(function (id) {
             var f = S.cast[id];
-            var sf = { id: f.id, x: layer.shadow.x + (f.x - layer.shadow.x) * 1.5, y: layer.shadow.wallY, h: f.h * 1.5, face: f.face, pose: f.pose };
+            var sf = { id: f.id, x: layer.shadow.x + (f.x - layer.shadow.x) * 1.5, y: layer.shadow.wallY, h: f.h * 1.5, face: f.face, pose: f.pose, motionProgress: f.motionProgress };
             var Ls = { ink: '#000', rim: '#000', rimA: 0 };
             drawFigure(g, sf, S.t, Ls);
           });
@@ -1151,11 +1262,12 @@
             return;
           }
           var lf = st.indoor ? (f.x < 800 ? 1 : -1) * (f.face || 1) : 1;
-          var hd = drawFigure(g, { id: f.id, x: f.x, y: f.y, h: f.h, face: f.face, pose: f.pose, lightFrom: lf, back: f.back }, S.t, L);
-          if (f.id === 'ei' && f.pose !== 'gone') drawFigure(g, { id: 'ei', x: f.x + 150, y: f.y, h: f.h, face: -1, pose: f.pose }, S.t, L);
+          var hd = drawFigure(g, { id: f.id, x: f.x, y: f.y, h: f.h, face: f.face, pose: f.pose, lightFrom: lf, back: f.back, motionProgress: f.motionProgress, fallProgress: f.fallProgress }, S.t, L);
+          if (f.id === 'ei' && f.pose !== 'gone') drawFigure(g, { id: 'ei', x: f.x + 150, y: f.y, h: f.h, face: -1, pose: f.pose, fallProgress: f.fallProgress }, S.t, L);
           if (hd) heads[f.id] = hd;
         });
         drawParticles(g);
+        if (S.stageId === 'feast') drawEntranceCurtain(g, L, true);
         R = null;
       }
     });
@@ -1208,7 +1320,7 @@
   function renderOnce() { draw(.016); }
 
   window.KoumonStage = {
-    mount: mount, resize: resize, setScene: setScene, setPose: setPose, focus: focus, effect: effect,
+    mount: mount, resize: resize, setScene: setScene, setPose: setPose, focus: focus, effect: effect, whenBreachImpact: whenBreachImpact,
     start: start, stop: stop, renderOnce: renderOnce, project: project,
     showBubble: showBubble, hideBubble: hideBubble, clearLabels: clearLabels,
     STAGES: STAGES, LIGHTS: LIGHTS, S: S

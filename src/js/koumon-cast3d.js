@@ -31,6 +31,12 @@
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function sstep(a, b, v) { var t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
   function lerp(a, b, t) { return a + (b - a) * t; }
+  // Shared with the entrance stage path. C1 travel starts and stops without
+  // sliding the planted feet; the local gait subtracts this exact root travel.
+  function enterTravel(u) {
+    var x=clamp((u-.02)/.82,0,1),r=.06/.82;
+    return (x<r?.5*x*x/r:x>1-r?1-r-.5*(1-x)*(1-x)/r:x-.5*r)/(1-r);
+  }
   function std(c, r, m, o) { var p = { color: col(c).convertSRGBToLinear(), roughness: r == null ? .85 : r, metalness: m || 0 }; if (o) for (var k in o) p[k] = o[k]; return new THREE.MeshStandardMaterial(p); }
   function mesh(g, m, cast, recv) { var x = new THREE.Mesh(g, m); x.castShadow = cast !== false; x.receiveShadow = recv !== false; return x; }
   function canvasTex(w, h, draw, srgb) {
@@ -824,7 +830,7 @@
       });
       var shin = mesh(shG, cloth); shin.position.y = -.21 * s; knee.add(shin);
       var shoe = shoeMesh('boot', s, 0x1a1210); shoe.position.set(0, -.46 * s, .0); knee.add(shoe);
-      legs[k] = { hip: hip, knee: knee };
+      legs[k] = { hip: hip, knee: knee, shoe: shoe };
       hip.visible = armored;
     });
     // 長衣の人物は、裾から履の先だけが見える
@@ -971,19 +977,23 @@
       ['L', 'R'].forEach(function (k) { arms[k].heldHandle = null; arms[k].wr.rotation.set(0,0,0); });
       state.pose = pose;
       state.motionPhase='';state.motionProgress=0;state.contactErrors={};state.ikDetails={};state.cupRotation=null;state.actionStart=null;
+      state.footContacts={};state.entryComplete=false;state.entryRootProgress=0;
+      delete state.gateProgress;delete state.gateRootProgress;
       delete state.actionProgress;
       root.visible = pose !== 'gone';
       body.rotation.set(0, 0, 0); body.position.set(0, 0, 0);
+      pelvis.rotation.set(0,0,0);pelvis.position.x=0;pelvis.position.z=0;
       spine.rotation.set(0, 0, 0); neck.rotation.set(0, 0, 0); headPiv.rotation.set(0, 0, 0);headPiv.position.set(0,0,0);
       var seated = pose === 'sit' || pose === 'raise', kneel = pose === 'kneel' || pose === 'eat';
       if (pose === 'stand' || seated || kneel) spine.rotation.x = c.restLean || 0;
       skirtStand.visible = !seated && !kneel;
+      skirtStand.scale.y=pose==='dance'&&!armored?.91:1;
       skirtSit.visible = seated; skirtKneel.visible = kneel;
       skirtKneel.scale.y = pose === 'eat' ? .74 : 1;
       if (skirtPlates) { skirtPlates.visible = true; skirtPlates.position.y = seated ? .02 * s : kneel ? .0 : 0; skirtPlates.scale.y = seated ? .55 : kneel ? .8 : 1; }
-      shoesR.visible = !seated && !kneel;
+      shoesR.visible = !seated && !kneel && pose!=='dance' && pose!=='enter';
       pelvis.position.y = seated ? .4 * s : pose === 'eat' ? .46*s : kneel ? .62 * s : .95 * s;
-      ['L', 'R'].forEach(function (k) { legs[k].hip.visible = armored && !seated && !kneel; legs[k].hip.rotation.set(0, 0, 0); legs[k].knee.rotation.set(0, 0, 0); });
+      ['L', 'R'].forEach(function (k) { legs[k].hip.visible = (armored || pose==='dance' || pose==='enter') && !seated && !kneel; legs[k].hip.rotation.set(0, 0, 0); legs[k].knee.rotation.set(0, 0, 0);legs[k].shoe.quaternion.identity(); });
       if (props.sword) { props.sword.visible = false; if (props.sword.parent) props.sword.parent.remove(props.sword); if (props.sheath) props.sheath.visible = true; }
       ['shield', 'halberd', 'jue', 'cup', 'meat', 'morsel'].forEach(function (k) { if (props[k] && props[k].parent) props[k].parent.remove(props[k]); });
       if (props.jueHang) props.jueHang.visible = true;
@@ -1009,13 +1019,15 @@
       if (pose === 'drink') { setArm('R', 1.0, .18, 1.5, .15); hpz.R = 'grasp'; hpz.L = 'hold'; holdIn('R', props.cup, [0, 0, 0], [0, -.1 * s, .06]); }
       if(pose==='eat')hpz.L='hold';
       if (pose === 'glare') { setArm('L', .2, .38, .32); setArm('R', .2, .38, .32); hpz = { L: 'grasp', R: 'grasp' }; legs.L.hip.rotation.z = .12; legs.R.hip.rotation.z = -.12; }
-      if (pose === 'charge') { spine.rotation.x = .3; setArm('L', 1.3, .2, .3); hpz.L = 'grasp'; legs.L.hip.rotation.x = -.5; legs.L.knee.rotation.x = .5; legs.R.hip.rotation.x = .4; }
-      if ((pose === 'glare' || pose === 'charge' || pose === 'stand' || pose === 'run') && props.shield) holdIn('L', props.shield, [0, PI / 2, 0], [-.05, -.12 * s, .1]);
+      if (pose === 'charge') { spine.rotation.x = .3; setArm('L', 1.3, .2, .3); hpz.L = 'grasp';hpz.R='grasp'; legs.L.hip.rotation.x = -.5; legs.L.knee.rotation.x = .5; legs.R.hip.rotation.x = .4; }
+      if(pose==='enter'){hpz={L:'grasp',R:'grasp'};setArm('L',.70,.36,1.0,-.08);setArm('R',.08,.35,.60);}
+      if ((pose === 'glare' || pose === 'charge' || pose === 'stand' || pose === 'run' || pose==='enter') && props.shield) holdIn('L', props.shield, [0, PI / 2, 0], [-.05, -.12 * s, .1]);
       if (props.halberd && pose !== 'down') { holdIn('R', props.halberd, [0, 0, 0], [0, -.62, .02]); setArm('R', .45, .05, .9); hpz.R = 'grasp'; }
       if (pose === 'down') { body.rotation.x = -PI / 2; body.position.set(0, .14, .9 * s); setArm('L', 2.8, .4, .2); setArm('R', .3, .6, .4); }
       if (pose === 'run') hpz = { L: 'grasp', R: 'grasp' };
       if(seated||kneel){arms.R.el.rotation.y=1.25;arms.L.el.rotation.y=-1.25;}
       ['L', 'R'].forEach(function (k) { if (arms[k].handPose !== hpz[k]) attachHand(k, hpz[k]); alignHeldHandle(k); });
+      if(pose==='glare'&&id==='kai'){state.footContacts={};entranceMotion(1);}
       state.base = { L: arms.L.cur.slice(), R: arms.R.cur.slice(), hL: hpz.L, hR: hpz.R };
     }
 
@@ -1069,7 +1081,7 @@
       var circle=shoulder.clone().addScaledVector(toward,along);
       var hint=forearmHint.clone().applyQuaternion(rootToChest).normalize();
       var preferred=wrist.clone().addScaledVector(hint,-fore).sub(circle).normalize();
-      var pole=new V3(sd*(sideKey==='L'?1:.75),-1,sideKey==='L'?.8:state.pose==='drink'?.65:-.75).applyQuaternion(rootToChest).addScaledVector(preferred,.10);
+      var pole=new V3(sd*(sideKey==='L'?1:.75),-1,sideKey==='L'?.8:state.pose==='drink'?1.20:-.75).applyQuaternion(rootToChest).addScaledVector(preferred,.10);
       pole.addScaledVector(toward,-pole.dot(toward));
       if(pole.lengthSq()<.000001)pole.set(sd,-1,.3).addScaledVector(toward,-pole.dot(toward));
       var elbow=circle.clone().addScaledVector(pole.normalize(),radius);
@@ -1108,23 +1120,84 @@
       return new THREE.Quaternion();
     }
     function gripOffset(k){var A=arms[k];return new V3().fromArray(A.hand.children[0].userData.gripCenter).multiplyScalar(s).applyQuaternion(A.hand.quaternion);}
+    function plantFoot(k,target,yaw) {
+      var L=legs[k];pelvis.updateWorldMatrix(true,false);root.updateWorldMatrix(true,false);
+      var toPelvis=new THREE.Matrix4().copy(pelvis.matrixWorld).invert().multiply(root.matrixWorld);
+      var ankle=target.clone().applyMatrix4(toPelvis),hip=L.hip.position.clone(),upper=L.knee.position.length(),lower=L.shoe.position.length();
+      var toward=ankle.clone().sub(hip),wanted=toward.length();toward.normalize();
+      var d=clamp(wanted,Math.abs(upper-lower)+.001,upper+lower-.0005),reachable=hip.clone().addScaledVector(toward,d);
+      var along=(upper*upper+d*d-lower*lower)/(2*d),radius=Math.sqrt(Math.max(0,upper*upper-along*along));
+      var pole=new V3(0,0,1).transformDirection(toPelvis);pole.addScaledVector(toward,-pole.dot(toward)).normalize();
+      var knee=hip.clone().addScaledVector(toward,along).addScaledVector(pole,radius);
+      var U=knee.clone().sub(hip).normalize(),D=reachable.clone().sub(knee).normalize(),flex=Math.acos(clamp(U.dot(D),-1,1));
+      var y=U.clone().negate(),z=D.clone().addScaledVector(U,-D.dot(U)).normalize().negate(),x=new V3().crossVectors(y,z).normalize();
+      L.hip.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z));L.knee.rotation.set(flex,0,0);
+      var chain=L.hip.quaternion.clone().multiply(L.knee.quaternion),orientation=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().extractRotation(toPelvis));
+      orientation.multiply(new THREE.Quaternion().setFromAxisAngle(new V3(0,1,0),yaw||0));
+      L.shoe.quaternion.copy(chain.invert().multiply(orientation));
+      state.footContacts[k]={target:target.toArray(),reachError:Math.abs(wanted-d),kneeFlex:flex};
+    }
+    function steppingFoot(from,to,start,end,u,height) {
+      var f=sstep(start,end,u);return from.clone().lerp(to,f).add(new V3(0,(height||.045)*s*Math.sin(PI*f),0));
+    }
+    function entranceFoot(k,u,distance) {
+      var sd=k==='L'?1:-1,x=sd*.16*s,travel=enterTravel(u)*distance;
+      var a=new V3(x,0,(k==='L'?.27:-.25)*s),b,c;
+      if(k==='R'){
+        b=new V3(x,0,enterTravel(.20)*distance+.31*s);c=new V3(x,0,enterTravel(.60)*distance+.31*s);
+        a=u<.20?steppingFoot(a,b,.02,.20,u,.085):u<.60?steppingFoot(b,c,.40,.60,u,.085):steppingFoot(c,new V3(x,0,distance-.12*s),.83,.97,u,.040);
+      }else{
+        b=new V3(x,0,enterTravel(.40)*distance+.31*s);c=new V3(x,0,distance+.12*s);
+        a=u<.40?steppingFoot(a,b,.20,.40,u,.085):steppingFoot(b,c,.60,.80,u,.085);
+      }
+      a.z-=travel;return a;
+    }
+    function entranceMotion(u,charging) {
+      var gait=1-sstep(.78,.98,u),settled=sstep(.78,.99,u),stride=Math.sin((u-.02)*PI/.20)*sstep(0,.06,u)*gait;
+      body.position.set(.025*s*stride,0,0);body.rotation.z=-.022*stride;
+      pelvis.position.y=((charging?.80:.83)+(charging?.10:.105)*sstep(.83,.99,u)-.015*stride*stride)*s;pelvis.rotation.set(0,.045*stride,0);
+      spine.rotation.set(charging?.20*gait+.16*settled:.11*gait+.025*settled,-.035*stride,0);neck.rotation.set(0,.03*stride,0);headPiv.rotation.set((charging?-.015:.035)*gait,-.035*stride,0);
+      setArm('L',lerp(charging?.82:.70,charging?.68:.28,settled)+.025*stride,.38,lerp(1.0,charging?.95:.58,settled),-.08*(1-settled));
+      setArm('R',lerp(charging?.20:.15,charging?.24:.20,settled)-.22*stride,.38,lerp(charging?.75:.60,charging?.65:.32,settled));
+      var distance=charging?(typeof state.gateDistance==='number'?state.gateDistance:2.65):(typeof state.entryDistance==='number'?state.entryDistance:2.65);
+      plantFoot('R',entranceFoot('R',u,distance),-.08);plantFoot('L',entranceFoot('L',u,distance),.08);
+      if(charging){state.gateRootProgress=enterTravel(u);state.gateComplete=u>=1;}else{state.entryRootProgress=enterTravel(u);state.entryComplete=u>=1;}
+      if(props.shield){
+        root.updateMatrixWorld(true);var shieldRootQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(charging?.10:.04*gait,.035*stride,-.07*gait));
+        var shieldWorldQ=root.getWorldQuaternion(new THREE.Quaternion()).multiply(shieldRootQ),wrWorld=arms.L.wr.getWorldQuaternion(new THREE.Quaternion());
+        props.shield.quaternion.copy(wrWorld.invert().multiply(shieldWorldQ));
+        props.shield.position.copy(gripOffset('L')).sub(new V3(0,0,-.035*s).applyQuaternion(props.shield.quaternion));
+      }
+    }
     function actionMotion(t) {
       var pose=state.pose,cycle=window.KM_BANQUET&&window.KM_BANQUET.cycles[pose]||(pose==='eat'?12:pose==='drink'?8:8);
       if(state.actionStart==null)state.actionStart=t;
       var elapsed=t-state.actionStart;
-      var u=typeof state.actionProgress==='number'?clamp(state.actionProgress,0,1):((elapsed%cycle)+cycle)%cycle/cycle;
+      var u=typeof state.actionProgress==='number'?clamp(state.actionProgress,0,1):pose==='enter'?clamp(elapsed/cycle,0,1):((elapsed%cycle)+cycle)%cycle/cycle;
       state.motionProgress=u;
       state.contactErrors={};state.ikDetails={};
+      state.footContacts={};
       if(pose==='dance'){
-        var keys=[[.28,.34,.68,-.34],[.88,.42,.62,-.42],[.52,.86,.27,-.46],[.25,.54,.75,-.30],[.28,.34,.68,-.34]];
-        var beat=Math.min(3,Math.floor(u*4)),f=sstep(0,1,u*4-beat),a=keys[beat],b0=keys[beat+1];
-        setArm('R',lerp(a[0],b0[0],f),lerp(a[1],b0[1],f),lerp(a[2],b0[2],f),lerp(a[3],b0[3],f));
-        arms.R.el.rotation.y=-.16+.20*Math.sin(u*PI*2);arms.R.wr.rotation.set(0,0,0);
-        setArm('L',.35+.20*Math.sin(u*PI*2),.60,.55,.04);
-        spine.rotation.y=.24*Math.sin(u*PI*2);spine.rotation.x=.06;
-        body.position.y=-.014*Math.pow(Math.sin(u*PI*2),2);
-        if(armored){legs.L.hip.rotation.x=.10*Math.sin(u*PI*2);legs.R.hip.rotation.x=-.10*Math.sin(u*PI*2);legs.L.knee.rotation.x=Math.max(0,-Math.sin(u*PI*2))*.12;legs.R.knee.rotation.x=Math.max(0,Math.sin(u*PI*2))*.12;}
-        state.motionPhase=['構え','斜めに上げる','外へ払う','構えへ戻す'][beat];
+        // Coils take time; the two outward cuts pass quickly between them.
+        // The planted feet remain fixed while the hips carry the weight across.
+        var times=[0,.16,.24,.43,.56,.64,.82,1];
+        var keys=[[.32,.42,.68,-.40,-.15,-.08,.025,.15],[1.10,.40,.48,-.45,-.32,-.12,.035,.55],[.18,.98,.38,-.57,.22,.14,-.040,1],[.55,.65,.80,-.35,.15,.04,-.025,.35],[1.18,.52,.32,-.46,-.30,-.10,.025,.65],[.30,1.08,.28,-.58,.30,.15,-.035,1],[.48,.78,.74,-.42,.12,.04,-.010,.30],[.32,.42,.68,-.40,-.15,-.08,.025,.15]];
+        var beat=0;while(beat<times.length-2&&u>times[beat+1])beat++;
+        var f=sstep(times[beat],times[beat+1],u),a=keys[beat],b0=keys[beat+1],v=a.map(function(n,i){return lerp(n,b0[i],f);});
+        setArm('R',v[0],v[1],v[2],v[3]);arms.R.el.rotation.y=-.16+.13*Math.sin(u*PI*2);arms.R.wr.rotation.set(0,0,0);
+        setArm('L',.43+.17*Math.sin(u*PI*2-.4),.68+.08*Math.sin(u*PI*2),.70+.12*Math.sin(u*PI*2+.7),.04);
+        pelvis.rotation.set(0,v[5],0);pelvis.position.y=(.925-.045*v[7])*s;
+        body.position.set(v[6]*s,0,0);body.rotation.z=-v[6]*.40;
+        spine.rotation.set(.055+.045*v[7],v[4],-.025*Math.sin(u*PI*2));
+        neck.rotation.set(0,-(v[4]+v[5])*.35,0);headPiv.rotation.set(.015,-(v[4]+v[5])*.20,0);
+        var rf0=new V3(-.16*s,0,-.04*s),rf1=new V3(-.18*s,0,.17*s),lf0=new V3(.16*s,0,.04*s),lf1=new V3(.20*s,0,-.12*s);
+        var rf=u<.30?steppingFoot(rf0,rf1,.06,.22,u,.045):steppingFoot(rf1,rf0,.66,.84,u,.035);
+        var lf=u<.55?steppingFoot(lf0,lf1,.28,.45,u,.040):steppingFoot(lf1,lf0,.84,1,u,.035);
+        plantFoot('R',rf,-.08+.12*sstep(.16,.32,u)*(1-sstep(.66,.84,u)));plantFoot('L',lf,.08+.08*Math.sin(u*PI*2));
+        state.motionPhase=['足を据え、剣を引く','踏み込んで斜めに斬る','腰を返して剣を巻く','反転して振り上げる','素早く外へ払う','足を戻して構える','次の舞へつなぐ'][beat];
+      } else if(pose==='enter'){
+        entranceMotion(u);
+        state.motionPhase=u<.18?'盾を先にして天幕へ進む':u<.60?'歩を重ねて宴席へ入る':u<.83?'身を起こして踏み止まる':'両足を据えて項羽を睨む';
       } else if(pose==='eat' && props.sword && window.KM_BANQUET){
         var lift=sstep(.34,.62,u)*(1-sstep(.85,.99,u));
         var brace=sstep(.43,.57,u)*(1-sstep(.86,.96,u));
@@ -1165,11 +1238,12 @@
         if(props.morsel)props.morsel.visible=false;
         state.motionPhase=u<.08?'盾に載せた生彘肩へ':u<.25?'剣で肩肉を切る':u<.34?'肩肉の塊へ剣を刺す':u<.58?'重い肩肉を丸ごと持ち上げる':u<.66?'左手を添えて口元へ':u<.79?'肩肉の塊にかぶりつく':u<.85?'塊を支えて口から離す':'肩肉を盾へ戻す';
       } else if(pose==='drink' && window.KM_BANQUET){
-        var raised=sstep(.03,.28,u)*(1-sstep(.82,.99,u));
-        var tilted=sstep(.31,.56,u)*(1-sstep(.69,.81,u));
-        var pitch=-.83*tilted;
-        spine.rotation.set(-.018*tilted,0,0);neck.rotation.set(-.055*tilted,0,0);
-        headPiv.rotation.set(-.155*tilted,0,0);headPiv.position.set(0,0,0);
+        var raised=sstep(.015,.17,u)*(1-sstep(.75,.91,u));
+        var tilted=sstep(.23,.43,u)*(1-sstep(.62,.74,u)),finish=sstep(.74,.83,u)*(1-sstep(.92,1,u));
+        var gulp=Math.pow(Math.sin(PI*2*clamp((u-.43)/.18,0,1)),2)*sstep(.42,.44,u)*(1-sstep(.60,.63,u));
+        var pitch=-1.04*tilted-.018*gulp;
+        spine.rotation.set(-.070*tilted+.010*gulp+.025*finish,0,0);neck.rotation.set(-.070*tilted,0,0);
+        headPiv.rotation.set(-.250*tilted+.028*gulp+.035*finish,0,0);headPiv.position.set(0,0,.040*s*tilted);
         root.updateMatrixWorld(true);
         var mouth=root.worldToLocal(headG.localToWorld(new V3(0,-.038,.073)));
         var cupQ=new THREE.Quaternion().setFromAxisAngle(new V3(1,0,0),pitch).multiply(new THREE.Quaternion().setFromAxisAngle(new V3(0,1,0),PI));
@@ -1184,14 +1258,15 @@
         var bottom=center.clone().add(new V3().fromArray(props.cup.userData.baseSupport||[0,-.075,0]).multiplyScalar(s).applyQuaternion(cupQ));
         solveHandContact('L',bottom,new V3(-.012*s,-.075*s,0),supportWrist(cupQ),new V3(-.76,.57,.28));
         props.cup.userData.contactState={raised:raised,tilted:tilted,pitch:pitch,rimTarget:rimTarget.toArray(),center:center.toArray()};
-        state.motionPhase=u<.17?'両手で卮を上げる':u<.31?'口縁を唇へ寄せる':u<.69?'底を上げて卮酒を飲み干す':u<.82?'卮と頭を静かに戻す':'卮を胸元へ下ろす';
+        state.motionPhase=u<.17?'勢いよく卮を口元へ上げる':u<.23?'口縁を唇へ据える':u<.62?'胸を反らし、底を上げて飲み干す':u<.75?'ぐっと飲み切って器を立てる':'卮を下ろし、胸を張る';
       }
       ['L','R'].forEach(alignHeldHandle);
-      if(pose==='drink'&&window.KM_BANQUET.updateLiquid){root.updateMatrixWorld(true);window.KM_BANQUET.updateLiquid(props.cup,lerp(.72,.05,sstep(.34,.70,u)),.15);}
+      if(pose==='drink'&&window.KM_BANQUET.updateLiquid){root.updateMatrixWorld(true);window.KM_BANQUET.updateLiquid(props.cup,lerp(.78,.02,sstep(.25,.65,u)),.25);}
     }
     function update(dt, t) {
-      var p = state.pose, br = p==='eat'||p==='drink'?0:Math.sin(t * 1.3 + id.length) * .012;
+      var p = state.pose, br = p==='eat'||p==='drink'||p==='dance'||p==='enter'||p==='charge'&&typeof state.gateProgress==='number'?0:Math.sin(t * 1.3 + id.length) * .012;
       chest.scale.set(1, 1 + br * .35, 1 + br);
+      if(p==='glare'&&id==='kai')entranceMotion(1);
       // 視線：話し手のほうへ首を向ける
       var targetYaw = 0, targetPitch = 0;
       if (state.look && p !== 'down') {
@@ -1228,7 +1303,11 @@
         setArm('R', -Math.sin(r) * .7 + .2, .15, .9); setArm('L', Math.sin(r) * .7 + .2, .15, .9);
         body.position.y = Math.abs(Math.sin(r)) * .05; spine.rotation.x = .18;
       }
-      if(p==='dance'||p==='eat'||p==='drink')actionMotion(t);
+      if(p==='dance'||p==='eat'||p==='drink'||p==='enter')actionMotion(t);
+      if(p==='charge'&&typeof state.gateProgress==='number'){
+        var gateU=clamp(state.gateProgress,0,1);state.footContacts={};entranceMotion(gateU,true);state.motionProgress=gateU;
+        state.motionPhase=gateU<.70?'盾を先に軍門へ踏み込む':gateU<.97?'足を据え、盾で衛士へ撞く':'盾を押し出した構え';
+      }
       if (hat.userData.tassel) hat.userData.tassel.rotation.z = Math.sin(t * 1.7) * .06 + (p === 'run' || p === 'dance' ? Math.sin(t * 8) * .1 : 0);
       updateSleeves();
       updateCape(t, p === 'run' || p === 'dance' || p === 'charge');
@@ -1445,7 +1524,7 @@
   }
 
   window.KM_CAST3D = {
-    CAST: CAST, makeFigure: makeFigure, makeHorse: makeHorse, sculptPortrait: sculptPortrait, lacquerCloudTex: lacquerCloudTex, cupMesh: cupMesh,
+    CAST: CAST, makeFigure: makeFigure, makeHorse: makeHorse, sculptPortrait: sculptPortrait, lacquerCloudTex: lacquerCloudTex, cupMesh: cupMesh,enterTravel:enterTravel,
     setQuality: function (q) { Q = q; }
   };
 })();

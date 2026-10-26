@@ -351,6 +351,36 @@
     });
     return g;
   }
+  /** 入口の帷も人物と同じ一回きりの位相で開く。各頂点は保存した布形から毎回求める。 */
+  function makeEntranceCurtain() {
+    var door = new THREE.Group(), leaves = [];
+    door.name = 'East entrance parted curtain';
+    door.position.set(3.8, 2.3, 1.1); door.rotation.y = -PI / 2;
+    [-1, 1].forEach(function (side, i) {
+      var leaf = drapeWall(.85, 4.6, 0x7a2018, 8 + i, { valance: 0x7a1a10 });
+      leaf.position.x = side * .425; door.add(leaf);
+      var cloth = leaf.children[0], base = cloth.geometry.attributes.position.array.slice();
+      leaves.push({ side: side, cloth: cloth, base: base, center: leaf.position.x });
+    });
+    door.userData.setProgress = function (u) {
+      var opened = ease((u - .015) / .24);
+      var flutter = Math.sin(Math.max(0, u - .06) * 32) * Math.sin(PI * Math.max(0, Math.min(1, (u - .06) / .58))) * .035;
+      leaves.forEach(function (leaf) {
+        var p = leaf.cloth.geometry.attributes.position, base = leaf.base;
+        for (var i = 0; i < p.count; i++) {
+          var x = base[i * 3], y = base[i * 3 + 1], z = base[i * 3 + 2];
+          var drop = (2.3 - y) / 4.6, pull = opened * (.4 + .56 * Math.sin(drop * PI / 2));
+          var gathered = x + (leaf.side * .85 - (x + leaf.center)) * pull;
+          p.setXYZ(i, gathered, y + opened * .08 * drop, z + opened * .14 * Math.sin(drop * PI) + flutter * drop * Math.cos(x * 16));
+        }
+        p.needsUpdate = true; leaf.cloth.geometry.computeVertexNormals();
+      });
+      door.userData.openness = opened;
+      door.userData.progress = u;
+    };
+    door.userData.setProgress(1);
+    return door;
+  }
   /** 屏風：黒漆に朱の雲気文、縁は黒、金具は青銅 */
   function screenMesh(w, h, panels, seed) {
     var g = new THREE.Group(), pw = w / panels;
@@ -529,9 +559,10 @@
         var wallC = day ? 0xb8a07a : 0x5a4030, valC = 0x7a1a10, band = '#1a0c0a';
         var back = drapeWall(12, 4.6, wallC, 10, { band: band, valance: valC, ties: [-4.6, 4.6] }); back.position.set(0, 2.3, -3.6); sc.add(back);
         var left = drapeWall(10, 4.6, wallC, 5, { band: band, valance: valC, ties: [-3.6, 3.6] }); left.rotation.y = PI / 2; left.position.set(-3.8, 2.3, 0); sc.add(left);
-        var rightA = drapeWall(4, 4.6, wallC, 6, { band: band, valance: valC, ties: [1.7] }); rightA.rotation.y = -PI / 2; rightA.position.set(3.8, 2.3, -2.4); sc.add(rightA);
-        var rightB = drapeWall(4, 4.6, wallC, 7, { band: band, valance: valC, ties: [-1.7] }); rightB.rotation.y = -PI / 2; rightB.position.set(3.8, 2.3, 2.6); sc.add(rightB);
-        var door = drapeWall(1.6, 4.6, 0x7a2018, 8, { valance: valC }); door.rotation.y = -PI / 2 + .5; door.position.set(3.5, 2.3, .6); sc.add(door);
+        // 東の入口を樊噲の通路 z=1.1 にそろえる。左右の幕の間は 1.7m。
+        var rightA = drapeWall(4.4, 4.6, wallC, 6, { band: band, valance: valC, ties: [1.7] }); rightA.rotation.y = -PI / 2; rightA.position.set(3.8, 2.3, -1.95); sc.add(rightA);
+        var rightB = drapeWall(3.2, 4.6, wallC, 7, { band: band, valance: valC, ties: [-1.2] }); rightB.rotation.y = -PI / 2; rightB.position.set(3.8, 2.3, 3.55); sc.add(rightB);
+        S.entranceCurtain = makeEntranceCurtain(); sc.add(S.entranceCurtain);
         var roof = mesh(new THREE.ConeGeometry(8.5, 2.6, 16, 1, true), std(day ? 0xc8aa78 : 0x1a120c, .95, 0, { side: THREE.DoubleSide, emissive: col(day ? 0x3a2a14 : 0), emissiveIntensity: .5 }), false, false); roof.position.y = 5.9; sc.add(roof);
         // 屏風：項王・項伯の背（西）と、亜父の背（北）
         var scrW = screenMesh(3.0, 1.75, 6, 40); scrW.rotation.y = PI / 2; scrW.position.set(-3.25, 0, -.7); sc.add(scrW);
@@ -628,7 +659,8 @@
     stageId: '', lightId: '', stage: null, cast: {}, figs: {}, anim: [], embers: [], parts: null,
     cam: { pos: new V3(), tgt: new V3() }, from: null, to: null, tStart: 0, tDur: 1.7, drift: 0,
     shake: 0, flash: 0, flashC: '255,255,255', pulse: 0, labels: {}, bubble: null, reduced: false, onFrame: null,
-    keyLight: null, hemi: null, faceFill: null, framingObserver: null, fx: null, horse: null, rider: null, travel: 0, building: false
+    keyLight: null, hemi: null, faceFill: null, framingObserver: null, fx: null, horse: null, rider: null, travel: 0, building: false,
+    buildEpoch: 0, entry: null, entranceCurtain: null, breach: null
   };
 
   function supported() {
@@ -688,6 +720,7 @@
     var r = S.cv.getBoundingClientRect(), p = panel && panel.getBoundingClientRect();
     // 注視点を、本文より上に残る領域の中央へ置く。DOM計測はサイズ変更時のみ。
     var visible = p && p.height && p.top > r.top ? Math.min(r.height, p.top - r.top) : r.height;
+    S.visibleFraction = visible / Math.max(1, r.height);
     var shift = Math.min(.22, Math.max(0, (1 - visible / Math.max(1, r.height)) / 2));
     S.camera.setViewOffset(S.cw, S.ch, 0, S.ch * shift, S.cw, S.ch);
   }
@@ -804,24 +837,33 @@
 
   /** 舞台を切り替える。人物の準備が要るときは Promise を返す */
   function setScene(stageId, lightId, cast, poses) {
-    S.stageId = STAGES[stageId] ? stageId : 'bashang';
-    var st = STAGES[S.stageId];
-    S.lightId = LIGHTS[lightId] ? lightId : st.light;
+    var token = ++S.buildEpoch;
+    stageId = STAGES[stageId] ? stageId : 'bashang';
+    var st = STAGES[stageId];
+    lightId = LIGHTS[lightId] ? lightId : st.light;
     var ids = (cast || []).slice();
     if (st.officials) ids.push('ou');
     var need = ids.filter(function (id) { return CAST[id] && !FIGCACHE[id]; });
     S.building = true;
-    var prep = need.length ? (showPrep(true), ensureFigures(ids, function (i, n) { showPrep(true, '絵を整えています… ' + i + ' / ' + n); })) : Promise.resolve();
+    var prep = need.length ? (showPrep(true), ensureFigures(ids, function (i, n) { if (token === S.buildEpoch) showPrep(true, '絵を整えています… ' + i + ' / ' + n); })) : Promise.resolve();
     return prep.then(function () {
+      if (token !== S.buildEpoch) return;
       showPrep(false);
       S.building = false;
+      S.stageId = stageId; S.lightId = lightId;
       buildScene(st, ids, cast || [], poses || {});
     });
   }
+  /** 台詞送りでは進行中の演技を残し、準備中の古い舞台だけを無効にする。 */
+  function cancelPendingScene() { S.buildEpoch++; S.building = false; showPrep(false); }
   function buildScene(st, ids, cast, poses) {
     // 前の舞台から人物を外す（人物は使い回すので破棄しない）
     if (S.scene) {
-      Object.keys(FIGCACHE).forEach(function (k) { var f = FIGCACHE[k]; if (f && f.parent) f.parent.remove(f); });
+      Object.keys(FIGCACHE).forEach(function (k) {
+        var f = FIGCACHE[k], weapon = f && f.userData.rig && f.userData.rig.props && f.userData.rig.props.halberd;
+        if (weapon && weapon.parent === S.scene) S.scene.remove(weapon);
+        if (f && f.parent) f.parent.remove(f);
+      });
       if (S.horse && S.horse.parent) S.horse.parent.remove(S.horse);
       // カメラに付けた暗転板と補助光は、次の舞台でも使う。
       S.scene.remove(S.camera);
@@ -829,6 +871,7 @@
     }
     var sc = new THREE.Scene();
     S.scene = sc; S.stage = st; S.anim = []; S.embers = []; S.cast = {}; S.travel = 0;
+    S.entry = null; S.entranceCurtain = null; S.breach = null;
     sc.add(S.camera);
     var L = LIGHTS[S.lightId];
     applyLight(sc, L, !!st.indoor);
@@ -889,14 +932,173 @@
     S.cam.pos.set(st.wide[0][0], st.wide[0][1], st.wide[0][2]);
     S.cam.tgt.set(st.wide[1][0], st.wide[1][1], st.wide[1][2]);
     S.from = null; S.to = null; S.drift = 0;
+    if (S.cast.kai && S.cast.kai.userData.state.pose === 'enter' && st === STAGES.feast) beginEntrance(S.cast.kai);
     clearLabels(); hideBubble();
   }
 
   function setPose(id, pose) {
     var f = S.cast[id]; if (!f) return;
+    if (S.stageId === 'gate' && id === 'ei' && pose === 'down' && S.breach) {
+      S.breach.impactRequested = true; S.breach.requestedAt = S.t; updateBreach(); return;
+    }
+    if (id === 'kai' && pose !== 'charge' && S.breach) finishBreach();
+    if (id === 'kai' && pose !== 'enter' && S.entry) finishEntrance();
     f.userData.setPose(pose);
+    if (id === 'kai' && pose === 'charge' && S.stageId === 'gate') beginBreach(f);
+    if (id === 'kai' && pose === 'enter' && S.stageId === 'feast') beginEntrance(f);
     if (id === 'haku' && S.stageId === 'feast') placeDancer(f,id);
     if (id === 'ei' && S.cast.ei2) S.cast.ei2.userData.setPose(pose);
+  }
+
+  function rigTransforms(f) {
+    var r = f.userData.rig || {}, nodes = [r.body, r.pelvis, r.spine, r.neck, r.headPiv];
+    ['L', 'R'].forEach(function (side) {
+      var arm = r.arms && r.arms[side], leg = r.legs && r.legs[side];
+      if (arm) nodes.push(arm.sh, arm.el, arm.wr);
+      if (leg) nodes.push(leg.hip, leg.knee);
+    });
+    return nodes.filter(Boolean).map(function (node) { return { node: node, position: node.position.clone(), quaternion: node.quaternion.clone() }; });
+  }
+  function beginBreach(f) {
+    var from = f.position.clone(), to = new V3(1.10, 0, -1.65);
+    var guardSources = [];
+    ['ei', 'ei2'].forEach(function (id) {
+      var guard = S.cast[id]; if (!guard) return;
+      guard.userData.setPose('stand');
+      guardSources.push({ figure: guard, from: rigTransforms(guard) });
+    });
+    S.breach = { started: S.t, duration: 1.9, progress: 0, active: true, finished: false,
+      from: from, to: to, yaw: Math.atan2(to.x - from.x, to.z - from.z), follow: true,
+      cameraFrom: { pos: S.cam.pos.clone(), tgt: S.cam.tgt.clone() }, impactRequested: false, impactStart: null, impactCallbacks: [], guards: [], guardSources: guardSources };
+    S.from = null; S.to = null; updateBreach();
+  }
+  function beginGuardFall(f, from) {
+    var weapon = f.userData.rig && f.userData.rig.props && f.userData.rig.props.halberd, drop = null;
+    if (weapon && weapon.parent) {
+      var position = weapon.getWorldPosition(new V3()), rotation = weapon.getWorldQuaternion(new THREE.Quaternion()), scale = weapon.getWorldScale(new V3());
+      var side = f.position.x < 0 ? -1 : 1;
+      var targetQ = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new V3(0, 0, -side), new V3(side, 0, 0), new V3(0, -1, 0)));
+      drop = { object: weapon, from: position, rotation: rotation, scale: scale,
+        to: new V3(position.x + side * .15, .03, f.position.z - (side < 0 ? .65 : .35)), targetQ: targetQ };
+    }
+    f.userData.setPose('down');
+    if (drop) { S.scene.add(weapon); weapon.position.copy(drop.from); weapon.quaternion.copy(drop.rotation); weapon.scale.copy(drop.scale); weapon.visible = true; }
+    var to = rigTransforms(f);
+    return { figure: f, from: from, to: to, weapon: drop };
+  }
+  function placeDroppedWeapon(drop, u) {
+    if (!drop) return;
+    var object = drop.object;
+    if (object.parent !== S.scene) S.scene.add(object);
+    object.position.lerpVectors(drop.from, drop.to, u);
+    object.quaternion.slerpQuaternions(drop.rotation, drop.targetQ, u);
+    object.scale.copy(drop.scale); object.visible = true; object.updateMatrixWorld(true);
+    var floor = new THREE.Box3().setFromObject(object).min.y;
+    if (floor < .006) object.position.y += .006 - floor;
+  }
+  function updateBreach() {
+    var b = S.breach, f = S.cast.kai;
+    if (!b || !f || S.stageId !== 'gate') return;
+    var u = S.reduced ? 1 : typeof b.actionProgress === 'number' ? b.actionProgress : (S.t - b.started) / b.duration;
+    u = Math.max(0, Math.min(1, u));
+    b.progress = u; b.active = u < 1;
+    var travel = entranceTravel(u); b.travel = travel;
+    f.position.lerpVectors(b.from, b.to, travel); f.rotation.y = b.yaw;
+    f.userData.state.gateProgress = u; f.userData.state.gateDistance = b.from.distanceTo(b.to);
+    if (b.impactRequested && u >= 1 && b.impactStart == null) {
+      b.impactStart = Math.max(b.started + b.duration, b.requestedAt);
+      b.guardSources.forEach(function (source) { b.guards.push(beginGuardFall(source.figure, source.from)); });
+      if (b.impactEffect) effect(b.impactEffect);
+      b.impactCallbacks.splice(0).forEach(function (callback) { callback(); });
+    }
+    b.fallProgress = b.impactStart == null ? 0 : S.reduced ? 1 : Math.max(0, Math.min(1, (S.t - b.impactStart) / .65));
+    b.finished = u >= 1 && (!b.impactRequested || b.fallProgress >= 1);
+    b.phase = u < 1 ? '盾を先に軍門へ進む' : b.fallProgress < 1 && b.impactRequested ? '盾で撞き、衛士が倒れる' : '軍門を押し通る';
+  }
+  function applyBreachRig() {
+    var b = S.breach, f = S.cast.kai;
+    if (!b || !f || S.stageId !== 'gate') return;
+    var u = ease(b.fallProgress || 0);
+    b.guards.forEach(function (guard) {
+      guard.from.forEach(function (p, i) {
+        var target = guard.to[i];
+        if (!target || p.node !== target.node) return;
+        p.node.position.lerpVectors(p.position, target.position, u);
+        p.node.quaternion.slerpQuaternions(p.quaternion, target.quaternion, u);
+      });
+      placeDroppedWeapon(guard.weapon, u);
+    });
+  }
+  function finishBreach() {
+    var b = S.breach, f = S.cast.kai;
+    if (!b || !f) return;
+    f.position.copy(b.to); f.rotation.y = b.yaw;
+    delete f.userData.state.gateProgress; delete f.userData.state.gateDistance;
+    if (b.impactRequested) ['ei', 'ei2'].forEach(function (id) { if (S.cast[id]) S.cast[id].userData.setPose('down'); });
+    b.guards.forEach(function (guard) { placeDroppedWeapon(guard.weapon, 1); });
+    S.breach = null;
+  }
+  function breachCamera() {
+    var b = S.breach;
+    if (!b || !b.follow || S.stageId !== 'gate') return false;
+    var u = S.reduced ? 1 : ease((S.t - b.started) / .5);
+    S.cam.pos.lerpVectors(b.cameraFrom.pos, new V3(3.2, 2.4, 3.5), u);
+    S.cam.tgt.lerpVectors(b.cameraFrom.tgt, new V3(.25, .95, -.8), u);
+    return true;
+  }
+  function whenBreachImpact(callback) {
+    var b = S.breach;
+    if (!b || !b.impactRequested || b.impactStart != null) return false;
+    b.impactCallbacks.push(callback); return true;
+  }
+
+  function entranceTravel(u) {
+    if (CM.enterTravel) return CM.enterTravel(u);
+    var x = Math.max(0, Math.min(1, (u - .02) / .82)), ramp = .06 / .82;
+    return (x < ramp ? .5 * x * x / ramp : x > 1 - ramp ? 1 - ramp - .5 * (1 - x) * (1 - x) / ramp : x - .5 * ramp) / (1 - ramp);
+  }
+
+  function beginEntrance(f) {
+    var state = f.userData.state;
+    state.actionStart = S.t + 'kai'.length;
+    state.entryDistance = 2.65;
+    S.entry = { id: 'kai', duration: window.KM_BANQUET && window.KM_BANQUET.cycles.enter || 3.6,
+      progress: 0, travel: 0, phase: '帷を押し開く', active: true, finished: false, interrupted: false, follow: true };
+    S.from = null; S.to = null;
+    updateEntrance(); entranceCamera();
+  }
+  function finishEntrance() {
+    var entry = S.entry, f = S.cast.kai;
+    if (!entry || !f) return;
+    var home = f.userData.home;
+    f.position.set(home.x, 0, home.z); f.rotation.y = home.yaw;
+    entry.interrupted = !entry.finished; entry.progress = entry.travel = entry.curtainOpen = 1;
+    entry.active = false; entry.finished = true; entry.follow = false; entry.phase = '西嚮して立つ';
+    if (S.entranceCurtain) S.entranceCurtain.userData.setProgress(1);
+  }
+  function updateEntrance() {
+    var entry = S.entry, f = S.cast.kai;
+    if (!entry || !f || f.userData.state.pose !== 'enter') return;
+    var state = f.userData.state;
+    if (state.actionStart == null) state.actionStart = S.t + 'kai'.length;
+    var u = S.reduced ? 1 : typeof state.actionProgress === 'number' ? state.actionProgress : (S.t + 'kai'.length - state.actionStart) / entry.duration;
+    u = Math.max(0, Math.min(1, u));
+    if (S.reduced) state.actionProgress = 1;
+    var travel = entranceTravel(u);
+    f.position.set(4.35 - state.entryDistance * travel, 0, 1.1); f.rotation.y = -PI / 2;
+    entry.progress = u; entry.travel = travel; entry.active = u < 1; entry.finished = u >= 1;
+    entry.phase = u < .25 ? '帷を押し開く' : u < .8 ? '盾を先に進み入る' : u < .97 ? '踏み止まる' : '西嚮して立つ';
+    if (S.entranceCurtain) { S.entranceCurtain.userData.setProgress(u); entry.curtainOpen = S.entranceCurtain.userData.openness; }
+  }
+  function entranceCamera() {
+    var entry = S.entry, f = S.cast.kai;
+    if (!entry || !entry.follow || !f || f.userData.state.pose !== 'enter') return false;
+    var spread = S.cw / S.ch < 1 ? 1.25 : 1;
+    var fit = S.visibleFraction < .98 ? Math.min(1.9, 1.22 / Math.max(.4, S.visibleFraction)) : 1;
+    // 東の壁の内側から通路を追い、沛公の背と張良の席の間を見通す。
+    S.cam.pos.set(Math.max(-3.45, f.position.x - 2.5 * spread * fit), 1.9, f.position.z + 1.2 * spread * fit);
+    S.cam.tgt.set(f.position.x, fit > 1 ? 1.08 : .95, f.position.z);
+    return true;
   }
 
   function placeDancer(figure, id) {
@@ -988,8 +1190,20 @@
     v.y += .12 * f.userData.rig.s;
     return v;
   }
-  function focus(target, z) {
+  function focus(target, z, options) {
     var st = S.stage; if (!st) return;
+    if (S.breach) {
+      if ((!options || options.followEntry !== false) && (target === 'kai' || target === 'ei' || target === 'wide' || !target)) {
+        S.breach.follow = true; S.from = null; S.to = null; return;
+      }
+      S.breach.follow = false;
+    }
+    if (S.entry) {
+      if ((!options || options.followEntry !== false) && S.entry.active && (target === 'kai' || target === 'wide' || !target)) {
+        S.entry.follow = true; S.from = null; S.to = null; entranceCamera(); return;
+      }
+      S.entry.follow = false;
+    }
     var pos, tgt;
     var f = target && target !== 'wide' ? S.cast[target] : null;
     if (!f) {
@@ -997,6 +1211,16 @@
       if (st.travel) { pos.x += S.travel; tgt.x += S.travel; }
     } else {
       var h = headWorld(f);
+      var danceFrame = st === STAGES.feast && (f.userData.state.pose === 'dance' || options && options.framing === 'dance');
+      if (danceFrame) {
+        // 刃先と足元を同時に読む。東寄りの斜めから項伯の体越しを避ける。
+        var danceTarget = new V3(f.position.x, 1.22, f.position.z);
+        var dancePos = new V3(3.45, 2.25, f === S.cast.haku ? 3.45 : 2.8);
+        var framingScale = (z ? .82 / z : 1) * (S.cw / S.ch < 1 ? 1.18 : 1);
+        pos = danceTarget.clone().add(dancePos.sub(danceTarget).multiplyScalar(framingScale));
+        // 縦長で引いても東の帷の外へカメラを出さない。
+        pos.x = Math.min(3.45, pos.x); tgt = danceTarget;
+      } else {
       var yaw = f.rotation.y, dist = (z ? 2.2 / z : 1.25) * (S.cw / S.ch < 1 ? 1.35 : 1);
       // 顔の正面から少し斜めに。引きのカメラ側へ寄せて、壁の向こうへ回り込まないようにする
       var fwd = new V3(Math.sin(yaw), 0, Math.cos(yaw));
@@ -1006,6 +1230,7 @@
       pos = h.clone().add(dir.multiplyScalar(dist)); pos.y = h.y + .08;
       tgt = h.clone(); tgt.y -= .1;
       // 本文を避ける上下配置は frameAbovePanel に任せ、縦長でも二重に上へ寄せない。
+      }
     }
     S.from = { pos: S.cam.pos.clone(), tgt: S.cam.tgt.clone() };
     S.to = { pos: pos, tgt: tgt, id: f ? target : null };
@@ -1024,6 +1249,7 @@
   }
 
   function effect(name) {
+    if (name === 'shake' && S.breach && S.breach.impactRequested && S.breach.impactStart == null) { S.breach.impactEffect = name; return; }
     if (S.reduced && (name === 'shake' || name === 'pulse')) { S.flash = .3; S.flashC = '255,255,255'; return; }
     if (name === 'flash') { S.flash = .8; S.flashC = '255,250,235'; var f = S.cast.sou || S.cast.zo || S.cast.kai || S.cast.haku; if (f) burst(headWorld(f).add(new V3(0, -.3, .2)), 40, 'spark'); }
     if (name === 'red') { S.flash = .55; S.flashC = '170,30,20'; }
@@ -1079,6 +1305,7 @@
   function frame(now) {
     if (!S.running) return;
     S.raf = requestAnimationFrame(frame);
+    if (document.hidden) { S.tLast = 0; return; }
     var t = now / 1000;
     var dt = S.tLast ? Math.min(.05, t - S.tLast) : .016;
     S.tLast = t;
@@ -1088,6 +1315,8 @@
     if (!S.scene || !S.renderer) return;
     S.t += dt;
     var st = S.stage;
+    updateBreach();
+    updateEntrance();
     // 道を駆ける場面：一行が進み、カメラも追う
     if (st.travel && !S.reduced) {
       S.travel += st.travel * dt;
@@ -1099,7 +1328,9 @@
       if (S.travel > 60) { S.travel = 0; }
     }
     // カメラ
-    if (S.to) {
+    if (breachCamera() || entranceCamera()) {
+      S.drift = 0;
+    } else if (S.to) {
       var u = ease((S.t - S.tStart) / S.tDur);
       var tp = S.to.pos.clone(), tt = S.to.tgt.clone();
       if (S.to.id && S.cast[S.to.id]) { var h = headWorld(S.cast[S.to.id]); tt.x = h.x; tt.z = h.z; if (st.travel) tp.x = S.to.pos.x + (h.x - S.to.tgt.x); }
@@ -1129,6 +1360,7 @@
     var t = S.t;
     S.anim.forEach(function (o) { if (o.userData.update) o.userData.update(dt, t); });
     Object.keys(S.cast).forEach(function (k) { var f = S.cast[k]; f.userData.update(dt, t + k.length); });
+    applyBreachRig();
     // 足の接地を保つ。踏み替えと重心移動は人物の剣舞リグへ任せ、
     // 舞台が別周期の平行移動を重ねて滑走・隣席への貫通を起こさない。
     Object.keys(S.cast).forEach(function (id) {
@@ -1156,7 +1388,7 @@
   window.KoumonStage3D = {
     supported: supported, mount: mount, resize: resize, setScene: setScene, setPose: setPose, focus: focus, effect: effect, speaker: speaker,
     start: start, stop: stop, renderOnce: renderOnce, showBubble: showBubble, hideBubble: hideBubble, clearLabels: clearLabels,
-    prewarm: prewarm, STAGES: STAGES, LIGHTS: LIGHTS, CAST: CAST, S: S, makeFigure: makeFigure, is3D: true,
+    prewarm: prewarm, cancelPendingScene: cancelPendingScene, whenBreachImpact: whenBreachImpact, STAGES: STAGES, LIGHTS: LIGHTS, CAST: CAST, S: S, makeFigure: makeFigure, is3D: true,
     quality: function () { return Q; }
   };
 })();
