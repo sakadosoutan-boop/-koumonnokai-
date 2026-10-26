@@ -14,7 +14,7 @@ $('note').textContent=a==='eat'?'本文は盾を伏せて肉を載せ、剣で�
 if(playing)stage.start();else scrub();$('action').disabled=false;$('timeline').disabled=false;}
 function scrub(){stage.stop();Object.values(stage.S.cast).forEach(f=>f.userData.state.actionProgress=Number($('timeline').value)/1000);stage.renderOnce();$('phase').textContent=stage.S.cast[actor].userData.state.motionPhase||'';}
 $('action').onchange=load;$('wide').onclick=()=>{stage.S.camera.fov=38;stage.S.camera.updateProjectionMatrix();stage.STAGES.feast.wide=wide.map(v=>v.slice());stage.focus('wide');if(!playing){stage.S.t+=2;stage.renderOnce();}};
-$('detail').onclick=()=>{stage.S.camera.fov=38;stage.S.camera.updateProjectionMatrix();stage.focus(actor,.82);if(!playing){stage.S.t+=2;stage.renderOnce();}};
+$('detail').onclick=()=>{stage.S.camera.fov=38;stage.S.camera.updateProjectionMatrix();stage.focus(actor,$('action').value==='eat'?1.6:.82);if(!playing){stage.S.t+=2;stage.renderOnce();}};
 $('above').onclick=()=>{stage.S.camera.fov=50;stage.S.camera.updateProjectionMatrix();stage.STAGES.feast.wide=[[.1,4.3,1.65],[0,.45,1.2]];stage.focus('wide');if(!playing){stage.S.t+=2;stage.renderOnce();}};
 $('play').onclick=()=>{playing=!playing;$('play').textContent=playing?'一時停止':'再生';if(playing){Object.entries(stage.S.cast).forEach(([id,f])=>{const state=f.userData.state,cycle=KM_BANQUET.cycles[state.pose]||8;state.actionStart=stage.S.t+id.length-Number($('timeline').value)/1000*cycle;delete state.actionProgress;});stage.start();}else scrub();};
 $('timeline').oninput=$('timeline').onchange=()=>{playing=false;$('play').textContent='再生';scrub();};
