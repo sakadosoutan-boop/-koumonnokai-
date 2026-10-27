@@ -1,0 +1,652 @@
+{
+  "date": "2026-10-27",
+  "change": "Reference-informed coordinated sword arcs, weight shifts and grounded steps, replacing isolated full-body spin",
+  "reference": {
+    "url": "https://www.youtube.com/watch?v=csDw9aJC2xA",
+    "seconds": 43,
+    "fps": 24,
+    "method": "Actual public video frames inspected at 1s intervals and 0.5s intervals for main phrases",
+    "notes": "docs/sword-dance-reference.md"
+  },
+  "runtimeCanonicalLF": {
+    "src/js/koumon-cast3d.js": "9c5d990021c7efb1b0fd09d4965e2725ac2c9c9ddcc5a175f92e8b56abc182a5",
+    "src/js/koumon-banquet-props.js": "76ad7d205d7914e7688a04703099da6ba5dce9769daa2be5d2fd6a77ed00570b",
+    "index.html": "46a7f0f73e4016ccda573138ac14b03745b609a7679965ee392dfb9a71b29850",
+    "tools/banquet-scenes.html": "0725b32fbd30b281d61f1e96efe5a3a5776cbd3f87ee811abc17a9bc69e85bd7",
+    "tools/character-gallery.html": "24b852c58f0c04d5963ba4f1ba2de28b1404d1afb97871d4c49f995088614415",
+    "dist/index.html": "fc615a576c2e5c6beb103e419dad1a75469542958d5881cb4c10b2bf6102b712"
+  },
+  "tests": {
+    "npm": {
+      "tests": 60,
+      "pass": 60,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "geometryConditions": 360,
+    "motionAuditRows": 5960,
+    "rowsByKind": {
+      "representative": 192,
+      "dense-dance": 2884,
+      "dense": 2884
+    },
+    "auditCastRawSha256": "a0aaa4fa389aea6cb2867d4775d15d1d22d7dd3d6b2fdfdcfbb9d6909ae31e25",
+    "maxima": {
+      "gripGap": 2.3551386880256624e-16,
+      "solverContact": 8.169055794461054e-16,
+      "wristBend": 1.1145339344631913,
+      "forearmTwist": 1.48,
+      "elbowFlex": 2.580235785377631,
+      "elbowRise": 0.09582646521760063,
+      "shoulderShieldGap": 0.00010287964571331631,
+      "bladePierceGap": 8.688869536365456e-16,
+      "shoulderSupportGap": 4.0053709487069576e-16,
+      "shoulderBiteGap": 0.008191383863865217,
+      "cupSupportGap": 7.28550816809042e-16,
+      "cupTilt": 1.4680000000000002,
+      "cupRimGap": 0.010593248217048728,
+      "danceRootShift": 0,
+      "danceFootContactGap": 7.529898907871222e-16,
+      "danceFootReachError": 0,
+      "flatShoeTurn": 1.6778257552035764e-05,
+      "flatSoleSlip": 2.6580039666626605e-05,
+      "flatSoleVerticalDrift": 1.2397598406766342e-05,
+      "danceLocalQuaternionStep": 0.08018308392187937,
+      "danceWorldQuaternionStep": 0.08489978893019078,
+      "danceCycleQuaternionGap": 0,
+      "danceCycleMatrixGap": 6.661338147750939e-16,
+      "danceOutOfOrderMatrixDelta": 0,
+      "localQuaternionStep": 0.0504122720822777,
+      "worldQuaternionStep": 0.03940487559829655,
+      "shoulderReturnGap": 0,
+      "cycleQuaternionGap": 0,
+      "outOfOrderMatrixDelta": 0,
+      "neckAnchorDrift": 8.899114524108741e-16
+    },
+    "minima": {
+      "bladeToThumb": 0.9999999999999997,
+      "shoulderElbowDrop": -0.09582646521760063,
+      "bladeLipClearance": 0.1800724795503025,
+      "cupForward": 0.09034883720930222,
+      "danceHeadClearance": 0.41816706637872053,
+      "danceFreeHandClearance": 0.16056714686125348,
+      "danceSoleHeight": -0.001034883500619021,
+      "independentDanceHeadClearance": 0.571730091854428,
+      "independentDanceFreeHandClearance": 0.10644088998961015,
+      "coordinatedBladeSpan": 0.4431620294359871,
+      "coordinatedArmPath": 0.7710212773694675,
+      "coordinatedHandPath": 0.23746150415480952,
+      "coordinatedFrameFraction": 0.9722222222222222
+    },
+    "dance": [
+      {
+        "q": "low",
+        "id": "sou",
+        "cycle": 7.8,
+        "bladePath": 13.840530007985592,
+        "peakBladeSpeed": 7.625409956972317,
+        "fastCutSpeed": 7.625409956972317,
+        "maxLocalStep": 0.08018308392187937,
+        "maxWorldStep": 0.08489978893019078,
+        "minHeadClearance": 0.41816706637872053,
+        "minFreeHandClearance": 0.35254830394461284,
+        "originalMotifScores": [
+          9.298002757656216e-16,
+          1.0629576194313574e-15
+        ],
+        "flatSoleSamples": 1022,
+        "flatStances": 10,
+        "longestFlatPlantFrames": 180,
+        "maxFlatShoeTurn": 1.6778257552035764e-05,
+        "maxSoleSlip": 2.6580039666626605e-05,
+        "maxSoleVerticalDrift": 1.2397598406766342e-05,
+        "peakSoleLift": 0.08688851740997942,
+        "overheadFrames": 46,
+        "overheadLateralFrames": 43,
+        "horizontalExtensionFrames": 20,
+        "peakHiltAboveCrown": 0.20736960427390838,
+        "peakWristAboveCrown": 0.10180702037956713,
+        "peakTorsoBow": 0.25497715089111067,
+        "ranges": {
+          "bodyTurn": 1.0899071348897489,
+          "waistTurn": 1.5605832496666945,
+          "bladeTipHeight": 1.6803763927512598,
+          "torsoYaw": 0.7699389917473292,
+          "bodyHeight": 0.2328277952357548,
+          "bodySway": 0.10348698961936575,
+          "LHip": 0.5899357355584224,
+          "LKnee": 0.8272763603302224,
+          "RHip": 0.869230521857683,
+          "RKnee": 0.9574957277684512
+        },
+        "waistPassages": [
+          {
+            "start": 0,
+            "end": 0.09027777777777778,
+            "waistArc": 0.22522314432238016,
+            "bladeSpan": 0.4431620294359871,
+            "armPath": 0.7710212773694675,
+            "handPath": 0.24480319675632695,
+            "coupledFraction": 0.984375
+          },
+          {
+            "start": 0.09027777777777778,
+            "end": 0.19027777777777777,
+            "waistArc": 1.1042775137036507,
+            "bladeSpan": 0.6016303044515162,
+            "armPath": 1.0652861129020024,
+            "handPath": 0.37227073633043367,
+            "coupledFraction": 0.9722222222222222
+          },
+          {
+            "start": 0.28055555555555556,
+            "end": 0.35,
+            "waistArc": 0.2996893960536683,
+            "bladeSpan": 0.996308387031057,
+            "armPath": 1.6305460359707975,
+            "handPath": 0.4939493041187592,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.35,
+            "end": 0.4486111111111111,
+            "waistArc": 1.3119578193603663,
+            "bladeSpan": 2.9308536453473404,
+            "armPath": 3.3150085023991536,
+            "handPath": 1.1748877182515038,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.4930555555555556,
+            "end": 0.5694444444444444,
+            "waistArc": 0.2859610475788847,
+            "bladeSpan": 1.2291708183585675,
+            "armPath": 2.4715361769534847,
+            "handPath": 0.8911839323852452,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.5694444444444444,
+            "end": 0.6652777777777777,
+            "waistArc": 1.0252281336889546,
+            "bladeSpan": 2.717998486673759,
+            "armPath": 3.3931634621630473,
+            "handPath": 1.3319458182924002,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.6652777777777777,
+            "end": 0.7805555555555556,
+            "waistArc": 1.0439140593347247,
+            "bladeSpan": 0.8061800594692852,
+            "armPath": 1.4874024114803432,
+            "handPath": 0.45296100542149387,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.7805555555555556,
+            "end": 0.85,
+            "waistArc": 0.7234069538606093,
+            "bladeSpan": 0.756001055308695,
+            "armPath": 1.3055045500393045,
+            "handPath": 0.4372716110631065,
+            "coupledFraction": 0.98
+          },
+          {
+            "start": 0.85,
+            "end": 0.8972222222222223,
+            "waistArc": 0.2405282319240652,
+            "bladeSpan": 1.1198008274538842,
+            "armPath": 1.4183316462133662,
+            "handPath": 0.5388004511795003,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.8972222222222223,
+            "end": 0.9444444444444444,
+            "waistArc": 0.9992856792612124,
+            "bladeSpan": 0.7682711735646693,
+            "armPath": 1.438232057793144,
+            "handPath": 0.6558621836906574,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.9444444444444444,
+            "end": 1,
+            "waistArc": 0.8983885355064842,
+            "bladeSpan": 0.46553185325526736,
+            "armPath": 1.4015054671960328,
+            "handPath": 0.5466335428394539,
+            "coupledFraction": 1
+          }
+        ],
+        "overheadBladeSpan": 0.5873804443236227,
+        "quickCuts": [
+          {
+            "start": 0.3763888888888889,
+            "end": 0.44027777777777777,
+            "frames": 47,
+            "peak": 5.368944920863346
+          },
+          {
+            "start": 0.46944444444444444,
+            "end": 0.4930555555555556,
+            "frames": 18,
+            "peak": 3.0604809740896552
+          },
+          {
+            "start": 0.5319444444444444,
+            "end": 0.5583333333333333,
+            "frames": 20,
+            "peak": 3.0066825663136423
+          },
+          {
+            "start": 0.5847222222222223,
+            "end": 0.6319444444444444,
+            "frames": 35,
+            "peak": 7.625409956972317
+          },
+          {
+            "start": 0.8722222222222222,
+            "end": 0.9569444444444445,
+            "frames": 44,
+            "peak": 4.906864022699429
+          }
+        ],
+        "clockCycleGap": 3.1401849173675503e-16
+      },
+      {
+        "q": "low",
+        "id": "haku",
+        "cycle": 7.8,
+        "bladePath": 6.491057515708791,
+        "peakBladeSpeed": 2.8079946859124902,
+        "fastCutSpeed": 2.8079946859124902,
+        "maxLocalStep": 0.05871735627005727,
+        "maxWorldStep": 0.058573726948670087,
+        "minHeadClearance": 0.693183722617283,
+        "minFreeHandClearance": 0.16056714686125348,
+        "originalMotifScores": [
+          5.721958498152797e-16,
+          4.1375569220787887e-16
+        ],
+        "flatSoleSamples": 1022,
+        "flatStances": 10,
+        "longestFlatPlantFrames": 180,
+        "maxFlatShoeTurn": 1.0905858450354923e-05,
+        "maxSoleSlip": 1.4221242752105196e-05,
+        "maxSoleVerticalDrift": 7.832078319619604e-06,
+        "peakSoleLift": 0.05453905367786045,
+        "overheadFrames": 0,
+        "overheadLateralFrames": 0,
+        "horizontalExtensionFrames": 0,
+        "peakHiltAboveCrown": -0.5827902919469015,
+        "peakWristAboveCrown": -0.5619610387239333,
+        "peakTorsoBow": 0.12903179856583394,
+        "ranges": {
+          "bodyTurn": 0.22049757483798427,
+          "waistTurn": 0.41185625449986824,
+          "bladeTipHeight": 0.6769776532400478,
+          "torsoYaw": 0.42346644546103107,
+          "bodyHeight": 0.04073178395304167,
+          "bodySway": 0.05531902843979018,
+          "LHip": 0.43784638404741305,
+          "LKnee": 0.4433017070808003,
+          "RHip": 0.39664161433418915,
+          "RKnee": 0.40524794890206883
+        },
+        "waistPassages": [
+          {
+            "start": 0.5694444444444444,
+            "end": 0.6291666666666667,
+            "waistArc": 0.3693469717617187,
+            "bladeSpan": 0.7769003016694804,
+            "armPath": 1.098777929757975,
+            "handPath": 0.47116218693022244,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.6291666666666667,
+            "end": 0.7527777777777778,
+            "waistArc": 0.2631025725431828,
+            "bladeSpan": 0.4453140990538255,
+            "armPath": 0.8519121365795054,
+            "handPath": 0.23746150415480952,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.8416666666666667,
+            "end": 0.9069444444444444,
+            "waistArc": 0.31106364642510825,
+            "bladeSpan": 0.9507495387290492,
+            "armPath": 1.2209238619016936,
+            "handPath": 0.5009249282981926,
+            "coupledFraction": 1
+          }
+        ],
+        "overheadBladeSpan": 0,
+        "quickCuts": [
+          {
+            "start": 0.9263888888888889,
+            "end": 0.9375,
+            "frames": 9,
+            "peak": 2.8079946859124902
+          }
+        ],
+        "clockCycleGap": 0
+      },
+      {
+        "q": "high",
+        "id": "sou",
+        "cycle": 7.8,
+        "bladePath": 13.840530007985592,
+        "peakBladeSpeed": 7.625409956972317,
+        "fastCutSpeed": 7.625409956972317,
+        "maxLocalStep": 0.08018308392187937,
+        "maxWorldStep": 0.08489978893019078,
+        "minHeadClearance": 0.41816706637872053,
+        "minFreeHandClearance": 0.35254830394461284,
+        "originalMotifScores": [
+          9.298002757656216e-16,
+          1.0629576194313574e-15
+        ],
+        "flatSoleSamples": 1022,
+        "flatStances": 10,
+        "longestFlatPlantFrames": 180,
+        "maxFlatShoeTurn": 1.6778257552035764e-05,
+        "maxSoleSlip": 2.6580039666626605e-05,
+        "maxSoleVerticalDrift": 1.2397598406766342e-05,
+        "peakSoleLift": 0.08688851740997942,
+        "overheadFrames": 46,
+        "overheadLateralFrames": 43,
+        "horizontalExtensionFrames": 20,
+        "peakHiltAboveCrown": 0.20651382409733587,
+        "peakWristAboveCrown": 0.10095124020299462,
+        "peakTorsoBow": 0.25497715089111067,
+        "ranges": {
+          "bodyTurn": 1.0899071348897489,
+          "waistTurn": 1.5605832496666945,
+          "bladeTipHeight": 1.6803763927512598,
+          "torsoYaw": 0.7699389917473292,
+          "bodyHeight": 0.2328277952357548,
+          "bodySway": 0.10348698961936575,
+          "LHip": 0.5899357355584224,
+          "LKnee": 0.8272763603302224,
+          "RHip": 0.869230521857683,
+          "RKnee": 0.9574957277684512
+        },
+        "waistPassages": [
+          {
+            "start": 0,
+            "end": 0.09027777777777778,
+            "waistArc": 0.22522314432238016,
+            "bladeSpan": 0.4431620294359871,
+            "armPath": 0.7710212773694675,
+            "handPath": 0.24480319675632695,
+            "coupledFraction": 0.984375
+          },
+          {
+            "start": 0.09027777777777778,
+            "end": 0.19027777777777777,
+            "waistArc": 1.1042775137036507,
+            "bladeSpan": 0.6016303044515162,
+            "armPath": 1.0652861129020024,
+            "handPath": 0.37227073633043367,
+            "coupledFraction": 0.9722222222222222
+          },
+          {
+            "start": 0.28055555555555556,
+            "end": 0.35,
+            "waistArc": 0.2996893960536683,
+            "bladeSpan": 0.996308387031057,
+            "armPath": 1.6305460359707975,
+            "handPath": 0.4939493041187592,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.35,
+            "end": 0.4486111111111111,
+            "waistArc": 1.3119578193603663,
+            "bladeSpan": 2.9308536453473404,
+            "armPath": 3.3150085023991536,
+            "handPath": 1.1748877182515038,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.4930555555555556,
+            "end": 0.5694444444444444,
+            "waistArc": 0.2859610475788847,
+            "bladeSpan": 1.2291708183585675,
+            "armPath": 2.4715361769534847,
+            "handPath": 0.8911839323852452,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.5694444444444444,
+            "end": 0.6652777777777777,
+            "waistArc": 1.0252281336889546,
+            "bladeSpan": 2.717998486673759,
+            "armPath": 3.3931634621630473,
+            "handPath": 1.3319458182924002,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.6652777777777777,
+            "end": 0.7805555555555556,
+            "waistArc": 1.0439140593347247,
+            "bladeSpan": 0.8061800594692852,
+            "armPath": 1.4874024114803432,
+            "handPath": 0.45296100542149387,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.7805555555555556,
+            "end": 0.85,
+            "waistArc": 0.7234069538606093,
+            "bladeSpan": 0.756001055308695,
+            "armPath": 1.3055045500393045,
+            "handPath": 0.4372716110631065,
+            "coupledFraction": 0.98
+          },
+          {
+            "start": 0.85,
+            "end": 0.8972222222222223,
+            "waistArc": 0.2405282319240652,
+            "bladeSpan": 1.1198008274538842,
+            "armPath": 1.4183316462133662,
+            "handPath": 0.5388004511795003,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.8972222222222223,
+            "end": 0.9444444444444444,
+            "waistArc": 0.9992856792612124,
+            "bladeSpan": 0.7682711735646693,
+            "armPath": 1.438232057793144,
+            "handPath": 0.6558621836906574,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.9444444444444444,
+            "end": 1,
+            "waistArc": 0.8983885355064842,
+            "bladeSpan": 0.46553185325526736,
+            "armPath": 1.4015054671960328,
+            "handPath": 0.5466335428394539,
+            "coupledFraction": 1
+          }
+        ],
+        "overheadBladeSpan": 0.5873804443236227,
+        "quickCuts": [
+          {
+            "start": 0.3763888888888889,
+            "end": 0.44027777777777777,
+            "frames": 47,
+            "peak": 5.368944920863346
+          },
+          {
+            "start": 0.46944444444444444,
+            "end": 0.4930555555555556,
+            "frames": 18,
+            "peak": 3.0604809740896552
+          },
+          {
+            "start": 0.5319444444444444,
+            "end": 0.5583333333333333,
+            "frames": 20,
+            "peak": 3.0066825663136423
+          },
+          {
+            "start": 0.5847222222222223,
+            "end": 0.6319444444444444,
+            "frames": 35,
+            "peak": 7.625409956972317
+          },
+          {
+            "start": 0.8722222222222222,
+            "end": 0.9569444444444445,
+            "frames": 44,
+            "peak": 4.906864022699429
+          }
+        ],
+        "clockCycleGap": 3.1401849173675503e-16
+      },
+      {
+        "q": "high",
+        "id": "haku",
+        "cycle": 7.8,
+        "bladePath": 6.491057515708791,
+        "peakBladeSpeed": 2.8079946859124902,
+        "fastCutSpeed": 2.8079946859124902,
+        "maxLocalStep": 0.05871735627005727,
+        "maxWorldStep": 0.058573726948670087,
+        "minHeadClearance": 0.693183722617283,
+        "minFreeHandClearance": 0.16056714686125348,
+        "originalMotifScores": [
+          5.721958498152797e-16,
+          4.1375569220787887e-16
+        ],
+        "flatSoleSamples": 1022,
+        "flatStances": 10,
+        "longestFlatPlantFrames": 180,
+        "maxFlatShoeTurn": 1.0905858450354923e-05,
+        "maxSoleSlip": 1.4221242752105196e-05,
+        "maxSoleVerticalDrift": 7.832078319619604e-06,
+        "peakSoleLift": 0.05453905367786045,
+        "overheadFrames": 0,
+        "overheadLateralFrames": 0,
+        "horizontalExtensionFrames": 0,
+        "peakHiltAboveCrown": -0.5835444005841435,
+        "peakWristAboveCrown": -0.5627158023143946,
+        "peakTorsoBow": 0.12903179856583394,
+        "ranges": {
+          "bodyTurn": 0.22049757483798427,
+          "waistTurn": 0.41185625449986824,
+          "bladeTipHeight": 0.6769776532400478,
+          "torsoYaw": 0.42346644546103107,
+          "bodyHeight": 0.04073178395304167,
+          "bodySway": 0.05531902843979018,
+          "LHip": 0.43784638404741305,
+          "LKnee": 0.4433017070808003,
+          "RHip": 0.39664161433418915,
+          "RKnee": 0.40524794890206883
+        },
+        "waistPassages": [
+          {
+            "start": 0.5694444444444444,
+            "end": 0.6291666666666667,
+            "waistArc": 0.3693469717617187,
+            "bladeSpan": 0.7769003016694804,
+            "armPath": 1.098777929757975,
+            "handPath": 0.47116218693022244,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.6291666666666667,
+            "end": 0.7527777777777778,
+            "waistArc": 0.2631025725431828,
+            "bladeSpan": 0.4453140990538255,
+            "armPath": 0.8519121365795054,
+            "handPath": 0.23746150415480952,
+            "coupledFraction": 1
+          },
+          {
+            "start": 0.8416666666666667,
+            "end": 0.9069444444444444,
+            "waistArc": 0.31106364642510825,
+            "bladeSpan": 0.9507495387290492,
+            "armPath": 1.2209238619016936,
+            "handPath": 0.5009249282981926,
+            "coupledFraction": 1
+          }
+        ],
+        "overheadBladeSpan": 0,
+        "quickCuts": [
+          {
+            "start": 0.9263888888888889,
+            "end": 0.9375,
+            "frames": 9,
+            "peak": 2.8079946859124902
+          }
+        ],
+        "clockCycleGap": 0
+      }
+    ],
+    "guzzling": [
+      {
+        "q": "low",
+        "cycle": 6.4,
+        "lipContactFrames": 418,
+        "guzzleFrames": 174,
+        "peakCupTilt": 1.4680000000000002
+      },
+      {
+        "q": "high",
+        "cycle": 6.4,
+        "lipContactFrames": 418,
+        "guzzleFrames": 174,
+        "peakCupTilt": 1.4680000000000002
+      }
+    ]
+  },
+  "bundle": {
+    "bytes": 25214354,
+    "inlineScriptsSyntaxChecked": 18,
+    "externalScripts": 0
+  },
+  "visualReview": {
+    "renderer": "Actual runtime geometry on CPU; not WebGL or PBR",
+    "framesPerActor": 96,
+    "cycleSeconds": 7.8,
+    "keyPhases": {
+      "horizontal": 0.36,
+      "overhead": 0.58,
+      "guardLunge": 0.855
+    },
+    "proofs": {
+      "docs/model-preview/choreography-dance.gif": "ae843a2308c48a6fc3b92504c2a43e9dc91db396318947c1c77141de79060062",
+      "docs/model-preview/choreography-dance.png": "ceeab489a80602e4e2072800e6029b15ed8bf6cd8421c89acfdb0e450d1434d7",
+      "docs/model-preview/choreography-guard.gif": "a44e77a14717157c7a12a7a291cec3f9313353b88652f3155a42291c2eabba81",
+      "docs/model-preview/choreography-guard.png": "3564866279267f93fc44a69600c1370a8667127398a6c63b49d847a5463b8d6d",
+      "docs/model-preview/choreography-dance-views.png": "d30d244b590e36468facfaf718e3a04679ddc3c5d026f50aaa9710fd98fb8222",
+      "docs/model-preview/choreography-guard-views.png": "04c23fa6ad40be1635f74beab7267a2aca4249aae82ab6b02ee5616422f54ef7",
+      "docs/model-preview/choreography-horizontal-views.png": "effc56dd100c7e4d94fa244eee26336bef9b6b10cece5cf67941133a74f95af6"
+    },
+    "views": [
+      "front",
+      "side",
+      "three-quarter",
+      "overhead"
+    ],
+    "independentReview": "Accepted as a grounded interpretation: distinct silhouettes and connected grip in sampled frames",
+    "browserStatus": "In-app browser initial navigation and existing-tab focus timed out; new runtime WebGL display not reverified"
+  },
+  "limits": [
+    "Keyframe interpretation of selected reference patterns; not motion capture",
+    "Reference hop/travel and deep kneel are adapted into grounded banquet steps/lunge",
+    "Haku weight shift is subtle through the long robe; lateral arm shapes remain straighter than the reference",
+    "No new browser WebGL capture",
+    "No device frame-rate measurement"
+  ]
+}

@@ -17,11 +17,67 @@ function nodes(r){
 }
 function snapshot(r){return Object.fromEntries(Object.entries(nodes(r)).map(([name,o])=>{const worldQ=o.getWorldQuaternion(new Q()).normalize();return [name,{matrix:Array.from(o.matrixWorld.elements),localQ:o.quaternion.clone(),worldQ}];}));}
 function angle(a,b){return 2*Math.acos(Math.min(1,Math.abs(a.dot(b))));}
-function pelvisYaw(f,r){const q=f.getWorldQuaternion(new Q()).invert().multiply(r.pelvis.getWorldQuaternion(new Q())),forward=new V(0,0,1).applyQuaternion(q);return Math.atan2(forward.x,forward.z);}
+function relativeYaw(f,node){const q=f.getWorldQuaternion(new Q()).invert().multiply(node.getWorldQuaternion(new Q())),forward=new V(0,0,1).applyQuaternion(q);return Math.atan2(forward.x,forward.z);}
 function originalMotifScore(r,key){
  const a=r.arms.R,p=r.props.sword,shoulder=new Q().setFromEuler(new C.THREE.Euler(-key[0],key[3],-key[1])),elbow=new Q().setFromEuler(new C.THREE.Euler(-key[2],a.el.rotation.y,0));
  const expected=new V().fromArray(p.userData.bladeDirection).applyQuaternion(p.quaternion).applyQuaternion(elbow).applyQuaternion(shoulder),actual=new V().fromArray(p.userData.bladeDirection).transformDirection(p.matrixWorld).applyQuaternion(r.chest.getWorldQuaternion(new Q()).invert());
  return Math.max(angle(a.sh.quaternion,shoulder)/.22,Math.abs(a.el.rotation.x+key[2])/.18,actual.distanceTo(expected)/.30);
+}
+const soleVertexIndices=new WeakMap();
+function actualSolePlant(shoe,s,anchor,previousPoints){
+ const sole=shoe.children.find(node=>node.isMesh&&node.geometry.type==='CylinderGeometry');check(!!sole,'the shoe has an actual sole mesh');
+ const p=sole.geometry.attributes.position;let indices=soleVertexIndices.get(sole.geometry);
+ if(!indices){
+  let minY=Infinity;for(let i=0;i<p.count;i++)minY=Math.min(minY,p.getY(i));
+  const bottom=[];for(let i=0;i<p.count;i++)if(Math.abs(p.getY(i)-minY)<1e-7)bottom.push(i);
+  indices=[bottom.reduce((a,b)=>p.getZ(a)<p.getZ(b)?a:b),bottom.reduce((a,b)=>p.getZ(a)>p.getZ(b)?a:b),bottom.reduce((a,b)=>p.getX(a)>p.getX(b)?a:b)];soleVertexIndices.set(sole.geometry,indices);
+ }
+ const points=indices.map(i=>new V().fromBufferAttribute(p,i).applyMatrix4(sole.matrixWorld)),minY=Math.min(...points.map(point=>point.y)),maxY=Math.max(...points.map(point=>point.y));
+ const verticalStep=previousPoints?Math.max(...points.map((point,i)=>Math.abs(point.y-previousPoints[i].y))):0;
+ const flat=maxY<.0005*s&&minY>-.003*s&&maxY-minY<.0015*s&&verticalStep<.00002*s,q=shoe.getWorldQuaternion(new Q()).normalize(),created=flat&&!anchor;
+ if(created)anchor={q:q.clone(),points:points.map(point=>point.clone()),frames:0};let turn=0,drift=0,verticalDrift=0;
+ if(flat){
+  anchor.frames++;turn=angle(q,anchor.q);
+  points.forEach((point,i)=>{drift=Math.max(drift,Math.hypot(point.x-anchor.points[i].x,point.z-anchor.points[i].z));verticalDrift=Math.max(verticalDrift,Math.abs(point.y-anchor.points[i].y));});
+ }
+ return {anchor:flat?anchor:null,points,created,flat,turn,drift,verticalDrift,minY};
+}
+function coordinatedWaistPassages(samples){
+ const passages=[];let start=0,direction=0;
+ function finish(end){
+  const run=samples.slice(start,end+1),arc=Math.abs(run.at(-1).yaw-run[0].yaw);if(run.length<2||arc<.22||run.at(-1).u-run[0].u<.04)return;
+  let minDot=1,armPath=0,handPath=0,waistFrames=0,coupledFrames=0;
+  for(let i=0;i<run.length;i++){
+   for(let j=0;j<i;j++)minDot=Math.min(minDot,run[i].blade.dot(run[j].blade));if(!i)continue;
+   const a=run[i-1],b=run[i],arm=angle(a.shoulder,b.shoulder)+angle(a.elbow,b.elbow);armPath+=arm;handPath+=a.hand.distanceTo(b.hand);
+   if(Math.abs(b.yaw-a.yaw)>.00005){waistFrames++;if(Math.acos(Math.min(1,Math.max(-1,a.blade.dot(b.blade))))>.0005&&arm>.0005)coupledFrames++;}
+  }
+  passages.push({start:run[0].u,end:run.at(-1).u,waistArc:arc,bladeSpan:Math.acos(Math.max(-1,Math.min(1,minDot))),armPath,handPath,coupledFraction:waistFrames?coupledFrames/waistFrames:0});
+ }
+ for(let i=1;i<samples.length;i++){
+  const delta=samples[i].yaw-samples[i-1].yaw,sign=Math.abs(delta)>.00005?Math.sign(delta):0;if(sign&&direction&&sign!==direction){finish(i-1);start=i-1;}if(sign)direction=sign;
+ }
+ finish(samples.length-1);return passages;
+}
+const headSkinObjects=new WeakMap();
+function referenceDanceFrame(f,r,a,b){
+ let skin=headSkinObjects.get(r.head);if(!skin){skin=[];r.head.traverse(node=>{if(node.isMesh&&node.userData.part==='skin')skin.push(node);});check(skin.length>0,'the anatomical head surface is available');headSkinObjects.set(r.head,skin);}
+ const crown=Math.max(...skin.map(node=>new C.THREE.Box3().setFromObject(node).max.y)),hilt=r.props.sword.localToWorld(new V().fromArray(r.props.sword.userData.gripCenter));
+ const wrist=r.arms.R.wr.getWorldPosition(new V()),left=r.arms.L.wr.getWorldPosition(new V()),shoulder=r.arms.R.sh.getWorldPosition(new V()),leftShoulder=r.arms.L.sh.getWorldPosition(new V()),chest=r.chest.getWorldPosition(new V()),direction=b.clone().sub(a).normalize();
+ const rx=wrist.x-chest.x,rz=wrist.z-chest.z,lx=left.x-chest.x,lz=left.z-chest.z,extension=Math.hypot(rx,rz),leftExtension=Math.hypot(lx,lz),opposed=(rx*lx+rz*lz)/Math.max(1e-9,extension*leftExtension);
+ const overhead=hilt.y>crown+.015*r.s&&wrist.y>crown-.02*r.s&&Math.min(hilt.y,wrist.y)>shoulder.y+.25*r.s;
+ const horizontal=Math.abs(direction.y)<.25&&Math.abs(hilt.y-shoulder.y)<.20*r.s&&Math.abs(wrist.y-shoulder.y)<.20*r.s&&extension>.42*r.s&&leftExtension>.30*r.s&&opposed<-.25&&Math.abs(left.y-leftShoulder.y)<.25*r.s;
+ const forward=new V(0,0,1).transformDirection(r.chest.matrixWorld).applyQuaternion(f.getWorldQuaternion(new Q()).invert());
+ return {overhead,overheadLateral:overhead&&Math.abs(direction.y)<.55,horizontal,hiltAboveCrown:hilt.y-crown,wristAboveCrown:wrist.y-crown,torsoBow:Math.atan2(-forward.y,Math.hypot(forward.x,forward.z)),blade:direction.applyQuaternion(r.chest.getWorldQuaternion(new Q()).invert())};
+}
+function directionSpan(directions){let minDot=1;for(let i=0;i<directions.length;i++)for(let j=0;j<i;j++)minDot=Math.min(minDot,directions[i].dot(directions[j]));return Math.acos(Math.max(-1,Math.min(1,minDot)));}
+function quickCutBursts(speeds,steps){
+ const bursts=[];let burst,last=-Infinity;
+ for(let i=0;i<speeds.length;i++)if(speeds[i]>2.5){
+  if(!burst||i-last>steps*.02){if(burst&&burst.frames>=steps*.006)bursts.push(burst);burst={start:i/steps,end:i/steps,frames:0,peak:0};}
+  burst.frames++;burst.end=i/steps;burst.peak=Math.max(burst.peak,speeds[i]);last=i;
+ }
+ if(burst&&burst.frames>=steps*.006)bursts.push(burst);return bursts;
 }
 vm.runInContext(fs.readFileSync(path.join(root,'src/js/koumon-3d.js'),'utf8'),C);
 function inspectDance(q){
@@ -32,18 +88,23 @@ function inspectDance(q){
  stage.setPose('sou','dance');stage.setPose('haku','dance');
  const cycle=C.KM_BANQUET.cycles.dance;check(cycle>=4&&cycle<=8,q+' dance phrase must fit a short stage sequence');
  const roots=Object.fromEntries(['sou','haku'].map(id=>[id,{position:actors[id].position.clone(),yaw:actors[id].rotation.y}]));
- for(const id of ['sou','haku']){stats[id]={q,id,cycle,bladePath:0,peakBladeSpeed:0,fastCutSpeed:0,maxLocalStep:0,maxWorldStep:0,minHeadClearance:Infinity,minFreeHandClearance:Infinity,originalMotifScores:[Infinity,Infinity],ranges:{}};saved[id]=[];}
+ for(const id of ['sou','haku']){stats[id]={q,id,cycle,bladePath:0,peakBladeSpeed:0,fastCutSpeed:0,maxLocalStep:0,maxWorldStep:0,minHeadClearance:Infinity,minFreeHandClearance:Infinity,originalMotifScores:[Infinity,Infinity],flatSoleSamples:0,flatStances:0,longestFlatPlantFrames:0,maxFlatShoeTurn:0,maxSoleSlip:0,maxSoleVerticalDrift:0,peakSoleLift:0,overheadFrames:0,overheadLateralFrames:0,horizontalExtensionFrames:0,peakHiltAboveCrown:-Infinity,peakWristAboveCrown:-Infinity,peakTorsoBow:0,ranges:{}};saved[id]=[];}
  function range(s,key,value){const span=s.ranges[key]||(s.ranges[key]=[Infinity,-Infinity]);span[0]=Math.min(span[0],value);span[1]=Math.max(span[1],value);}
- const tips={},feetPrevious={},yawPrevious={},yawUnwrapped={sou:0,haku:0};
+ const tips={},tipSpeeds={sou:[],haku:[]},feetPrevious={},yawPrevious={},yawUnwrapped={sou:0,haku:0},chestYawPrevious={},chestYawUnwrapped={sou:0,haku:0},soleAnchors={},solePrevious={},coordination={sou:[],haku:[]},overheadDirections={sou:[],haku:[]};
  for(let i=0;i<=steps;i++){
   for(const id of ['sou','haku'])frame(actors[id],i/steps);
   Object.values(actors).forEach(f=>f.updateMatrixWorld(true));
   for(const id of ['sou','haku']){
    const f=actors[id],r=f.userData.rig,s=stats[id],row=inspect(f,q,id,'dance',i/steps,'dense-dance'),p=r.props.sword;
    check(max('danceRootShift',f.position.distanceTo(roots[id].position))<1e-10&&Math.abs(f.rotation.y-roots[id].yaw)<1e-10,q+'/'+id+' stage root moves during body rotation');
-   const yaw=pelvisYaw(f,r);if(yawPrevious[id]!==undefined)yawUnwrapped[id]+=Math.atan2(Math.sin(yaw-yawPrevious[id]),Math.cos(yaw-yawPrevious[id]));yawPrevious[id]=yaw;range(s,'bodyTurn',yawUnwrapped[id]);
+   const yaw=relativeYaw(f,r.pelvis);if(yawPrevious[id]!==undefined)yawUnwrapped[id]+=Math.atan2(Math.sin(yaw-yawPrevious[id]),Math.cos(yaw-yawPrevious[id]));yawPrevious[id]=yaw;range(s,'bodyTurn',yawUnwrapped[id]);
+   const chestYaw=relativeYaw(f,r.chest);if(chestYawPrevious[id]!==undefined)chestYawUnwrapped[id]+=Math.atan2(Math.sin(chestYaw-chestYawPrevious[id]),Math.cos(chestYaw-chestYawPrevious[id]));chestYawPrevious[id]=chestYaw;range(s,'waistTurn',chestYawUnwrapped[id]);
    if(i/steps<=.35){s.originalMotifScores[0]=Math.min(s.originalMotifScores[0],originalMotifScore(r,[.88,.42,.62,-.42]));s.originalMotifScores[1]=Math.min(s.originalMotifScores[1],originalMotifScore(r,[.52,.86,.27,-.46]));}
    const a=p.localToWorld(new V().fromArray(p.userData.bladeRoot)),b=p.localToWorld(new V().fromArray(p.userData.bladeTip)),line=new C.THREE.Line3(a,b);
+   coordination[id].push({u:i/steps,yaw:chestYawUnwrapped[id],blade:b.clone().sub(a).normalize().applyQuaternion(r.chest.getWorldQuaternion(new Q()).invert()),shoulder:r.arms.R.sh.quaternion.clone(),elbow:r.arms.R.el.quaternion.clone(),hand:r.chest.worldToLocal(r.arms.R.wr.getWorldPosition(new V()))});
+   const mode=referenceDanceFrame(f,r,a,b);
+   if(mode.overhead){s.overheadFrames++;overheadDirections[id].push(mode.blade);}if(mode.overheadLateral)s.overheadLateralFrames++;if(mode.horizontal)s.horizontalExtensionFrames++;
+   s.peakHiltAboveCrown=Math.max(s.peakHiltAboveCrown,mode.hiltAboveCrown);s.peakWristAboveCrown=Math.max(s.peakWristAboveCrown,mode.wristAboveCrown);s.peakTorsoBow=Math.max(s.peakTorsoBow,mode.torsoBow);range(s,'bladeTipHeight',b.y);
    if(safetyFrames.has(i))safety[id].push({a:a.clone(),b:b.clone(),head:r.head.localToWorld(new V(0,.015,.01)),palm:r.arms.L.wr.localToWorld(new V(0,-.07*r.s,0))});
    for(const [other,actor] of Object.entries(actors)){
     const otherRig=actor.userData.rig,head=otherRig.head.localToWorld(new V(0,.015,.01)),palm=otherRig.arms.L.wr.localToWorld(new V(0,-.07*otherRig.s,0));
@@ -51,7 +112,7 @@ function inspectDance(q){
     check(headGap>.14,q+'/'+id+' blade clears '+other+' head');check(palmGap>.07,q+'/'+id+' blade clears '+other+' free hand');
     s.minHeadClearance=Math.min(s.minHeadClearance,headGap);s.minFreeHandClearance=Math.min(s.minFreeHandClearance,palmGap);
    }
-   if(tips[id]){const distance=b.distanceTo(tips[id]),speed=distance/(cycle/steps);s.bladePath+=distance;s.peakBladeSpeed=Math.max(s.peakBladeSpeed,speed);if(i/steps<.5||i/steps>.9)s.fastCutSpeed=Math.max(s.fastCutSpeed,speed);}tips[id]=b.clone();
+   if(tips[id]){const distance=b.distanceTo(tips[id]),speed=distance/(cycle/steps);s.bladePath+=distance;s.peakBladeSpeed=Math.max(s.peakBladeSpeed,speed);s.fastCutSpeed=Math.max(s.fastCutSpeed,speed);tipSpeeds[id].push(speed);}else tipSpeeds[id].push(0);tips[id]=b.clone();
    range(s,'torsoYaw',r.spine.rotation.y);range(s,'bodyHeight',r.body.position.y+r.pelvis.position.y);range(s,'bodySway',r.body.position.x);
    for(const side of ['L','R']){
     range(s,side+'Hip',r.legs[side].hip.rotation.x);range(s,side+'Knee',r.legs[side].knee.rotation.x);
@@ -59,6 +120,14 @@ function inspectDance(q){
     check(max('danceFootContactGap',shoe.getWorldPosition(new V()).distanceTo(target))<.0005,q+'/'+id+'/'+side+' shoe detached from foot contact');
     check(max('danceFootReachError',foot.reachError)<.0005&&foot.kneeFlex>.05&&foot.kneeFlex<2.5,q+'/'+id+'/'+side+' leg reach or flex limit');
     check(min('danceSoleHeight',new C.THREE.Box3().setFromObject(shoe).min.y)>-.003*r.s,q+'/'+id+'/'+side+' shoe below floor');
+    const plant=actualSolePlant(shoe,r.s,soleAnchors[id+'/'+side],solePrevious[id+'/'+side]);soleAnchors[id+'/'+side]=plant.anchor;solePrevious[id+'/'+side]=plant.points;
+    if(plant.flat){
+     s.flatSoleSamples++;if(plant.created)s.flatStances++;s.longestFlatPlantFrames=Math.max(s.longestFlatPlantFrames,plant.anchor.frames);
+     s.maxFlatShoeTurn=Math.max(s.maxFlatShoeTurn,plant.turn);s.maxSoleSlip=Math.max(s.maxSoleSlip,plant.drift);s.maxSoleVerticalDrift=Math.max(s.maxSoleVerticalDrift,plant.verticalDrift);
+     check(max('flatShoeTurn',plant.turn)<.02,q+'/'+id+'/'+side+' actual flat shoe rotates during its whole plant');
+     check(max('flatSoleSlip',plant.drift)<.0015*r.s&&max('flatSoleVerticalDrift',plant.verticalDrift)<.002*r.s,q+'/'+id+'/'+side+' actual sole points skate during their whole plant');
+    }
+    s.peakSoleLift=Math.max(s.peakSoleLift,plant.minY);
     const last=feetPrevious[id+'/'+side];if(last&&Math.hypot(foot.target[0]-last[0],foot.target[2]-last[2])>.0005*r.s)check(Math.max(foot.target[1],last[1])>.00001*r.s,q+'/'+id+'/'+side+' moving foot slides on the floor');feetPrevious[id+'/'+side]=Array.from(foot.target);
    }
    check(Math.min(...Object.values(f.userData.state.footContacts).map(foot=>foot.target[1]))<1e-8,q+'/'+id+' lacks a supporting foot');
@@ -77,14 +146,29 @@ function inspectDance(q){
  for(const id of ['sou','haku']){
   const f=actors[id],r=f.userData.rig,s=stats[id];s.ranges=Object.fromEntries(Object.entries(s.ranges).map(([key,span])=>[key,span[1]-span[0]]));
   check(s.ranges.torsoYaw>.4&&s.ranges.bodyHeight>.025*r.s,q+'/'+id+' must turn the torso and shift body weight');
-  check(s.ranges.bodyTurn>(id==='sou'?Math.PI*2-.08:.35),q+'/'+id+' full-body turn or shielding pivot is missing');
+  check(s.ranges.bodyTurn>(id==='sou'?.25:.18)&&s.ranges.bodyTurn<Math.PI&&s.ranges.waistTurn<Math.PI,q+'/'+id+' needs bounded oblique turns rather than revolutions');
+  s.waistPassages=coordinatedWaistPassages(coordination[id]);check(s.waistPassages.length>=1,q+'/'+id+' coordinated waist passage is missing');
+  for(const passage of s.waistPassages){
+   check(min('coordinatedBladeSpan',passage.bladeSpan)>.20&&min('coordinatedArmPath',passage.armPath)>.25&&min('coordinatedHandPath',passage.handPath)>.035*r.s,q+'/'+id+' actual sword/arm does not move relative to its turning chest');
+   check(min('coordinatedFrameFraction',passage.coupledFraction)>.20,q+'/'+id+' static guard is carried by its moving waist');
+  }
+  check(s.flatSoleSamples>steps*.6&&s.flatStances>=3&&s.longestFlatPlantFrames>steps*.08,q+'/'+id+' sustained actual flat plants/replants are missing');
+  check(s.peakSoleLift>.018*r.s,q+'/'+id+' actual shoe never lifts between steps');
+  s.overheadBladeSpan=directionSpan(overheadDirections[id]);
+  if(id==='sou'){
+   check(s.overheadFrames>steps*.02&&s.overheadLateralFrames>steps*.01,q+' actual hilt/wrist do not rise above the anatomical head during a lateral overhead arc');
+   check(s.overheadBladeSpan>.35,q+' overhead blade direction is static relative to the chest');
+   check(s.horizontalExtensionFrames>steps*.02,q+' actual shoulder-level horizontal extension with opposed free hand is missing');
+   check(s.ranges.bladeTipHeight>.65*r.s&&s.peakTorsoBow>.25,q+' overhead-to-low blade height and body bow are missing');
+  }
   check(s.originalMotifScores.every(score=>score<1),q+'/'+id+' original slant-up or outer-sweep motif is missing');
   for(const side of ['L','R'])check(s.ranges[side+'Hip']>.1&&s.ranges[side+'Knee']>.12,q+'/'+id+' must move both hips and knees');
   check(s.bladePath>2.5&&s.peakBladeSpeed>1,q+'/'+id+' blade must travel quickly through a substantial path');
-  check(s.fastCutSpeed>2.5,q+'/'+id+' actual fast cuts outside the spin are missing');
+  check(s.fastCutSpeed>2.5,q+'/'+id+' actual quick cuts are missing');
+  s.quickCuts=quickCutBursts(tipSpeeds[id],steps);if(id==='sou')check(s.quickCuts.length>=2,q+' actual sword path needs two distinct quick-cut bursts');
   for(const name of Object.keys(saved[id][0])){
-   check(max('danceCycleQuaternionGap',angle(saved[id][0][name].worldQ,saved[id][steps][name].worldQ))<1e-6,q+'/'+id+'/'+name+' full-turn loop quaternion does not close');
-   for(let k=0;k<16;k++)check(max('danceCycleMatrixGap',Math.abs(saved[id][0][name].matrix[k]-saved[id][steps][name].matrix[k]))<1e-7,q+'/'+id+'/'+name+' full-turn loop transform does not close');
+   check(max('danceCycleQuaternionGap',angle(saved[id][0][name].worldQ,saved[id][steps][name].worldQ))<1e-6,q+'/'+id+'/'+name+' physical dance loop quaternion does not close');
+   for(let k=0;k<16;k++)check(max('danceCycleMatrixGap',Math.abs(saved[id][0][name].matrix[k]-saved[id][steps][name].matrix[k]))<1e-7,q+'/'+id+'/'+name+' physical dance loop transform does not close');
   }
   for(let i=0;i<=128;i++){
    const index=i===128?steps:i*193%721;frame(f,index/steps);const actual=snapshot(r),expected=saved[id][index];determinismCases++;

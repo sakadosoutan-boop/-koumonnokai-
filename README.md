@@ -63,6 +63,8 @@ tools/compose-motion-preview.py 連続フレームから確認用GIFを作成（
 
 形状と動きをCPUで確認する場合は、`node tools/model-preview.cjs model-preview-output/dance sou low --pose=dance --motion-frames=64`、続いて `python tools/compose-motion-preview.py model-preview-output/dance/motion-sou-low model-preview-output/dance/dance.gif` を実行します。Canvas用モジュールの場所は `CANVAS_MODULE` で指定できます。このGIFは実モデルの動作確認用で、ブラウザーのPBR・影・透過の表示とは区別します。
 
+人物と宴席の確認範囲は[3D品質の記録](docs/model-quality.md)、剣舞で参照した動画と動きの設計は[参考映像と動作設計](docs/sword-dance-reference.md)を参照してください。
+
 ## ライセンス
 
 人物ガイド・導入・会話には主要8人の肖像を使用しています。画像の制作情報と創作表現の範囲は [`docs/character-art.md`](docs/character-art.md)、検証済みの範囲と実画面・印刷の未確認項目は [`docs/implementation-audit.md`](docs/implementation-audit.md) を参照してください。

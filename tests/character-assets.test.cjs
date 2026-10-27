@@ -97,8 +97,8 @@ function actionSnapshot(r){
 }
 function quaternionStep(a,b){return 2*Math.acos(Math.min(1,Math.abs(a.dot(b))));}
 function actionFrame(f,u){f.userData.state.actionProgress=u;f.userData.update(0,0);f.updateMatrixWorld(true);}
-function pelvisYaw(f,r){
-  const q=f.getWorldQuaternion(new C.THREE.Quaternion()).invert().multiply(r.pelvis.getWorldQuaternion(new C.THREE.Quaternion()));
+function relativeYaw(f,node){
+  const q=f.getWorldQuaternion(new C.THREE.Quaternion()).invert().multiply(node.getWorldQuaternion(new C.THREE.Quaternion()));
   const forward=new C.THREE.Vector3(0,0,1).applyQuaternion(q);return Math.atan2(forward.x,forward.z);
 }
 function originalMotifScore(r,key){
@@ -108,6 +108,72 @@ function originalMotifScore(r,key){
   const expected=new V().fromArray(p.userData.bladeDirection).applyQuaternion(p.quaternion).applyQuaternion(elbow).applyQuaternion(shoulder);
   const actual=new V().fromArray(p.userData.bladeDirection).transformDirection(p.matrixWorld).applyQuaternion(r.chest.getWorldQuaternion(new Q()).invert());
   return Math.max(quaternionStep(a.sh.quaternion,shoulder)/.22,Math.abs(a.el.rotation.x+key[2])/.18,actual.distanceTo(expected)/.30);
+}
+const soleVertexIndices=new WeakMap();
+function actualSolePlant(shoe,s,anchor,previousPoints){
+  const sole=shoe.children.find(node=>node.isMesh&&node.geometry.type==='CylinderGeometry');
+  assert.ok(sole,'the shoe has an actual sole mesh');
+  const p=sole.geometry.attributes.position;let indices=soleVertexIndices.get(sole.geometry);
+  if(!indices){
+    let minY=Infinity;for(let i=0;i<p.count;i++)minY=Math.min(minY,p.getY(i));
+    const bottom=[];for(let i=0;i<p.count;i++)if(Math.abs(p.getY(i)-minY)<1e-7)bottom.push(i);
+    indices=[bottom.reduce((a,b)=>p.getZ(a)<p.getZ(b)?a:b),bottom.reduce((a,b)=>p.getZ(a)>p.getZ(b)?a:b),bottom.reduce((a,b)=>p.getX(a)>p.getX(b)?a:b)];
+    soleVertexIndices.set(sole.geometry,indices);
+  }
+  const points=indices.map(i=>new C.THREE.Vector3().fromBufferAttribute(p,i).applyMatrix4(sole.matrixWorld));
+  const minY=Math.min(...points.map(point=>point.y)),maxY=Math.max(...points.map(point=>point.y));
+  const verticalStep=previousPoints?Math.max(...points.map((point,i)=>Math.abs(point.y-previousPoints[i].y))):0;
+  const flat=maxY<.0005*s&&minY>-.003*s&&maxY-minY<.0015*s&&verticalStep<.00002*s,q=shoe.getWorldQuaternion(new C.THREE.Quaternion()).normalize();
+  const created=flat&&!anchor;if(created)anchor={q:q.clone(),points:points.map(point=>point.clone()),frames:0};
+  let turn=0,drift=0,verticalDrift=0;
+  if(flat){
+    anchor.frames++;turn=quaternionStep(q,anchor.q);
+    points.forEach((point,i)=>{drift=Math.max(drift,Math.hypot(point.x-anchor.points[i].x,point.z-anchor.points[i].z));verticalDrift=Math.max(verticalDrift,Math.abs(point.y-anchor.points[i].y));});
+  }
+  return {anchor:flat?anchor:null,points,created,flat,turn,drift,verticalDrift,minY};
+}
+function coordinatedWaistPassages(samples){
+  const passages=[];let start=0,direction=0;
+  function finish(end){
+    const run=samples.slice(start,end+1),arc=Math.abs(run.at(-1).yaw-run[0].yaw);
+    if(run.length<2||arc<.22||run.at(-1).u-run[0].u<.04)return;
+    let minDot=1,armPath=0,handPath=0,waistFrames=0,coupledFrames=0;
+    for(let i=0;i<run.length;i++){
+      for(let j=0;j<i;j++)minDot=Math.min(minDot,run[i].blade.dot(run[j].blade));
+      if(!i)continue;
+      const a=run[i-1],b=run[i],arm=quaternionStep(a.shoulder,b.shoulder)+quaternionStep(a.elbow,b.elbow);
+      armPath+=arm;handPath+=a.hand.distanceTo(b.hand);
+      if(Math.abs(b.yaw-a.yaw)>.00005){waistFrames++;if(Math.acos(Math.min(1,Math.max(-1,a.blade.dot(b.blade))))>.0005&&arm>.0005)coupledFrames++;}
+    }
+    passages.push({start:run[0].u,end:run.at(-1).u,waistArc:arc,bladeSpan:Math.acos(Math.max(-1,Math.min(1,minDot))),armPath,handPath,coupledFraction:waistFrames?coupledFrames/waistFrames:0});
+  }
+  for(let i=1;i<samples.length;i++){
+    const delta=samples[i].yaw-samples[i-1].yaw,sign=Math.abs(delta)>.00005?Math.sign(delta):0;
+    if(sign&&direction&&sign!==direction){finish(i-1);start=i-1;}
+    if(sign)direction=sign;
+  }
+  finish(samples.length-1);return passages;
+}
+const headSkinObjects=new WeakMap();
+function referenceDanceFrame(f,r,a,b){
+  const V=C.THREE.Vector3,Q=C.THREE.Quaternion;let skin=headSkinObjects.get(r.head);
+  if(!skin){skin=[];r.head.traverse(node=>{if(node.isMesh&&node.userData.part==='skin')skin.push(node);});assert.ok(skin.length,'the anatomical head surface is available');headSkinObjects.set(r.head,skin);}
+  const crown=Math.max(...skin.map(node=>new C.THREE.Box3().setFromObject(node).max.y)),hilt=r.props.sword.localToWorld(new V().fromArray(r.props.sword.userData.gripCenter));
+  const wrist=r.arms.R.wr.getWorldPosition(new V()),left=r.arms.L.wr.getWorldPosition(new V()),shoulder=r.arms.R.sh.getWorldPosition(new V()),leftShoulder=r.arms.L.sh.getWorldPosition(new V()),chest=r.chest.getWorldPosition(new V()),direction=b.clone().sub(a).normalize();
+  const rx=wrist.x-chest.x,rz=wrist.z-chest.z,lx=left.x-chest.x,lz=left.z-chest.z,extension=Math.hypot(rx,rz),leftExtension=Math.hypot(lx,lz),opposed=(rx*lx+rz*lz)/Math.max(1e-9,extension*leftExtension);
+  const overhead=hilt.y>crown+.015*r.s&&wrist.y>crown-.02*r.s&&Math.min(hilt.y,wrist.y)>shoulder.y+.25*r.s;
+  const horizontal=Math.abs(direction.y)<.25&&Math.abs(hilt.y-shoulder.y)<.20*r.s&&Math.abs(wrist.y-shoulder.y)<.20*r.s&&extension>.42*r.s&&leftExtension>.30*r.s&&opposed<-.25&&Math.abs(left.y-leftShoulder.y)<.25*r.s;
+  const forward=new V(0,0,1).transformDirection(r.chest.matrixWorld).applyQuaternion(f.getWorldQuaternion(new Q()).invert());
+  return {overhead,overheadLateral:overhead&&Math.abs(direction.y)<.55,horizontal,hiltAboveCrown:hilt.y-crown,wristAboveCrown:wrist.y-crown,torsoBow:Math.atan2(-forward.y,Math.hypot(forward.x,forward.z)),blade:direction.applyQuaternion(r.chest.getWorldQuaternion(new Q()).invert())};
+}
+function directionSpan(directions){let minDot=1;for(let i=0;i<directions.length;i++)for(let j=0;j<i;j++)minDot=Math.min(minDot,directions[i].dot(directions[j]));return Math.acos(Math.max(-1,Math.min(1,minDot)));}
+function quickCutBursts(speeds,steps){
+  const bursts=[];let burst,last=-Infinity;
+  for(let i=0;i<speeds.length;i++)if(speeds[i]>2.5){
+    if(!burst||i-last>steps*.02){if(burst&&burst.frames>=steps*.006)bursts.push(burst);burst={start:i/steps,end:i/steps,frames:0,peak:0};}
+    burst.frames++;burst.end=i/steps;burst.peak=Math.max(burst.peak,speeds[i]);last=i;
+  }
+  if(burst&&burst.frames>=steps*.006)bursts.push(burst);return bursts;
 }
 
 for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder and drinks with continuous, deterministic joints ('+quality+')',()=>{
@@ -217,7 +283,7 @@ for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder an
   assert.ok(!r.props.meat.parent&&!r.props.cup.parent,'action props are removed on return to standing');
 });
 
-for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a fast whole-body sword dance ('+quality+')',()=>{
+for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a grounded, coordinated sword dance ('+quality+')',()=>{
   vm.runInContext(fs.readFileSync(path.join(root,'src/js/koumon-3d.js'),'utf8'),C);
   const stage=C.KoumonStage3D,V=C.THREE.Vector3,actors={};stage.S.stageId='feast';stage.S.cast=actors;
   C.KM_CAST3D.setQuality(quality);
@@ -228,9 +294,9 @@ for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a fas
   stage.setPose('sou','dance');stage.setPose('haku','dance');
   const start=actors.sou.position,end=actors.hai.position,guard=actors.haku.position;
   assert.ok(guard.z>start.z&&guard.z<end.z&&Math.abs(guard.x)<.5,'guard stands in the line to the guest');
-  const steps=720,previous={},ranges={sou:{},haku:{}},tipPrevious={},tipPath={sou:0,haku:0},peakSpeed={sou:0,haku:0},fastCutSpeed={sou:0,haku:0},safety={sou:[],haku:[]},frames={sou:[],haku:[]},feetPrevious={},yawPrevious={},yawUnwrapped={sou:0,haku:0},motifs={sou:[Infinity,Infinity],haku:[Infinity,Infinity]};
+  const steps=720,previous={},ranges={sou:{},haku:{}},tipPrevious={},tipPath={sou:0,haku:0},peakSpeed={sou:0,haku:0},fastCutSpeed={sou:0,haku:0},safety={sou:[],haku:[]},frames={sou:[],haku:[]},feetPrevious={},yawPrevious={},yawUnwrapped={sou:0,haku:0},chestYawPrevious={},chestYawUnwrapped={sou:0,haku:0},motifs={sou:[Infinity,Infinity],haku:[Infinity,Infinity]},soleAnchors={},solePrevious={},soleStats={sou:{flatSamples:0,stances:0,longest:0,maxLift:0},haku:{flatSamples:0,stances:0,longest:0,maxLift:0}},coordination={sou:[],haku:[]},readability={sou:{overhead:0,lateral:0,horizontal:0,bow:0,directions:[]},haku:{overhead:0,lateral:0,horizontal:0,bow:0,directions:[]}};
   const roots=Object.fromEntries(['sou','haku'].map(id=>[id,{position:actors[id].position.clone(),yaw:actors[id].rotation.y}]));
-  const safetyFrames=new Set(Array.from({length:64},(_,i)=>Math.round(i*steps/64)));
+  const safetyFrames=new Set(Array.from({length:64},(_,i)=>Math.round(i*steps/64))),tipSpeeds={sou:[],haku:[]};
   const cycle=C.KM_BANQUET.cycles.dance;
   assert.ok(cycle>=4&&cycle<=8,'the complete dance phrase fits a short stage sequence');
   function track(id,key,value){const range=ranges[id][key]||(ranges[id][key]=[Infinity,-Infinity]);range[0]=Math.min(range[0],value);range[1]=Math.max(range[1],value);}
@@ -248,9 +314,16 @@ for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a fas
       }
       const f=actors[id],r=f.userData.rig,current=actionSnapshot(r);
       assert.ok(f.position.distanceTo(roots[id].position)<1e-10&&Math.abs(f.rotation.y-roots[id].yaw)<1e-10,id+' keeps the stage root fixed while the body turns');
-      const yaw=pelvisYaw(f,r);
+      const yaw=relativeYaw(f,r.pelvis);
       if(yawPrevious[id]!==undefined)yawUnwrapped[id]+=Math.atan2(Math.sin(yaw-yawPrevious[id]),Math.cos(yaw-yawPrevious[id]));
       yawPrevious[id]=yaw;track(id,'bodyTurn',yawUnwrapped[id]);
+      const chestYaw=relativeYaw(f,r.chest);
+      if(chestYawPrevious[id]!==undefined)chestYawUnwrapped[id]+=Math.atan2(Math.sin(chestYaw-chestYawPrevious[id]),Math.cos(chestYaw-chestYawPrevious[id]));
+      chestYawPrevious[id]=chestYaw;track(id,'waistTurn',chestYawUnwrapped[id]);
+      coordination[id].push({u:i/steps,yaw:chestYawUnwrapped[id],blade:b.clone().sub(a).normalize().applyQuaternion(r.chest.getWorldQuaternion(new C.THREE.Quaternion()).invert()),shoulder:r.arms.R.sh.quaternion.clone(),elbow:r.arms.R.el.quaternion.clone(),hand:r.chest.worldToLocal(r.arms.R.wr.getWorldPosition(new V()))});
+      const mode=referenceDanceFrame(f,r,a,b),read=readability[id];
+      if(mode.overhead){read.overhead++;read.directions.push(mode.blade);}if(mode.overheadLateral)read.lateral++;if(mode.horizontal)read.horizontal++;
+      read.bow=Math.max(read.bow,mode.torsoBow);track(id,'bladeTipHeight',b.y);
       if(i/steps<=.35){motifs[id][0]=Math.min(motifs[id][0],originalMotifScore(r,[.88,.42,.62,-.42]));motifs[id][1]=Math.min(motifs[id][1],originalMotifScore(r,[.52,.86,.27,-.46]));}
       if(safetyFrames.has(i))safety[id].push({a:a.clone(),b:b.clone(),head:r.head.localToWorld(new V(0,.015,.01)),palm:r.arms.L.wr.localToWorld(new V(0,-.07*r.s,0))});
       for(const [name,node] of Object.entries(current))if(previous[id]){
@@ -265,12 +338,19 @@ for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a fas
         assert.ok(shoe.getWorldPosition(new V()).distanceTo(target)<.0005,id+' shoe follows the actual foot contact');
         assert.ok(foot.reachError<.0005&&foot.kneeFlex>.05&&foot.kneeFlex<2.5,id+' stepping legs stay in reach and bend forward');
         assert.ok(new C.THREE.Box3().setFromObject(shoe).min.y>-.003*r.s,id+' shoe sole stays above the floor');
+        const plant=actualSolePlant(shoe,r.s,soleAnchors[id+'/'+side],solePrevious[id+'/'+side]),ss=soleStats[id];soleAnchors[id+'/'+side]=plant.anchor;solePrevious[id+'/'+side]=plant.points;
+        if(plant.flat){
+          ss.flatSamples++;if(plant.created)ss.stances++;ss.longest=Math.max(ss.longest,plant.anchor.frames);
+          assert.ok(plant.turn<.02,id+' actual flat shoe keeps its world orientation throughout the plant');
+          assert.ok(plant.drift<.0015*r.s&&plant.verticalDrift<.002*r.s,id+' actual heel, toe and lateral sole points stay anchored throughout the plant');
+        }
+        ss.maxLift=Math.max(ss.maxLift,plant.minY);
         const last=feetPrevious[id+'/'+side];
         if(last&&Math.hypot(foot.target[0]-last[0],foot.target[2]-last[2])>.0005*r.s)assert.ok(Math.max(foot.target[1],last[1])>.00001*r.s,id+' moving foot lifts instead of sliding across the floor');
         feetPrevious[id+'/'+side]=Array.from(foot.target);
       }
       assert.ok(Math.min(...Object.values(f.userData.state.footContacts).map(foot=>foot.target[1]))<1e-8,id+' keeps a supporting foot planted');
-      if(tipPrevious[id]){const distance=b.distanceTo(tipPrevious[id]),speed=distance/(cycle/steps);tipPath[id]+=distance;peakSpeed[id]=Math.max(peakSpeed[id],speed);if(i/steps<.5||i/steps>.9)fastCutSpeed[id]=Math.max(fastCutSpeed[id],speed);}
+      if(tipPrevious[id]){const distance=b.distanceTo(tipPrevious[id]),speed=distance/(cycle/steps);tipPath[id]+=distance;peakSpeed[id]=Math.max(peakSpeed[id],speed);fastCutSpeed[id]=Math.max(fastCutSpeed[id],speed);tipSpeeds[id].push(speed);}else tipSpeeds[id].push(0);
       tipPrevious[id]=b.clone();
     }
   }
@@ -282,14 +362,29 @@ for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a fas
   for(const id of ['sou','haku']){
     const r=actors[id].userData.rig,span=key=>ranges[id][key][1]-ranges[id][key][0];
     assert.ok(span('torsoYaw')>.4,id+' turns the torso through the dance');
-    assert.ok(span('bodyTurn')>(id==='sou'?Math.PI*2-.08:.35),id+' performs the full turn or shielding pivot with the actual pelvis');
+    assert.ok(span('bodyTurn')>(id==='sou'?.25:.18)&&span('bodyTurn')<Math.PI&&span('waistTurn')<Math.PI,id+' uses bounded oblique body turns without a revolution');
+    const passages=coordinatedWaistPassages(coordination[id]);
+    assert.ok(passages.length>=1,id+' has a substantial coordinated waist passage');
+    for(const passage of passages){
+      assert.ok(passage.bladeSpan>.20&&passage.armPath>.25&&passage.handPath>.035*r.s,id+' moves the actual sword and arm relative to the chest during the waist turn');
+      assert.ok(passage.coupledFraction>.20,id+' coordinates sword motion with the moving waist rather than carrying a static guard');
+    }
+    assert.ok(soleStats[id].flatSamples>steps*.6&&soleStats[id].stances>=3&&soleStats[id].longest>steps*.08,id+' has sustained actual flat-foot plants and replants');
+    assert.ok(soleStats[id].maxLift>.018*r.s,id+' visibly lifts a foot between grounded steps');
+    if(id==='sou'){
+      assert.ok(readability[id].overhead>steps*.02&&readability[id].lateral>steps*.01,'the actual hilt and wrist rise above the anatomical head during a lateral overhead arc');
+      assert.ok(directionSpan(readability[id].directions)>.35,'the overhead sword direction genuinely changes relative to the chest');
+      assert.ok(readability[id].horizontal>steps*.02,'the actual blade extends horizontally at shoulder height with an opposed free hand');
+      assert.ok(span('bladeTipHeight')>.65*r.s&&readability[id].bow>.25,'the overhead-to-low passage changes actual blade height and bows the torso');
+    }
     assert.ok(motifs[id].every(score=>score<1),id+' preserves the original slant-up and outer-sweep blade poses');
     assert.ok(span('bodyHeight')>.025*r.s,id+' shifts body weight vertically');
     for(const side of ['L','R']){assert.ok(span(side+'Hip')>.1,id+' moves both hips');assert.ok(span(side+'Knee')>.12,id+' bends both knees');}
     assert.ok(tipPath[id]>2.5&&peakSpeed[id]>1,id+' sword covers a substantial path at dance speed');
-    assert.ok(fastCutSpeed[id]>2.5,id+' keeps actual fast cuts outside the turning passage');
+    assert.ok(fastCutSpeed[id]>2.5,id+' keeps actual quick sword cuts in the phrase');
+    if(id==='sou')assert.ok(quickCutBursts(tipSpeeds[id],steps).length>=2,'the actual sword path contains two distinct quick-cut bursts');
     for(const name of Object.keys(frames[id][0])){
-      assert.ok(quaternionStep(frames[id][0][name].worldQ,frames[id][steps][name].worldQ)<1e-6,id+'/'+name+' closes the physical loop after the full turn');
+      assert.ok(quaternionStep(frames[id][0][name].worldQ,frames[id][steps][name].worldQ)<1e-6,id+'/'+name+' closes the physical dance loop');
       for(let k=0;k<16;k++)assert.ok(Math.abs(frames[id][0][name].matrix[k]-frames[id][steps][name].matrix[k])<1e-7,id+'/'+name+' closes its world transform');
     }
     for(let j=0;j<=128;j++){

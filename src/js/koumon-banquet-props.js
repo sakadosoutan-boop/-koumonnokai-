@@ -193,5 +193,5 @@
   function morsel() {
     var o=mesh(geometry('raw-pork-morsel',function(){return shoulderGeometry(true);}),[meatMaterial(),cutMeatMaterial()],'Small cut morsel pierced by the blade');o.userData={prop:'raw-pork-morsel',piercedByBlade:true};return o;
   }
-  global.KM_BANQUET={setQuality:function(q){quality=q==='high'?'high':'low';},sword:sword,zhi:zhi,updateLiquid:updateLiquid,porkShoulder:porkShoulder,morsel:morsel,cycles:{dance:6.8,eat:12,drink:6.4,enter:3.6}};
+  global.KM_BANQUET={setQuality:function(q){quality=q==='high'?'high':'low';},sword:sword,zhi:zhi,updateLiquid:updateLiquid,porkShoulder:porkShoulder,morsel:morsel,cycles:{dance:7.8,eat:12,drink:6.4,enter:3.6}};
 })(typeof window!=='undefined'?window:this);
