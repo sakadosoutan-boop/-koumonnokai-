@@ -53,11 +53,15 @@ tools/build.mjs            一枚にまとめる（node tools/build.mjs → dist
 tools/character-gallery.html 人物を回転・拡大して確認するページ
 tools/banquet-scenes.html   乗り込み・剣舞・翼蔽・飲酒・食事を再生／巻き戻しするページ
 tools/verify-banquet.cjs    握り・接触・関節範囲・動きの連続性の検査
+tools/model-preview.cjs     実モデルのCPU画像・連続フレームを出力
+tools/compose-motion-preview.py 連続フレームから確認用GIFを作成（Pillow）
 ```
 
 ## 開発時の確認
 
 `npm ci` のあと `npm test` で進行・保存・再開などの回帰テスト、`npm run build` で配布用HTMLを生成します。画面の見た目や操作感は、PCと縦長画面のブラウザでも確認してください。導入・授業モードなどの受け入れ確認は [`docs/implementation-audit.md`](docs/implementation-audit.md)、表紙画像の制作情報は [`docs/visual-assets.md`](docs/visual-assets.md) に記録します。
+
+形状と動きをCPUで確認する場合は、`node tools/model-preview.cjs model-preview-output/dance sou low --pose=dance --motion-frames=64`、続いて `python tools/compose-motion-preview.py model-preview-output/dance/motion-sou-low model-preview-output/dance/dance.gif` を実行します。Canvas用モジュールの場所は `CANVAS_MODULE` で指定できます。このGIFは実モデルの動作確認用で、ブラウザーのPBR・影・透過の表示とは区別します。
 
 ## ライセンス
 

@@ -978,6 +978,7 @@
       state.pose = pose;
       state.motionPhase='';state.motionProgress=0;state.contactErrors={};state.ikDetails={};state.cupRotation=null;state.actionStart=null;
       state.footContacts={};state.entryComplete=false;state.entryRootProgress=0;
+      state.danceTurn=null;
       delete state.gateProgress;delete state.gateRootProgress;
       delete state.actionProgress;
       root.visible = pose !== 'gone';
@@ -1120,14 +1121,14 @@
       return new THREE.Quaternion();
     }
     function gripOffset(k){var A=arms[k];return new V3().fromArray(A.hand.children[0].userData.gripCenter).multiplyScalar(s).applyQuaternion(A.hand.quaternion);}
-    function plantFoot(k,target,yaw) {
+    function plantFoot(k,target,yaw,kneeYaw) {
       var L=legs[k];pelvis.updateWorldMatrix(true,false);root.updateWorldMatrix(true,false);
       var toPelvis=new THREE.Matrix4().copy(pelvis.matrixWorld).invert().multiply(root.matrixWorld);
       var ankle=target.clone().applyMatrix4(toPelvis),hip=L.hip.position.clone(),upper=L.knee.position.length(),lower=L.shoe.position.length();
       var toward=ankle.clone().sub(hip),wanted=toward.length();toward.normalize();
       var d=clamp(wanted,Math.abs(upper-lower)+.001,upper+lower-.0005),reachable=hip.clone().addScaledVector(toward,d);
       var along=(upper*upper+d*d-lower*lower)/(2*d),radius=Math.sqrt(Math.max(0,upper*upper-along*along));
-      var pole=new V3(0,0,1).transformDirection(toPelvis);pole.addScaledVector(toward,-pole.dot(toward)).normalize();
+      var pole=new V3(Math.sin(kneeYaw||0),0,Math.cos(kneeYaw||0)).transformDirection(toPelvis);pole.addScaledVector(toward,-pole.dot(toward)).normalize();
       var knee=hip.clone().addScaledVector(toward,along).addScaledVector(pole,radius);
       var U=knee.clone().sub(hip).normalize(),D=reachable.clone().sub(knee).normalize(),flex=Math.acos(clamp(U.dot(D),-1,1));
       var y=U.clone().negate(),z=D.clone().addScaledVector(U,-D.dot(U)).normalize().negate(),x=new V3().crossVectors(y,z).normalize();
@@ -1169,6 +1170,29 @@
         props.shield.position.copy(gripOffset('L')).sub(new V3(0,0,-.035*s).applyQuaternion(props.shield.quaternion));
       }
     }
+    function compactSwordGuard(blend,draw,shielding) {
+      // A vertical jian close to the chest, with no wrist flip. This avoids
+      // sweeping a horizontal blade through the guard during the body turn.
+      var flex=1.75,c=Math.cos(flex),F=new V3(lerp(-.65,.35,draw),0,lerp(.76,.936,draw)).normalize(),U=F.clone().multiplyScalar(c).add(new V3(0,-Math.sin(flex),0));
+      var y=U.clone().negate(),z=F.clone().addScaledVector(U,-c).normalize(),x=new V3().crossVectors(y,z).normalize();
+      var target=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z));
+      if(shielding){target.setFromEuler(new THREE.Euler(-.55,-.30,-.55));flex=1.0;}
+      arms.R.sh.quaternion.slerp(target,blend);
+      arms.R.el.quaternion.slerp(new THREE.Quaternion().setFromEuler(new THREE.Euler(-flex,0,0)),blend);
+      var e=new THREE.Euler().setFromQuaternion(arms.R.sh.quaternion);arms.R.cur=[-e.x,-e.z,-arms.R.el.rotation.x,e.y];
+    }
+    function turningFeet(turn,shielding) {
+      var index=Math.min(7,Math.floor(turn*8)),f=turn>=1?1:turn*8-index;
+      var bases={R:new V3(-.16*s,0,-.04*s),L:new V3(.16*s,0,.04*s)},out={};
+      var angles=shielding?[0,-.40,-.65,-.40,0]:[0,PI/2,PI,PI*1.5,PI*2];
+      ['R','L'].forEach(function(k){
+        var moving=(index%2===0)===(k==='R'),completed=k==='R'?Math.floor((index+1)/2):Math.floor(index/2);
+        var previous=angles[completed],next=moving?angles[completed+1]:previous;
+        var from=bases[k].clone().applyAxisAngle(new V3(0,1,0),previous),to=bases[k].clone().applyAxisAngle(new V3(0,1,0),next);
+        out[k]=moving?steppingFoot(from,to,0,1,f,.055):from;
+      });
+      return out;
+    }
     function actionMotion(t) {
       var pose=state.pose,cycle=window.KM_BANQUET&&window.KM_BANQUET.cycles[pose]||(pose==='eat'?12:pose==='drink'?8:8);
       if(state.actionStart==null)state.actionStart=t;
@@ -1178,23 +1202,32 @@
       state.contactErrors={};state.ikDetails={};
       state.footContacts={};
       if(pose==='dance'){
-        // Coils take time; the two outward cuts pass quickly between them.
-        // The planted feet remain fixed while the hips carry the weight across.
-        var times=[0,.16,.24,.43,.56,.64,.82,1];
-        var keys=[[.32,.42,.68,-.40,-.15,-.08,.025,.15],[1.10,.40,.48,-.45,-.32,-.12,.035,.55],[.18,.98,.38,-.57,.22,.14,-.040,1],[.55,.65,.80,-.35,.15,.04,-.025,.35],[1.18,.52,.32,-.46,-.30,-.10,.025,.65],[.30,1.08,.28,-.58,.30,.15,-.035,1],[.48,.78,.74,-.42,.12,.04,-.010,.30],[.32,.42,.68,-.40,-.15,-.08,.025,.15]];
+        // The original four forms lead into the newer fast cuts and a stepped
+        // full turn. Xiang Bo keeps a smaller shielding pivot toward the guest.
+        var old=[[.28,.34,.68,-.34],[.88,.42,.62,-.42],[.52,.86,.27,-.46],[.25,.54,.75,-.30],[.28,.34,.68,-.34]];
+        var times=[0,.08,.18,.30,.38,.44,.51,.56,.88,.94,.97,1];
+        var keys=[old[0].concat([-.15,-.08,.025,.15]),old[1].concat([-.25,-.12,.035,.55]),old[2].concat([.18,.12,-.035,.90]),old[3].concat([.12,.04,-.015,.35]),[1.10,.40,.48,-.45,-.32,-.12,.025,.65],[.18,.98,.38,-.57,.30,.15,-.040,1],[.55,.65,.80,-.35,.12,.04,-.010,.30],[.55,.65,.80,-.35,0,0,0,.55],[.55,.65,.80,-.35,0,0,0,.55],[1.18,.52,.32,-.46,-.30,-.10,.025,.65],[.30,1.08,.28,-.58,.30,.15,-.035,1],old[4].concat([-.15,-.08,.025,.15])];
         var beat=0;while(beat<times.length-2&&u>times[beat+1])beat++;
         var f=sstep(times[beat],times[beat+1],u),a=keys[beat],b0=keys[beat+1],v=a.map(function(n,i){return lerp(n,b0[i],f);});
+        var tx=clamp((u-.56)/.32,0,1),ramp=.12;
+        var turn=(tx<ramp?.5*tx*tx/ramp:tx>1-ramp?1-ramp-.5*(1-tx)*(1-tx)/ramp:tx-.5*ramp)/(1-ramp);
+        var shielding=id==='haku',theta=shielding?-.60*Math.sin(PI*turn):PI*2*turn;
+        var guard=sstep(.46,.51,u)*(1-sstep(.90,.94,u)),draw=sstep(.51,.56,u)*(1-sstep(.86,.90,u));
         setArm('R',v[0],v[1],v[2],v[3]);arms.R.el.rotation.y=-.16+.13*Math.sin(u*PI*2);arms.R.wr.rotation.set(0,0,0);
-        setArm('L',.43+.17*Math.sin(u*PI*2-.4),.68+.08*Math.sin(u*PI*2),.70+.12*Math.sin(u*PI*2+.7),.04);
-        pelvis.rotation.set(0,v[5],0);pelvis.position.y=(.925-.045*v[7])*s;
-        body.position.set(v[6]*s,0,0);body.rotation.z=-v[6]*.40;
-        spine.rotation.set(.055+.045*v[7],v[4],-.025*Math.sin(u*PI*2));
-        neck.rotation.set(0,-(v[4]+v[5])*.35,0);headPiv.rotation.set(.015,-(v[4]+v[5])*.20,0);
-        var rf0=new V3(-.16*s,0,-.04*s),rf1=new V3(-.18*s,0,.17*s),lf0=new V3(.16*s,0,.04*s),lf1=new V3(.20*s,0,-.12*s);
-        var rf=u<.30?steppingFoot(rf0,rf1,.06,.22,u,.045):steppingFoot(rf1,rf0,.66,.84,u,.035);
-        var lf=u<.55?steppingFoot(lf0,lf1,.28,.45,u,.040):steppingFoot(lf1,lf0,.84,1,u,.035);
-        plantFoot('R',rf,-.08+.12*sstep(.16,.32,u)*(1-sstep(.66,.84,u)));plantFoot('L',lf,.08+.08*Math.sin(u*PI*2));
-        state.motionPhase=['足を据え、剣を引く','踏み込んで斜めに斬る','腰を返して剣を巻く','反転して振り上げる','素早く外へ払う','足を戻して構える','次の舞へつなぐ'][beat];
+        compactSwordGuard(guard,draw,shielding);
+        setArm('L',lerp((shielding?.24:.43)+(shielding?.10:.17)*Math.sin(u*PI*2-.4),.22,guard),lerp((shielding?.88:.68)+(shielding?.06:.08)*Math.sin(u*PI*2),shielding?.48:.06,guard),lerp((shielding?.45:.70)+(shielding?.10:.12)*Math.sin(u*PI*2+.7),shielding?.75:1.0,guard),lerp(.04,.68,guard));
+        pelvis.rotation.set(0,v[5]*(1-guard),0);pelvis.position.y=lerp(.925-.045*v[7],.89,guard)*s;
+        spine.rotation.set(lerp(.055+.045*v[7],.040,guard),v[4]*(1-guard),-.025*Math.sin(u*PI*2)*(1-guard));
+        neck.rotation.set(0,-(v[4]+v[5])*.35*(1-guard),0);headPiv.rotation.set(.015,-(v[4]+v[5])*.20*(1-guard),0);
+        var rf0=new V3(-.16*s,0,-.04*s),rf1=new V3(-.18*s,0,.15*s),lf0=new V3(.16*s,0,.04*s),lf1=new V3(.20*s,0,-.12*s),rf,lf;
+        if(u<.56){rf=u<.20?steppingFoot(rf0,rf1,.03,.12,u,.045):steppingFoot(rf1,rf0,.30,.39,u,.035);lf=u<.30?steppingFoot(lf0,lf1,.15,.24,u,.040):steppingFoot(lf1,lf0,.42,.54,u,.035);}
+        else if(u<=.88){var feet=turningFeet(turn,shielding);rf=feet.R;lf=feet.L;}
+        else{rf=rf0;lf=lf0;}
+        var center=rf.clone().add(lf).multiplyScalar(.42*guard);center.y=0;
+        body.position.set(v[6]*s*(1-guard)+center.x,0,center.z);body.rotation.set(0,theta,-v[6]*.40*(1-guard));
+        plantFoot('R',rf,theta-.08,theta);plantFoot('L',lf,theta+.08,theta);
+        state.danceTurn={angle:theta,progress:turn,guard:guard,fullTurn:!shielding};
+        state.motionPhase=turn>0&&turn<1?(shielding?'沛公をかばい、身を返して舞う':'剣を立て、踏み替えて一周する'):['元の構えから剣を上げる','元の型で外へ払う','剣を巻いて構えを返す','斜め上の構えにつなぐ','素早く斜めに斬る','剣を身近へ収める','旋回の足を据える','剣を立てて舞う','旋回から剣を開く','もう一度素早く払う','元の構えへ戻る'][beat];
       } else if(pose==='enter'){
         entranceMotion(u);
         state.motionPhase=u<.18?'盾を先にして天幕へ進む':u<.60?'歩を重ねて宴席へ入る':u<.83?'身を起こして踏み止まる':'両足を据えて項羽を睨む';
@@ -1241,9 +1274,15 @@
         var raised=sstep(.015,.17,u)*(1-sstep(.75,.91,u));
         var tilted=sstep(.23,.43,u)*(1-sstep(.62,.74,u)),finish=sstep(.74,.83,u)*(1-sstep(.92,1,u));
         var gulp=Math.pow(Math.sin(PI*2*clamp((u-.43)/.18,0,1)),2)*sstep(.42,.44,u)*(1-sstep(.60,.63,u));
-        var pitch=-1.04*tilted-.018*gulp;
-        spine.rotation.set(-.070*tilted+.010*gulp+.025*finish,0,0);neck.rotation.set(-.070*tilted,0,0);
-        headPiv.rotation.set(-.250*tilted+.028*gulp+.035*finish,0,0);headPiv.position.set(0,0,.040*s*tilted);
+        var heroic=id==='kai',pitch=-(heroic?1.45:1.04)*tilted-.018*gulp;
+        spine.rotation.set(-(heroic?.140:.070)*tilted+.010*gulp+.025*finish,0,0);neck.rotation.set(-(heroic?.130:.070)*tilted,0,0);
+        headPiv.rotation.set(-(heroic?.420:.250)*tilted+.028*gulp+.035*finish,0,0);
+        if(heroic){
+          // Rotate the imported neck about its anatomical base, keeping that
+          // same point inside the collar through the larger back bend.
+          var neckBase=new V3(0,-.165,0).multiplyScalar(s).add(headG.position);
+          headPiv.position.copy(neckBase.clone().applyQuaternion(neck.quaternion.clone().invert())).sub(neckBase.clone().applyQuaternion(headPiv.quaternion));
+        }else headPiv.position.set(0,0,.040*s*tilted);
         root.updateMatrixWorld(true);
         var mouth=root.worldToLocal(headG.localToWorld(new V3(0,-.038,.073)));
         var cupQ=new THREE.Quaternion().setFromAxisAngle(new V3(1,0,0),pitch).multiply(new THREE.Quaternion().setFromAxisAngle(new V3(0,1,0),PI));

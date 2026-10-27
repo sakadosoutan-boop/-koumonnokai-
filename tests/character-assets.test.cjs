@@ -97,6 +97,18 @@ function actionSnapshot(r){
 }
 function quaternionStep(a,b){return 2*Math.acos(Math.min(1,Math.abs(a.dot(b))));}
 function actionFrame(f,u){f.userData.state.actionProgress=u;f.userData.update(0,0);f.updateMatrixWorld(true);}
+function pelvisYaw(f,r){
+  const q=f.getWorldQuaternion(new C.THREE.Quaternion()).invert().multiply(r.pelvis.getWorldQuaternion(new C.THREE.Quaternion()));
+  const forward=new C.THREE.Vector3(0,0,1).applyQuaternion(q);return Math.atan2(forward.x,forward.z);
+}
+function originalMotifScore(r,key){
+  const V=C.THREE.Vector3,Q=C.THREE.Quaternion,E=C.THREE.Euler,a=r.arms.R,p=r.props.sword;
+  const shoulder=new Q().setFromEuler(new E(-key[0],key[3],-key[1]));
+  const elbow=new Q().setFromEuler(new E(-key[2],a.el.rotation.y,0));
+  const expected=new V().fromArray(p.userData.bladeDirection).applyQuaternion(p.quaternion).applyQuaternion(elbow).applyQuaternion(shoulder);
+  const actual=new V().fromArray(p.userData.bladeDirection).transformDirection(p.matrixWorld).applyQuaternion(r.chest.getWorldQuaternion(new Q()).invert());
+  return Math.max(quaternionStep(a.sh.quaternion,shoulder)/.22,Math.abs(a.el.rotation.x+key[2])/.18,actual.distanceTo(expected)/.30);
+}
 
 for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder and drinks with continuous, deterministic joints ('+quality+')',()=>{
   const V=C.THREE.Vector3,Q=C.THREE.Quaternion;C.KM_CAST3D.setQuality(quality);
@@ -121,7 +133,7 @@ for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder an
         assert.ok(joint.flex>.07&&joint.flex<2.68,label+' elbow stays in range');
         assert.ok(bend<1.24,label+' wrist bend stays below 71 degrees');
         assert.ok(Math.abs(arm.el.rotation.x+joint.flex)<1e-9,label+' elbow diagnostic matches the actual joint');
-        assert.ok(arm.sh.getWorldPosition(new V()).y-arm.el.getWorldPosition(new V()).y>(pose==='drink'?.005:.02)*r.s,label+' elbow remains below the shoulder');
+        assert.ok(arm.sh.getWorldPosition(new V()).y-arm.el.getWorldPosition(new V()).y>(pose==='drink'?-.20:.02)*r.s,label+' elbow elevation stays within the action range');
       }
       const mouth=r.head.localToWorld(new V(0,-.038,.073));
       const palm=r.arms.L.wr.localToWorld(new V(-.012*r.s,-.075*r.s,0));
@@ -162,9 +174,12 @@ for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder an
       }else{
         const cup=r.props.cup,bottom=cup.localToWorld(new V().fromArray(cup.userData.baseSupport));
         assert.ok(palm.distanceTo(bottom)<.0005,label+' left palm supports the actual cup base');
+        const neckAnchor=r.chest.worldToLocal(r.head.localToWorld(new V(0,-.165,0)));
+        if(!drinking.neckAnchor)drinking.neckAnchor=neckAnchor.clone();
+        assert.ok(neckAnchor.distanceTo(drinking.neckAnchor)<.0005,label+' the raised head remains attached at the actual neck base');
         const up=new V(0,1,0).applyQuaternion(cup.getWorldQuaternion(new Q())).applyQuaternion(f.getWorldQuaternion(new Q()).invert());
         const pitch=Math.atan2(up.z,up.y);
-        assert.ok(pitch<=1e-8&&pitch>-1.25,label+' cup tilts toward the drinker without inverting');
+        assert.ok(pitch<=1e-8&&pitch>-1.51,label+' cup tilts toward the drinker without inverting');
         drinking.peakTilt=Math.max(drinking.peakTilt,-pitch);
         if(cup.userData.contactState.raised>.999999){
           const rim=cup.localToWorld(new V().fromArray(cup.userData.drinkContact));
@@ -172,7 +187,7 @@ for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder an
           assert.ok(rim.distanceTo(mouth)<.015*r.s,label+' drinking edge reaches the lips');
           assert.ok(center.clone().sub(mouth).dot(forward)>.05*r.s,label+' cup stays in front of the mouth');
           assert.ok(rim.clone().sub(center).dot(forward)<-.04*r.s,label+' the near rim faces the lips');
-          drinking.lipFrames++;if(pitch<-.95)drinking.guzzleFrames++;
+          drinking.lipFrames++;if(pitch<=-1.35)drinking.guzzleFrames++;
         }
       }
       const current=actionSnapshot(r);frames.push(current);
@@ -187,7 +202,7 @@ for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder an
     }
     if(pose==='eat')assert.ok(endpoints[0].distanceTo(endpoints[1])<1e-9,'the whole shoulder returns to its original place');
     else{
-      assert.ok(drinking.peakTilt>.95,'the raised cup tilts deeply enough for the emphatic drink');
+      assert.ok(drinking.peakTilt>1.39&&drinking.peakTilt<1.50,'the cup reaches roughly 80–85 degrees during the emphatic drink');
       assert.ok(drinking.lipFrames>720*.4&&drinking.guzzleFrames>720*.15,'the deep drink maintains sustained actual lip contact');
     }
     for(const name of Object.keys(frames[0]))assert.ok(quaternionStep(frames[0][name].worldQ,frames[720][name].worldQ)<1e-6,quality+'/'+pose+' '+name+' closes the animation cycle');
@@ -213,13 +228,14 @@ for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a fas
   stage.setPose('sou','dance');stage.setPose('haku','dance');
   const start=actors.sou.position,end=actors.hai.position,guard=actors.haku.position;
   assert.ok(guard.z>start.z&&guard.z<end.z&&Math.abs(guard.x)<.5,'guard stands in the line to the guest');
-  const previous={},ranges={sou:{},haku:{}},tipPrevious={},tipPath={sou:0,haku:0},peakSpeed={sou:0,haku:0},safety={sou:[],haku:[]};
-  const safetyFrames=new Set(Array.from({length:32},(_,i)=>Math.round(i*360/32)));
+  const steps=720,previous={},ranges={sou:{},haku:{}},tipPrevious={},tipPath={sou:0,haku:0},peakSpeed={sou:0,haku:0},fastCutSpeed={sou:0,haku:0},safety={sou:[],haku:[]},frames={sou:[],haku:[]},feetPrevious={},yawPrevious={},yawUnwrapped={sou:0,haku:0},motifs={sou:[Infinity,Infinity],haku:[Infinity,Infinity]};
+  const roots=Object.fromEntries(['sou','haku'].map(id=>[id,{position:actors[id].position.clone(),yaw:actors[id].rotation.y}]));
+  const safetyFrames=new Set(Array.from({length:64},(_,i)=>Math.round(i*steps/64)));
   const cycle=C.KM_BANQUET.cycles.dance;
-  assert.ok(cycle<=5,'a complete sword dance takes less than five seconds');
+  assert.ok(cycle>=4&&cycle<=8,'the complete dance phrase fits a short stage sequence');
   function track(id,key,value){const range=ranges[id][key]||(ranges[id][key]=[Infinity,-Infinity]);range[0]=Math.min(range[0],value);range[1]=Math.max(range[1],value);}
-  for(let i=0;i<=360;i++){
-    for(const id of ['sou','haku']){const f=actors[id];f.userData.state.actionProgress=i/360;f.userData.update(0,0);}
+  for(let i=0;i<=steps;i++){
+    for(const id of ['sou','haku']){const f=actors[id];f.userData.state.actionProgress=i/steps;f.userData.update(0,0);}
     Object.values(actors).forEach(f=>f.updateMatrixWorld(true));
     for(const id of ['sou','haku']){
       const p=actors[id].userData.rig.props.sword,a=p.localToWorld(new V().fromArray(p.userData.bladeRoot)),b=p.localToWorld(new V().fromArray(p.userData.bladeTip));
@@ -231,12 +247,17 @@ for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a fas
         assert.ok(line.closestPointToPoint(palm,true,new V()).distanceTo(palm)>.07,id+' blade clears '+other+' free hand');
       }
       const f=actors[id],r=f.userData.rig,current=actionSnapshot(r);
+      assert.ok(f.position.distanceTo(roots[id].position)<1e-10&&Math.abs(f.rotation.y-roots[id].yaw)<1e-10,id+' keeps the stage root fixed while the body turns');
+      const yaw=pelvisYaw(f,r);
+      if(yawPrevious[id]!==undefined)yawUnwrapped[id]+=Math.atan2(Math.sin(yaw-yawPrevious[id]),Math.cos(yaw-yawPrevious[id]));
+      yawPrevious[id]=yaw;track(id,'bodyTurn',yawUnwrapped[id]);
+      if(i/steps<=.35){motifs[id][0]=Math.min(motifs[id][0],originalMotifScore(r,[.88,.42,.62,-.42]));motifs[id][1]=Math.min(motifs[id][1],originalMotifScore(r,[.52,.86,.27,-.46]));}
       if(safetyFrames.has(i))safety[id].push({a:a.clone(),b:b.clone(),head:r.head.localToWorld(new V(0,.015,.01)),palm:r.arms.L.wr.localToWorld(new V(0,-.07*r.s,0))});
       for(const [name,node] of Object.entries(current))if(previous[id]){
         assert.ok(quaternionStep(node.localQ,previous[id][name].localQ)<.10,id+'/'+name+' local dance quaternion has no snap');
         assert.ok(quaternionStep(node.worldQ,previous[id][name].worldQ)<.10,id+'/'+name+' world dance quaternion has no snap');
       }
-      previous[id]=current;
+      previous[id]=current;frames[id].push(current);
       track(id,'torsoYaw',r.spine.rotation.y);track(id,'bodyHeight',r.body.position.y+r.pelvis.position.y);track(id,'bodySway',r.body.position.x);
       for(const side of ['L','R']){
         track(id,side+'Hip',r.legs[side].hip.rotation.x);track(id,side+'Knee',r.legs[side].knee.rotation.x);
@@ -244,9 +265,12 @@ for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a fas
         assert.ok(shoe.getWorldPosition(new V()).distanceTo(target)<.0005,id+' shoe follows the actual foot contact');
         assert.ok(foot.reachError<.0005&&foot.kneeFlex>.05&&foot.kneeFlex<2.5,id+' stepping legs stay in reach and bend forward');
         assert.ok(new C.THREE.Box3().setFromObject(shoe).min.y>-.003*r.s,id+' shoe sole stays above the floor');
+        const last=feetPrevious[id+'/'+side];
+        if(last&&Math.hypot(foot.target[0]-last[0],foot.target[2]-last[2])>.0005*r.s)assert.ok(Math.max(foot.target[1],last[1])>.00001*r.s,id+' moving foot lifts instead of sliding across the floor');
+        feetPrevious[id+'/'+side]=Array.from(foot.target);
       }
       assert.ok(Math.min(...Object.values(f.userData.state.footContacts).map(foot=>foot.target[1]))<1e-8,id+' keeps a supporting foot planted');
-      if(tipPrevious[id]){const distance=b.distanceTo(tipPrevious[id]);tipPath[id]+=distance;peakSpeed[id]=Math.max(peakSpeed[id],distance/(cycle/360));}
+      if(tipPrevious[id]){const distance=b.distanceTo(tipPrevious[id]),speed=distance/(cycle/steps);tipPath[id]+=distance;peakSpeed[id]=Math.max(peakSpeed[id],speed);if(i/steps<.5||i/steps>.9)fastCutSpeed[id]=Math.max(fastCutSpeed[id],speed);}
       tipPrevious[id]=b.clone();
     }
   }
@@ -258,10 +282,21 @@ for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a fas
   for(const id of ['sou','haku']){
     const r=actors[id].userData.rig,span=key=>ranges[id][key][1]-ranges[id][key][0];
     assert.ok(span('torsoYaw')>.4,id+' turns the torso through the dance');
+    assert.ok(span('bodyTurn')>(id==='sou'?Math.PI*2-.08:.35),id+' performs the full turn or shielding pivot with the actual pelvis');
+    assert.ok(motifs[id].every(score=>score<1),id+' preserves the original slant-up and outer-sweep blade poses');
     assert.ok(span('bodyHeight')>.025*r.s,id+' shifts body weight vertically');
     for(const side of ['L','R']){assert.ok(span(side+'Hip')>.1,id+' moves both hips');assert.ok(span(side+'Knee')>.12,id+' bends both knees');}
     assert.ok(tipPath[id]>2.5&&peakSpeed[id]>1,id+' sword covers a substantial path at dance speed');
-    // The elapsed-time path must actually use the shorter cycle, including a clear mid-cycle pose.
+    assert.ok(fastCutSpeed[id]>2.5,id+' keeps actual fast cuts outside the turning passage');
+    for(const name of Object.keys(frames[id][0])){
+      assert.ok(quaternionStep(frames[id][0][name].worldQ,frames[id][steps][name].worldQ)<1e-6,id+'/'+name+' closes the physical loop after the full turn');
+      for(let k=0;k<16;k++)assert.ok(Math.abs(frames[id][0][name].matrix[k]-frames[id][steps][name].matrix[k])<1e-7,id+'/'+name+' closes its world transform');
+    }
+    for(let j=0;j<=128;j++){
+      const index=j===128?steps:j*193%721;actionFrame(actors[id],index/steps);const actual=actionSnapshot(r),expected=frames[id][index];
+      for(const name of Object.keys(actual))for(let k=0;k<16;k++)assert.ok(Math.abs(actual[name].matrix[k]-expected[name].matrix[k])<1e-8,id+'/'+name+' is independent of dance frame order');
+    }
+    // Elapsed time must drive the phrase and its fast cuts, including a clear mid-cycle pose.
     const f=actors[id];f.userData.setPose('dance');f.userData.update(0,10);f.updateMatrixWorld(true);
     const p=r.props.sword,first=p.localToWorld(new V().fromArray(p.userData.bladeTip));
     f.userData.update(0,10+cycle/2);f.updateMatrixWorld(true);
