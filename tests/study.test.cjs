@@ -195,3 +195,15 @@ test('intro stage arrangements reuse the main stage builders and only add positi
   for(const id of used)assert.ok(id.startsWith('intro-')||['nangong','bashang','koumon','gate','road'].includes(id),id);
   d.close();
 });
+test('figures from the earlier intro (alliance map, relation diagram, next-morning map) remain available',async()=>{
+  const h=await setup('c0-1',{start:false,classroom:true});await h.click('[data-km="intro"]');
+  await h.click('[data-intro="step"][data-step="1"]');await h.click('[data-intro="view"][data-view="notes"]');
+  assert.ok(h.doc.querySelector('.km-intro-pair'));await h.click('[data-intro="fig"][data-fig="1"]');
+  assert.ok(h.doc.querySelector('svg.km-intro-map.allies'));assert.match(h.doc.querySelector('.km-intro-visual').textContent,/城陽/);
+  await h.click('[data-intro="step"][data-step="6"]');await h.click('[data-intro="view"][data-view="notes"]');
+  assert.ok(h.doc.querySelector('svg.km-intro-map.eve'));
+  await h.click('[data-intro="fig"][data-fig="1"]');assert.equal(h.doc.querySelectorAll('.km-intro-people [data-person]').length,3);assert.match(h.doc.querySelector('.km-intro-visual').textContent,/旧交が、陣営をつなぐ/);
+  await h.click('[data-intro="fig"][data-fig="2"]');assert.ok(h.doc.querySelector('svg.km-intro-map.hongmen'));assert.match(h.doc.querySelector('.km-intro-visual').textContent,/翌朝、百余騎で謝罪へ/);
+  for(const m of ['promise','routes','arrival','tension']){assert.ok(h.w.KoumonClassroom.scenes.some(s=>s.map===m),m+' map kept');}
+  assert.deepEqual(h.errors,[]);h.close();
+});

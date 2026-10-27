@@ -22,7 +22,8 @@
       quote:{src:'史記・陳渉世家', haku:'王侯将相寧有種乎', yomi:'王侯将相寧んぞ種有らんや', yaku:'王や諸侯、将軍や宰相になるのに、決まった家柄などあるものか。'},
       point:'生まれに関係なく、だれもが天下を争う時代が始まった。',
       alt:'秦の都・咸陽と、大沢郷・沛・会稽など各地に広がる反乱を示す模式図。'},
-    {tag:'挙兵', era:'前209年', year:1, map:'pair', title:'村の役人・劉邦と、名将の孫・項羽。',
+    {tag:'挙兵', era:'前209年', year:1, map:'pair',
+      figs:[['pair','人物の比較'],['allies','共闘の地図','二人は同じ楚の陣営で、城陽などを共に攻めた。はじめから敵どうしだったわけではない。']], title:'村の役人・劉邦と、名将の孫・項羽。',
       body:['劉邦は沛の村の役人（亭長）だった。反乱が広がると沛の人々に推されて立ち、「沛公」と呼ばれる。','項羽は楚の名将・項燕の孫。叔父の項梁とともに会稽で兵を挙げた。このとき二十四歳で、劉邦はずっと年上だった。','二人はやがて同じ楚の陣営に入り、城陽などを共に攻めた。はじめから敵どうしだったわけではない。'],
       terms:[['沛公','「沛の長」という意味。鴻門の本文での劉邦の呼び名。'],['項王','項羽のこと。本文では「項羽」「項王」と書かれ、本人は名の「籍」で自分を呼ぶ。']],
       quote:{src:'史記・高祖本紀', haku:'仁而愛人、喜施、意豁如也', yomi:'仁にして人を愛し、施しを喜み、意豁如たり', yaku:'（劉邦は）思いやりがあって人を愛し、人に施すことを好み、心がおおらかだった。'},
@@ -56,7 +57,8 @@
         {id:'force', q:'この時点で、兵力が大きいのは？', choices:[['hai','劉邦'],['u','項羽']], answer:'u', why:'本文では劉邦十万、項羽四十万。兵力は項羽が上回る。'}],
       takeaway:'約束と兵力。その二つの基準のずれが、鴻門の会の背景にある。',
       alt:'閉ざされた函谷関を項羽の軍が破り、鴻門に陣を置く模式図。'},
-    {tag:'霸上の夕べへ', era:'前206年（漢元年）十二月', year:4, map:'eve', title:'四十里をへだてて、十万と四十万。',
+    {tag:'霸上の夕べへ', era:'前206年（漢元年）十二月', year:4, map:'eve',
+      figs:[['eve','霸上と鴻門'],['people','人のつながり','項伯は親しい張良を助けようと、夜、劉邦の陣を訪れる。項伯 → 張良 → 劉邦。敵味方の線を越える関係が、第一幕で動き出す。'],['hongmen','翌朝の道','劉邦は翌朝、百騎あまりを従えて鴻門の項羽に会い、謝罪する（第二幕）。かつての共闘相手に、どんな言葉をかけるのか。']], title:'四十里をへだてて、十万と四十万。',
       body:['鴻門の項羽は兵四十万で百万と号し、霸上の劉邦は兵十万で二十万と号した。二つの陣のあいだは四十里（約17キロ）。','この夕べから、物語が始まる。あなたは沛公・劉邦。言葉を一つ読み違えれば、命はない。'],
       watch:[['曹無傷','劉邦の部下。項羽に何を伝えるのか。','序幕'],['范増','項羽の参謀。劉邦の何を恐れたのか。','序幕'],['項伯と張良','敵と味方に分かれた旧友。その夜、何が起こるのか。','第一幕']],
       quote:{src:'史記・高祖本紀', haku:'項羽兵四十万号百万、沛公兵十万号二十万、力不敵。', yomi:'項羽の兵は四十万、百万と号し、沛公の兵は十万、二十万と号す。力敵せず。', yaku:'項羽の兵は四十万で百万と称し、沛公の兵は十万で二十万と称していた。力ではかなわなかった。'},
@@ -112,7 +114,7 @@
     });
   });
   var KIND = { shiki: '史記の記述（書き下し）', retold: '本文をもとにした再構成', fiction: 'ゲーム上の創作' };
-  var panel, index=0, auto=false, timer=null, callbacks, view='drama', cut=0;
+  var panel, index=0, auto=false, timer=null, callbacks, view='drama', cut=0, fig=0;
   var answers={};
   function homeHTML(meta, is3D) {
     return '<div class="km-home"><div class="km-home-art" aria-hidden="true"></div><div class="km-home-shade"></div><div class="km-home-content">' +
@@ -156,13 +158,25 @@
       paths:[['han','M153 250Q185 280 216 286'],['so late','M572 96Q505 160 458 203']], notes:[[100,290,'子嬰が降伏'],[120,345,'倉を封じ霸上へ'],[80,175,'約法三章']] },
     tension: { places:['kanyo','hajo','koumon','kankoku','shinan'], seals:{hai:[150,322],u:[318,175]}, gate:true,
       paths:[['so','M452 205Q412 206 378 214Q330 222 284 228']], troops:true },
-    eve: { places:['kanyo','hajo','koumon','kankoku'], seals:{hai:[150,322],u:[318,175]}, dusk:true, distance:true, troops:true }
+    eve: { places:['kanyo','hajo','koumon','kankoku'], seals:{hai:[150,322],u:[318,175]}, dusk:true, distance:true, troops:true },
+    // 以前の導入の「共闘」「翌朝」の地図。場面の中の図として残す
+    allies: { seals:{hai:[490,328],u:[635,292]}, notes:[[430,392,'城陽などを共に攻めた（前208年）']] },
+    hongmen: { places:['kanyo','hajo','koumon'], seals:{hai:[205,250],u:[310,264]}, paths:[['han','M232 280Q258 256 270 237']], texts:[['km-troops han',300,355,'翌朝、百余騎で謝罪へ']] }
   };
   function placeSVG(k){var p=places[k];return '<g class="km-place"><circle cx="'+p[0]+'" cy="'+p[1]+'" r="5"/><text x="'+(p[0]+p[3])+'" y="'+(p[1]+p[4])+'">'+p[2]+'</text></g>';}
   function sealSVG(id,xy){return '<g class="km-map-seal '+(id==='hai'?'han':'so')+'" data-person="'+id+'" role="button" tabindex="0" aria-label="'+people[id][0]+'、別名は'+people[id][2]+'。人物紹介を開く" transform="translate('+xy[0]+' '+xy[1]+')"><circle r="26"/><text y="6">'+people[id][0]+'</text></g>';}
-  function mapSVG(s) {
-    var a=s.map, L=mapLayers[a]||{};
-    if(a==='pair') return pairHTML();
+  /** 場面の図。figs があれば切り替えて見せる（以前の導入の図もここに残す） */
+  function figureHTML(s){
+    var f=s.figs?s.figs[fig]:null,a=f?f[0]:s.map;
+    var tabs=s.figs?'<div class="km-fig-tabs" role="group" aria-label="図を切り替える">'+s.figs.map(function(x,i){return '<button data-intro="fig" data-fig="'+i+'" aria-pressed="'+(i===fig)+'">'+x[1]+'</button>';}).join('')+'</div>':'';
+    var body=a==='pair'?pairHTML():a==='people'?peopleHTML():mapSVG(s,a);
+    return tabs+body+(f&&f[2]?'<p class="km-fig-note">'+f[2]+'</p>':'');
+  }
+  function peopleHTML(){
+    return '<div class="km-intro-people">'+['haku','ryo','hai'].map(function(id,i){return (i?'<span class="km-relation-arrow">→<small>'+(i===1?'知らせる':'伝える')+'</small></span>':'')+'<button data-person="'+id+'">'+portraitHTML(id)+'<strong>'+people[id][0]+'</strong><small>'+people[id][2]+'</small></button>';}).join('')+'</div><p class="km-map-caption">旧交が、陣営をつなぐ。</p>';
+  }
+  function mapSVG(s, a) {
+    a=a||s.map; var L=mapLayers[a]||{};
     return '<svg class="km-intro-map '+a+'" viewBox="0 0 800 470" role="group" aria-label="'+(s.alt||'劉邦と項羽の動きを示す模式図')+'人物名を押すと紹介が開きます。">'+
       '<defs><pattern id="map-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#b49b73" opacity=".12"/></pattern><marker id="arrow-han" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10" fill="#7cc8be"/></marker><marker id="arrow-so" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10" fill="#dc8b76"/></marker></defs>'+
       '<rect width="800" height="470" fill="url(#map-grid)"/><path class="km-land" d="M35 230Q95 120 190 150L270 110L380 145L490 95L650 70L760 150L778 300L768 432L600 425L450 372L340 405L200 360L80 345Z"/>'+
@@ -175,6 +189,7 @@
       (L.distance?'<path class="km-distance" d="M232 280L268 236"/><text class="km-distance-label" x="282" y="292">四十里（約17km）</text>':'')+
       (L.places||[]).map(placeSVG).join('')+
       (L.notes||[]).map(function(n){return '<text class="km-map-note" x="'+n[0]+'" y="'+n[1]+'">'+n[2]+'</text>';}).join('')+
+      (L.texts||[]).map(function(t){return '<text class="'+t[0]+'" x="'+t[1]+'" y="'+t[2]+'">'+t[3]+'</text>';}).join('')+
       (L.box?'<g class="km-promise"><rect x="300" y="372" width="390" height="70" rx="5"/><text x="495" y="401">先に関中に入り平定した者を、</text><text x="495" y="428">その地の王にする。</text></g>':'')+
       (L.troops?'<text class="km-troops han" x="40" y="400">霸上　劉邦 十万</text><text class="km-troops so" x="360" y="120">鴻門　項羽 四十万</text><text class="km-map-foot" x="40" y="424">兵力は『史記』の記述による</text>':'')+
       Object.keys(L.seals||{}).map(function(id){return sealSVG(id,L.seals[id]);}).join('')+
@@ -199,7 +214,7 @@
   function schedule(){stopAuto();if(!auto||document.hidden)return;
     if(view==='drama'){timer=setTimeout(function(){nextCut();},7000);return;}
     if(!scenes[index].quiz&&index<scenes.length-1)timer=setTimeout(function(){goScene(index+1);},45000);}
-  function goScene(i){index=Math.max(0,Math.min(scenes.length-1,i));view='drama';cut=0;render();}
+  function goScene(i){index=Math.max(0,Math.min(scenes.length-1,i));view='drama';cut=0;fig=0;render();}
   function nextCut(){var d=scenes[index].drama;if(cut<d.length-1){cut++;render();}else{view='notes';render();}}
   /** 紙芝居の一コマ。舞台は本編の描画（koumon.js の callbacks.stage）に任せる */
   function dramaHTML(s){
@@ -222,7 +237,7 @@
     var s=scenes[index];if(view==='notes'&&(s.quiz||index===scenes.length-1))auto=false;callbacks.step(index);
     var drama=view==='drama';panel.classList.toggle('km-intro-drama',drama);panel.parentNode.classList.toggle('km-intro-staging',drama);
     panel.innerHTML='<header class="km-intro-head"><button data-intro="exit">← 表紙</button><span>鴻門への道 <small>宴の前の流れを、七つの場面で</small></span><div class="km-intro-views" role="group" aria-label="表示"><button data-intro="view" data-view="drama" aria-pressed="'+drama+'">場面</button><button data-intro="view" data-view="notes" aria-pressed="'+!drama+'">解説</button></div><button data-intro="auto" aria-pressed="'+auto+'">'+(auto?'Ⅱ 一時停止':'▷ 自動で進む')+'</button></header>'+
-      (drama?dramaHTML(s):'')+'<div class="km-intro-layout"'+(drama?' hidden':'')+'><div class="km-intro-visual"><span class="km-visual-no" aria-hidden="true">0'+(index+1)+'</span>'+timelineHTML(s)+mapSVG(s)+'<div class="km-map-legend"><span>● 劉邦側</span><span>● 項羽側</span><small>人物名を押すと紹介</small></div><div id="km-intro-person" aria-live="polite"></div></div>'+
+      (drama?dramaHTML(s):'')+'<div class="km-intro-layout"'+(drama?' hidden':'')+'><div class="km-intro-visual"><span class="km-visual-no" aria-hidden="true">0'+(index+1)+'</span>'+timelineHTML(s)+figureHTML(s)+'<div class="km-map-legend"><span>● 劉邦側</span><span>● 項羽側</span><small>人物名を押すと紹介</small></div><div id="km-intro-person" aria-live="polite"></div></div>'+
       '<article class="km-intro-copy" aria-live="polite">'+copyHTML(s)+
       '<details class="km-intro-source"><summary>出典と表現について</summary><p>原文は『史記』から短く引きました。書き下し文・現代語訳・説明は学習用です。地図と人物画は模式的な表現です。</p><a href="https://zh.wikisource.org/wiki/史記/卷007" target="_blank" rel="noopener">項羽本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷008" target="_blank" rel="noopener">高祖本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷048" target="_blank" rel="noopener">陳渉世家</a></details></article></div>'+
       '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前へ</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===scenes.length-1?'done':'next')+'">'+(index===scenes.length-1?'序幕「霸上の夕べ」へ →':'次へ →')+'</button><small class="km-intro-playback">'+(auto?'場面は7秒、解説は45秒ごとに進む · 問いで一時停止':'手動で進む · ← → で場面、Enter でコマ送り')+'</small></footer>';
@@ -241,6 +256,7 @@
         else auto=false;
         if(a==='next'||a==='prev'||a==='step'){goScene(a==='step'?Number(b.dataset.step):index+(a==='next'?1:-1));focusMain();return;}
         if(a==='cutnext'||a==='tap'){nextCut();focusMain(a==='tap');return;}
+        if(a==='fig'){fig=Number(b.dataset.fig)||0;render();var ft=panel.querySelector('[data-intro="fig"][data-fig="'+fig+'"]');if(ft)ft.focus({preventScroll:true});return;}
         if(a==='cutprev'){cut=Math.max(0,cut-1);render();focusMain();return;}
         if(a==='view'){var to=b.dataset.view==='notes'?'notes':'drama';if(to==='drama'&&view==='notes'&&cut===scenes[index].drama.length-1)cut=0;view=to;render();focusMain();return;}
         if(a==='quiz')answers[b.dataset.question]=b.dataset.answer;
@@ -252,7 +268,7 @@
       panel.addEventListener('keydown',function(e){if(e.target.matches('input,textarea'))return;if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-person][role="button"]')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));return;}if(view==='drama'&&(e.key==='Enter'||e.key===' ')&&!e.target.closest('button,summary,a')){e.preventDefault();auto=false;nextCut();focusMain();return;}if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();auto=false;goScene(index+(e.key==='ArrowRight'?1:-1));focusMain();}if(e.key==='Escape'){hide();callbacks.exit();}});
       document.addEventListener('visibilitychange',function(){if(panel&&!panel.hidden){if(document.hidden)stopAuto();else schedule();}});
     }
-    callbacks=cb;index=Math.max(0,Math.min(scenes.length-1,Math.floor(Number(start)||0)));auto=false;answers={};view='drama';cut=0;panel.hidden=false;root.classList.add('km-at-intro');render();focusMain();
+    callbacks=cb;index=Math.max(0,Math.min(scenes.length-1,Math.floor(Number(start)||0)));auto=false;answers={};view='drama';cut=0;fig=0;panel.hidden=false;root.classList.add('km-at-intro');render();focusMain();
   }
   /** 紙芝居では「次へ」、解説では見出しへ。コマ送りの途中で画面を押したときは焦点を動かさない */
   function focusMain(keep){if(keep)return;var t=view==='drama'?panel.querySelector('[data-intro="cutnext"]'):panel.querySelector('h2');if(t)t.focus({preventScroll:true});}

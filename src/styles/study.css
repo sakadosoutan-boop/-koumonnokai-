@@ -128,3 +128,8 @@
 .km-drama-card { width: min(820px, 100%); padding: 14px 22px 12px; }
 .km-drama-text { font-size: 19px; margin: 2px 0 10px; }
 .km-drama-card .km-speaker-portrait .km-portrait { width: 56px; height: 56px; }
+/* 場面の図の切り替え（以前の導入の図も残す） */
+.km-fig-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 14px 20px 0; }
+.km-fig-tabs button { background: none; border: 1px solid var(--line); color: #d6d6c5; border-radius: 99px; padding: 5px 14px; font: 12px var(--gothic); cursor: pointer; }
+.km-fig-tabs button[aria-pressed="true"] { background: #e2c58b; border-color: #e2c58b; color: #1b120a; }
+.km-fig-note { margin: 0 auto 12px; max-width: 560px; padding: 0 20px; font: 13px/1.8 var(--gothic); color: #d8e2da; text-align: center; }
