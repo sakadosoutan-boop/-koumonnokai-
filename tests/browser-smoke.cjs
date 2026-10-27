@@ -53,6 +53,12 @@ async function story(browser, name, viewport) {
   await p.waitForFunction(() => window.Koumon._mode() === 'feedback');
   assert.ok(await inView(p, '[data-km="fbnext"]'), name + ': 解説の「次へ」が画面内にある');
   await p.click('[data-km="quit"]');
+  await p.click('[data-km="intro"]');
+  assert.ok(await p.isVisible('.km-drama-card'), name + ': 導入の紙芝居');
+  assert.ok(await inView(p, '[data-intro="cutnext"]'), name + ': 紙芝居の「次へ」が画面内にある');
+  for (let i = 0; i < 4; i++) await p.click('[data-intro="cutnext"]');
+  assert.ok(await p.isVisible('.km-intro-copy h2'), name + ': 紙芝居のあとに解説');
+  await p.click('[data-intro="exit"]');
   await p.click('[data-km="record"]');
   assert.match(await p.inputValue('.km-record'), /読み直し帳/);
   assert.deepEqual(errors, [], name + ': ページのエラー');

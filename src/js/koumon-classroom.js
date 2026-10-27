@@ -67,7 +67,52 @@
     hai: ['劉邦（沛公）', '沛の村の役人（亭長）', '沛の人々に推されて挙兵', '仁にして人を愛し、施しを喜む', '沛公'],
     u: ['項羽（籍）', '楚の名将・項燕の孫', '叔父の項梁と会稽で挙兵（二十四歳）', '力は能く鼎を扛げ、才気人に過ぐ', '項王']
   };
-  var panel, index=0, auto=false, timer=null, callbacks;
+  // 紙芝居：本編と同じ舞台と人物で、各場面を数コマで演じる。stage・light・cast を省いたコマは前のコマを引き継ぐ。
+  // kind は本文との関係：shiki＝史記の記述（書き下し）、retold＝本文をもとにした再構成、fiction＝ゲーム上の創作。
+  var dramas = [
+    [ {stage:'nangong', light:'palace', cast:[], at:'wide', kind:'retold', x:'秦の都・咸陽。天下を一つにした始皇帝の宮殿には、だれも逆らえない威光があった。'},
+      {stage:'intro-palace', light:'palace', cast:['hai'], at:'hai', w:'hai', kind:'shiki', src:'高祖本紀：若いころ、咸陽で始皇帝の行列を見て', x:'嗟乎、大丈夫当に此くのごとくなるべきなり。'},
+      {stage:'koumon', light:'night', cast:['u'], at:'u', w:'u', kind:'shiki', src:'項羽本紀：会稽で、始皇帝の巡行を見て', x:'彼取りて代はるべきなり。'},
+      {stage:'gate', light:'dawn', cast:[], at:'wide', kind:'retold', fx:'pulse', sfx:'drum', x:'前209年。始皇帝が亡くなった翌年、陳勝・呉広が大沢郷で立つと、反乱の火は各地へ広がった。'} ],
+    [ {stage:'bashang', light:'dusk', cast:['hai','kai'], at:'wide', kind:'retold', src:'高祖本紀', x:'沛の町。人々は秦の役人を倒し、村の役人だった劉邦（劉季）を長に迎えた。'},
+      {at:'kai', w:'kai', kind:'fiction', x:'季どの。沛の若者は、みなあなたについて行くと申しております。'},
+      {at:'hai', w:'hai', kind:'fiction', x:'よし、旗を立てよう。今日から、わしは沛公だ。'},
+      {stage:'intro-field', light:'day', cast:['u'], at:'wide', kind:'retold', src:'項羽本紀', x:'同じころ、会稽。叔父の項梁とともに兵を挙げた項羽は、二十四歳だった。'},
+      {at:'u', w:'u', kind:'shiki', src:'項羽本紀：少年のころ、叔父の項梁に', x:'書は以て名姓を記するに足るのみ。剣は一人の敵、学ぶに足らず。万人の敵を学ばん。'} ],
+    [ {stage:'koumon', light:'night', cast:['u','zo'], at:'zo', kind:'retold', src:'項羽本紀', x:'居鄛の人、范増。七十歳。奇計を好む老人が、項梁のもとを訪ねた。'},
+      {at:'zo', w:'zo', kind:'retold', src:'項羽本紀：范増の進言の要約', x:'楚の王の子孫を立てて王とすれば、楚の人々はこぞって従いましょう。'},
+      {stage:'intro-court', light:'palace', cast:['hai','u'], at:'wide', kind:'retold', src:'高祖本紀', x:'楚の懐王は、将軍たちと約束した。「先に入りて関中を定むる者は、之を王とせん。」'},
+      {at:'u', kind:'retold', src:'高祖本紀', x:'項羽も西へ行くことを望んだ。だが懐王の老将たちは「項羽は荒々しい。寛大な長者を西へ送るべきだ」と言い、劉邦を選んだ。'} ],
+    [ {stage:'intro-field', light:'dawn', cast:['u'], at:'u', kind:'retold', src:'項羽本紀', x:'鉅鹿。項羽は河を渡ると、船を沈め、釜を壊し、陣小屋を焼いた。持たせたのは三日分の糧だけ。'},
+      {at:'u', w:'u', kind:'fiction', x:'引き返す道はない。勝つか、死ぬかだ。'},
+      {at:'wide', kind:'retold', src:'項羽本紀', fx:'shake', sfx:'clang', x:'楚の兵は一人で十人に当たり、秦の大軍を打ち破った。諸侯の将たちは膝で進み出て、項羽を仰ぎ見ることもできなかった。'},
+      {stage:'road', light:'moon', cast:['hai','kai'], at:'wide', kind:'retold', src:'高祖本紀', sfx:'hoof', x:'そのころ劉邦は、西へ急いでいた。城を力で落とすより、降伏を受け入れて道を開いた。'},
+      {at:'kai', w:'kai', kind:'fiction', x:'沛公、武関を抜ければ、関中はすぐそこです！'} ],
+    [ {stage:'intro-palace', light:'palace', cast:['hai','kai','ryo'], at:'wide', kind:'retold', src:'留侯世家', x:'咸陽の宮殿。宝物も美女も、数えきれないほどあった。劉邦は、ここにとどまりたいと思った。'},
+      {at:'kai', w:'kai', kind:'retold', src:'留侯世家', x:'沛公、宮殿を出て、外に陣を置かれませ。'},
+      {at:'ryo', w:'ryo', kind:'shiki', src:'留侯世家', x:'忠言は耳に逆らへども行ひに利あり、毒薬は口に苦けれども病に利あり。願はくは沛公、樊噲の言を聴かれよ。'},
+      {stage:'bashang', light:'dusk', cast:['hai','ryo','kai'], at:'hai', w:'hai', kind:'shiki', src:'高祖本紀：霸上に戻り、関中の長老たちに', x:'父老と約す、法は三章のみ。人を殺す者は死し、人を傷つけ及び盗むは罪に抵る。'},
+      {at:'wide', kind:'retold', src:'高祖本紀', x:'秦の人々は大いに喜び、牛や羊、酒や食べ物を持ってきて兵をもてなそうとした。劉邦は受け取らなかった。'} ],
+    [ {stage:'gate', light:'dawn', cast:[], at:'wide', kind:'retold', x:'函谷関。劉邦の兵が門を固め、諸侯の軍を通さない。'},
+      {stage:'intro-field', light:'dusk', cast:['u','zo'], at:'u', kind:'retold', src:'項羽本紀', x:'遅れて着いた項羽の前で、関は閉ざされていた。しかも劉邦は、すでに咸陽を落としたという。'},
+      {at:'u', w:'u', kind:'retold', src:'項羽本紀「項羽大いに怒り、当陽君等をして関を撃たしむ」', fx:'shake', sfx:'drum', x:'関を撃て！'},
+      {stage:'koumon', light:'night', cast:['u','zo'], at:'wide', kind:'retold', src:'項羽本紀', x:'項羽は関を破って進み、新豊の鴻門に陣を構えた。'} ],
+    [ {stage:'koumon', light:'night', cast:['u','zo'], at:'wide', kind:'retold', src:'高祖本紀', x:'鴻門。見渡すかぎりの篝火。四十万の兵が、百万と号している。'},
+      {stage:'bashang', light:'dusk', cast:['hai','ryo'], at:'wide', kind:'retold', src:'高祖本紀', x:'霸上。十万の陣。四十里の向こうに、楚の火が見える。'},
+      {at:'hai', w:'hai', kind:'fiction', x:'……あの男と、どう向き合えばよい。'},
+      {at:'wide', kind:'fiction', x:'――この夕べから、物語が始まる。'} ]
+  ];
+  // 省いた舞台・光・配役を前のコマから引き継いで、各場面に結びつける
+  dramas.forEach(function (cuts, i) {
+    var prev = {};
+    scenes[i].drama = cuts.map(function (c) {
+      var cut = {}; ['stage', 'light', 'cast'].forEach(function (k) { cut[k] = c[k] !== undefined ? c[k] : prev[k]; });
+      Object.keys(c).forEach(function (k) { if (cut[k] === undefined) cut[k] = c[k]; });
+      prev = cut; return cut;
+    });
+  });
+  var KIND = { shiki: '史記の記述（書き下し）', retold: '本文をもとにした再構成', fiction: 'ゲーム上の創作' };
+  var panel, index=0, auto=false, timer=null, callbacks, view='drama', cut=0;
   var answers={};
   function homeHTML(meta, is3D) {
     return '<div class="km-home"><div class="km-home-art" aria-hidden="true"></div><div class="km-home-shade"></div><div class="km-home-content">' +
@@ -151,7 +196,21 @@
       (s.quiz?quizHTML(s):'');
   }
   function stopAuto(){clearTimeout(timer);timer=null;}
-  function schedule(){stopAuto();if(auto&&!document.hidden&&!scenes[index].quiz&&index<scenes.length-1)timer=setTimeout(function(){index++;render();},45000);}
+  function schedule(){stopAuto();if(!auto||document.hidden)return;
+    if(view==='drama'){timer=setTimeout(function(){nextCut();},7000);return;}
+    if(!scenes[index].quiz&&index<scenes.length-1)timer=setTimeout(function(){goScene(index+1);},45000);}
+  function goScene(i){index=Math.max(0,Math.min(scenes.length-1,i));view='drama';cut=0;render();}
+  function nextCut(){var d=scenes[index].drama;if(cut<d.length-1){cut++;render();}else{view='notes';render();}}
+  /** 紙芝居の一コマ。舞台は本編の描画（koumon.js の callbacks.stage）に任せる */
+  function dramaHTML(s){
+    var c=s.drama[cut],last=cut===s.drama.length-1,p=c.w&&people[c.w];
+    return '<div class="km-drama" data-intro="tap"><div class="km-drama-card">'+
+      (p?'<div class="km-speaker km-speaker-portrait">'+portraitHTML(c.w)+'<span class="km-speaker-identity"><span class="km-speaker-name"><span class="km-seal km-'+(p[5]==='han'?'han':'so')+'">'+p[0].charAt(1)+'</span><b>'+p[0]+'</b></span><small>'+p[2]+' · '+p[3]+'</small></span></div>':'')+
+      '<span class="km-evidence-label">'+KIND[c.kind]+(c.src?' · '+c.src:'')+'</span>'+
+      '<p class="km-drama-text'+(p?'':' narr')+'" aria-live="polite">'+c.x+'</p>'+
+      '<div class="km-drama-nav"><button data-intro="cutprev"'+(cut===0?' disabled':'')+'>◀ 前のコマ</button><span class="km-drama-count">'+(cut+1)+' / '+s.drama.length+'</span>'+
+      '<button class="km-btn gold" data-intro="cutnext">'+(last?'解説を読む →':'次へ ▶')+'</button></div></div></div>';
+  }
   function quizHTML(s){
     var all=s.quiz.every(function(q){return answers[q.id]===q.answer;});
     return '<fieldset class="km-intro-quiz"><legend>いったん止まって、考えよう。</legend>'+s.quiz.map(function(q,i){var a=answers[q.id];
@@ -160,12 +219,14 @@
       (s.takeaway&&all?'<p class="km-quiz-takeaway">'+s.takeaway+'</p>':'')+'</fieldset>';
   }
   function render(){
-    var s=scenes[index];if(s.quiz||index===scenes.length-1)auto=false;callbacks.step(index);
-    panel.innerHTML='<header class="km-intro-head"><button data-intro="exit">← 表紙</button><span>鴻門への道 <small>宴の前の流れを、七つの場面で</small></span><button data-intro="auto" aria-pressed="'+auto+'">'+(auto?'Ⅱ 一時停止':'▷ 自動で進む')+'</button></header>'+
-      '<div class="km-intro-layout"><div class="km-intro-visual"><span class="km-visual-no" aria-hidden="true">0'+(index+1)+'</span>'+timelineHTML(s)+mapSVG(s)+'<div class="km-map-legend"><span>● 劉邦側</span><span>● 項羽側</span><small>人物名を押すと紹介</small></div><div id="km-intro-person" aria-live="polite"></div></div>'+
+    var s=scenes[index];if(view==='notes'&&(s.quiz||index===scenes.length-1))auto=false;callbacks.step(index);
+    var drama=view==='drama';panel.classList.toggle('km-intro-drama',drama);panel.parentNode.classList.toggle('km-intro-staging',drama);
+    panel.innerHTML='<header class="km-intro-head"><button data-intro="exit">← 表紙</button><span>鴻門への道 <small>宴の前の流れを、七つの場面で</small></span><div class="km-intro-views" role="group" aria-label="表示"><button data-intro="view" data-view="drama" aria-pressed="'+drama+'">場面</button><button data-intro="view" data-view="notes" aria-pressed="'+!drama+'">解説</button></div><button data-intro="auto" aria-pressed="'+auto+'">'+(auto?'Ⅱ 一時停止':'▷ 自動で進む')+'</button></header>'+
+      (drama?dramaHTML(s):'')+'<div class="km-intro-layout"'+(drama?' hidden':'')+'><div class="km-intro-visual"><span class="km-visual-no" aria-hidden="true">0'+(index+1)+'</span>'+timelineHTML(s)+mapSVG(s)+'<div class="km-map-legend"><span>● 劉邦側</span><span>● 項羽側</span><small>人物名を押すと紹介</small></div><div id="km-intro-person" aria-live="polite"></div></div>'+
       '<article class="km-intro-copy" aria-live="polite">'+copyHTML(s)+
       '<details class="km-intro-source"><summary>出典と表現について</summary><p>原文は『史記』から短く引きました。書き下し文・現代語訳・説明は学習用です。地図と人物画は模式的な表現です。</p><a href="https://zh.wikisource.org/wiki/史記/卷007" target="_blank" rel="noopener">項羽本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷008" target="_blank" rel="noopener">高祖本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷048" target="_blank" rel="noopener">陳渉世家</a></details></article></div>'+
-      '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前へ</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===scenes.length-1?'done':'next')+'">'+(index===scenes.length-1?'序幕「霸上の夕べ」へ →':'次へ →')+'</button><small class="km-intro-playback">'+(auto?'45秒ごとに進む · 問いで一時停止':'手動で進む · ← → キーでも操作')+'</small></footer>';
+      '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前へ</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===scenes.length-1?'done':'next')+'">'+(index===scenes.length-1?'序幕「霸上の夕べ」へ →':'次へ →')+'</button><small class="km-intro-playback">'+(auto?'場面は7秒、解説は45秒ごとに進む · 問いで一時停止':'手動で進む · ← → で場面、Enter でコマ送り')+'</small></footer>';
+    if(callbacks.stage)callbacks.stage(drama?s.drama[cut]:null);
     schedule();
   }
   function open(root,start,cb){
@@ -178,20 +239,24 @@
         if(a==='exit'){hide();callbacks.exit();return;}if(a==='done'){hide();callbacks.done();return;}
         if(a==='auto')auto=!auto;
         else auto=false;
-        if(a==='next')index=Math.min(scenes.length-1,index+1);if(a==='prev')index=Math.max(0,index-1);
-        if(a==='step')index=Number(b.dataset.step);
+        if(a==='next'||a==='prev'||a==='step'){goScene(a==='step'?Number(b.dataset.step):index+(a==='next'?1:-1));focusMain();return;}
+        if(a==='cutnext'||a==='tap'){nextCut();focusMain(a==='tap');return;}
+        if(a==='cutprev'){cut=Math.max(0,cut-1);render();focusMain();return;}
+        if(a==='view'){var to=b.dataset.view==='notes'?'notes':'drama';if(to==='drama'&&view==='notes'&&cut===scenes[index].drama.length-1)cut=0;view=to;render();focusMain();return;}
         if(a==='quiz')answers[b.dataset.question]=b.dataset.answer;
         var question=b.dataset.question, answer=b.dataset.answer;
         render();
         var target=a==='quiz'?panel.querySelector('[data-question="'+question+'"][data-answer="'+answer+'"]'):a==='auto'?panel.querySelector('[data-intro="auto"]'):panel.querySelector('h2');
         if(target)target.focus({preventScroll:a==='quiz'||a==='auto'});
       });
-      panel.addEventListener('keydown',function(e){if(e.target.matches('input,textarea'))return;if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-person][role="button"]')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));return;}if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();auto=false;index=Math.max(0,Math.min(scenes.length-1,index+(e.key==='ArrowRight'?1:-1)));render();panel.querySelector('h2').focus();}if(e.key==='Escape'){hide();callbacks.exit();}});
+      panel.addEventListener('keydown',function(e){if(e.target.matches('input,textarea'))return;if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-person][role="button"]')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));return;}if(view==='drama'&&(e.key==='Enter'||e.key===' ')&&!e.target.closest('button,summary,a')){e.preventDefault();auto=false;nextCut();focusMain();return;}if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();auto=false;goScene(index+(e.key==='ArrowRight'?1:-1));focusMain();}if(e.key==='Escape'){hide();callbacks.exit();}});
       document.addEventListener('visibilitychange',function(){if(panel&&!panel.hidden){if(document.hidden)stopAuto();else schedule();}});
     }
-    callbacks=cb;index=Math.max(0,Math.min(scenes.length-1,Math.floor(Number(start)||0)));auto=false;answers={};panel.hidden=false;root.classList.add('km-at-intro');render();panel.querySelector('h2').focus();
+    callbacks=cb;index=Math.max(0,Math.min(scenes.length-1,Math.floor(Number(start)||0)));auto=false;answers={};view='drama';cut=0;panel.hidden=false;root.classList.add('km-at-intro');render();focusMain();
   }
-  function hide(){stopAuto();auto=false;if(panel){panel.hidden=true;panel.parentNode.classList.remove('km-at-intro');}}
+  /** 紙芝居では「次へ」、解説では見出しへ。コマ送りの途中で画面を押したときは焦点を動かさない */
+  function focusMain(keep){if(keep)return;var t=view==='drama'?panel.querySelector('[data-intro="cutnext"]'):panel.querySelector('h2');if(t)t.focus({preventScroll:true});}
+  function hide(){stopAuto();auto=false;if(panel){panel.hidden=true;panel.classList.remove('km-intro-drama');panel.parentNode.classList.remove('km-at-intro','km-intro-staging');if(callbacks&&callbacks.stage)callbacks.stage(null);}}
   function buildPrompt(ids){
     var K=window.KOUMON;
     return K.aiPrompt+'\n\n【資料：引用はこの範囲から】\n'+ids.filter(function(id){return K.genbun[id];}).map(function(id){var g=K.genbun[id];return '['+id+'] '+g.src+'「'+g.title+'」\n原文：'+g.hakubun+'\n書き下し（学習用）：'+g.yomi;}).join('\n\n');

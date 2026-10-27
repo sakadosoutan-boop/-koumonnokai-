@@ -411,7 +411,26 @@
     window.KoumonClassroom.open($root, meta.introStep, {
       step: function (i) { meta.introStep = i; saveMeta(); },
       done: function () { window.KoumonClassroom.hide(); ST.start(); startNew('c0'); },
-      exit: function () { ST.start(); titleScreen(); }
+      exit: function () { ST.start(); titleScreen(); },
+      stage: introCut
+    });
+  }
+  /** 導入の紙芝居：本編と同じ舞台と人物で一コマを見せる。cut が無ければ舞台を止める */
+  var introKey = '';
+  function introCut(cut) {
+    if (!cut) { introKey = ''; if (ST.speaker) ST.speaker(null); ST.hideBubble(); ST.stop(); return; }
+    ST.start();
+    if (ST.resize) ST.resize(); // 字幕の札の高さに合わせて、人物を札より上に収める
+    var key = [cut.stage, cut.light, (cut.cast || []).join(',')].join('|'), epoch = ++sceneEpoch;
+    var ready = key === introKey ? Promise.resolve() : Promise.resolve(ST.setScene(!ST.STAGES || typeof ST.STAGES !== 'object' || ST.STAGES[cut.stage] ? cut.stage : 'bashang', cut.light, cut.cast || [], cut.pose || {}));
+    introKey = key;
+    if (meta.sound) ambience(/nangong|palace/.test(cut.stage) ? 'in' : 'out');
+    ready.then(function () {
+      if (epoch !== sceneEpoch || mode !== 'intro') return;
+      ST.focus(cut.at || 'wide');
+      if (ST.speaker) ST.speaker(cut.w || null);
+      if (cut.fx) ST.effect(cut.fx);
+      if (cut.sfx) sfx(cut.sfx);
     });
   }
 

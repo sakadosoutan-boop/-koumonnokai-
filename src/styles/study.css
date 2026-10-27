@@ -97,3 +97,34 @@
 .km-intro-visual .km-visual-no { top: auto; bottom: 18px; left: auto; right: 28px; }
 .km-intro-copy h2 { word-break: auto-phrase; }
 .km-gate-break { font: 16px var(--mincho); fill: #f0b199; }
+
+/* 導入の紙芝居：本編の舞台（3D・影絵）を背景に見せ、字幕の札を重ねる */
+.km.km-intro-staging .km-cv, .km.km-intro-staging .km-ov { visibility: visible; }
+.km-intro.km-intro-drama { background: transparent; }
+.km-intro.km-intro-drama > .km-intro-head, .km-intro.km-intro-drama > .km-intro-nav { background: #10272de0; backdrop-filter: blur(8px); }
+.km-intro-layout[hidden] { display: none; }
+.km-drama { flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: center; padding: 18px 24px; cursor: pointer; }
+.km-drama-card { width: min(900px, 100%); box-sizing: border-box; cursor: auto; background: linear-gradient(120deg, rgba(10,29,34,.95), rgba(17,29,31,.93)); border: 1px solid #bb9d675c; border-top: 2px solid #bda169; border-radius: 8px; padding: 18px 26px 16px; box-shadow: 0 18px 60px #0008; color: #f2e9d5; }
+.km-drama-card .km-speaker { margin-bottom: 8px; }
+.km-drama-text { font: 21px/1.85 var(--mincho); letter-spacing: .03em; margin: 4px 0 14px; }
+.km-drama-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.km-drama-nav > button:first-child { background: none; border: 0; color: #d6d6c5; font: 13px var(--gothic); cursor: pointer; padding: 8px 0; }
+.km-drama-nav > button:disabled { opacity: .35; cursor: default; }
+.km-drama-count { font: 12px var(--gothic); color: #a9c0b7; }
+.km-intro-views { display: flex; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.km-intro-views button { background: none; border: 0; color: #d6d6c5; padding: 6px 16px; font: 12px var(--gothic); cursor: pointer; }
+.km-intro-views button[aria-pressed="true"] { background: #e2c58b; color: #1b120a; }
+.km-projection .km-drama-text { font-size: 28px; }
+@media (max-width:580px) {
+  .km-drama { padding: 10px 12px; }
+  .km-drama-card { padding: 14px 16px 12px; }
+  .km-drama-text { font-size: 17px; }
+  .km-intro-views button { padding: 6px 10px; }
+}
+.km-intro-drama .km-intro-playback { display: none; }
+.km-intro-drama .km-intro-nav { padding-top: 12px; padding-bottom: 12px; }
+.km-intro-drama .km-intro-head { padding-top: 14px; padding-bottom: 14px; }
+.km-drama { padding-bottom: 12px; }
+.km-drama-card { width: min(820px, 100%); padding: 14px 22px 12px; }
+.km-drama-text { font-size: 19px; margin: 2px 0 10px; }
+.km-drama-card .km-speaker-portrait .km-portrait { width: 56px; height: 56px; }

@@ -158,3 +158,40 @@ test('intro "鴻門への道" covers the road before the prologue and hands off 
   await h.click('[data-intro="step"][data-step="6"]');assert.match(h.doc.querySelector('[data-intro="done"]').textContent,/霸上の夕べ/);
   await h.click('[data-intro="done"]');assert.equal(h.app._state().ch,'c0');assert.deepEqual(h.errors,[]);h.close();
 });
+test('intro scenes open as a picture story on the main stage, then switch to the unchanged notes',async()=>{
+  const h=await setup('c0-1',{start:false,classroom:true}),calls=[];
+  h.w.KoumonStage.setScene=(stage,light,cast)=>{calls.push([stage,light,cast.join(',')]);return Promise.resolve();};
+  await h.click('[data-km="intro"]');
+  assert.ok(h.doc.querySelector('#km-intro.km-intro-drama'));assert.ok(h.doc.querySelector('#km').classList.contains('km-intro-staging'));
+  assert.equal(h.doc.querySelector('.km-intro-layout').hidden,true);
+  const scenes=h.w.KoumonClassroom.scenes;
+  for(let i=0;i<scenes.length;i++){
+    await h.click('[data-intro="step"][data-step="'+i+'"]');
+    const n=scenes[i].drama.length;assert.ok(n>=3,'scene '+i+' has several cuts');
+    for(let c=1;c<n;c++){assert.match(h.doc.querySelector('.km-drama-count').textContent,new RegExp('^'+c+' / '+n));await h.click('[data-intro="cutnext"]');}
+    assert.match(h.doc.querySelector('[data-intro="cutnext"]').textContent,/解説を読む/);
+    await h.click('[data-intro="cutnext"]');
+    assert.equal(h.doc.querySelector('.km-drama'),null);assert.equal(h.doc.querySelector('.km-intro-layout').hidden,false);
+    assert.equal(h.doc.querySelector('.km-intro-copy h2').textContent,scenes[i].title,'notes stay as written');
+  }
+  for(const s of scenes)for(const c of s.drama){assert.ok(c.stage&&c.light&&Array.isArray(c.cast),'cut inherits its stage');assert.ok(['shiki','retold','fiction'].includes(c.kind));if(c.w)assert.ok(c.cast.includes(c.w),c.w+' is on stage');}
+  assert.ok(calls.some(c=>c[0]==='nangong'),'the main story stages are reused');
+  await h.click('[data-intro="view"][data-view="drama"]');assert.ok(h.doc.querySelector('.km-drama'));
+  await h.click('.km-drama');assert.match(h.doc.querySelector('.km-drama-count').textContent,/^2 \//);
+  h.doc.querySelector('.km-drama-card').dispatchEvent(new h.w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));await h.flush();
+  assert.match(h.doc.querySelector('.km-drama-count').textContent,/^3 \//);
+  await h.click('[data-intro="cutprev"]');assert.match(h.doc.querySelector('.km-drama-count').textContent,/^2 \//);
+  await h.click('[data-intro="exit"]');assert.equal(h.doc.querySelector('#km').classList.contains('km-intro-staging'),false);
+  assert.deepEqual(h.errors,[]);h.close();
+});
+test('intro stage arrangements reuse the main stage builders and only add positions',()=>{
+  const w={KoumonStage3D:{STAGES:{nangong:{build:'b3',pos:{ko:1},officials:[1]},gate:{build:'g3',pos:{}}}},KoumonStage:{STAGES:{nangong:{layers:'l2',pos:{},officials:[1]},gate:{layers:'g2',pos:{}}}}};
+  new Function('window',fs.readFileSync(path.join(root,'src/js/koumon-intro-stages.js'),'utf8'))(w);
+  const court=w.KoumonStage3D.STAGES['intro-court'];assert.equal(court.build,'b3');assert.equal(court.officials,null);assert.ok(court.pos.hai&&court.pos.u);
+  assert.equal(w.KoumonStage.STAGES['intro-field'].layers,'g2');assert.ok(w.KoumonStage.STAGES['intro-field'].pos.u.h);
+  const used=new Set();
+  const d=new JSDOM('',{runScripts:'outside-only'}).window;d.eval(fs.readFileSync(path.join(root,'src/js/koumon-classroom.js'),'utf8'));
+  for(const s of d.KoumonClassroom.scenes)for(const c of s.drama){used.add(c.stage);const st=w.KoumonStage3D.STAGES[c.stage]||{pos:null};if(c.stage.startsWith('intro-'))for(const id of c.cast)assert.ok(st.pos[id],c.stage+' places '+id);}
+  for(const id of used)assert.ok(id.startsWith('intro-')||['nangong','bashang','koumon','gate','road'].includes(id),id);
+  d.close();
+});
