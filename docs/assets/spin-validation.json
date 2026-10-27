@@ -1,0 +1,242 @@
+{
+  "date": "2026-10-27",
+  "change": "Stronger Fan Kuai drink; original sword forms, quick cuts and a stepped full turn in one phrase",
+  "runtimeCanonicalLF": {
+    "src/js/koumon-cast3d.js": "cfb8766f47b107dca819e63fecd7cb35ef29d72aa4c71df99180ff949c3c4769",
+    "src/js/koumon-banquet-props.js": "edb1053308ccb314d8d4f0769a7682983ab06ae3f75d3c6e221ea7e4fb668c83",
+    "index.html": "9c558e185c07f88a9c623885b36c87349f1003c2fca4997e1f8491ccb2a38612",
+    "tools/banquet-scenes.html": "207a0caf9f8cbe3e7b97506b9c8dbaa617086b9d1a23b2bc5c428749bbc7dcef",
+    "tools/character-gallery.html": "d6410a6b571fd1461fc897288dc8218655ad38f66d456c6cf838ea30c18465a0",
+    "dist/index.html": "ba7d0e5a071b6a831519399ef4a4389de9e5bd2ca6389ce797187fe382379f3f"
+  },
+  "tests": {
+    "npmPassed": 60,
+    "geometryConditions": 360,
+    "motionAuditRows": 5960,
+    "motionAuditCastRawSha256": "8627c8643824b3b4d35535d77e5ea912f15f35cff94819a62b902e43ab70cf67",
+    "rowsByKind": {
+      "representative": 192,
+      "dense-dance": 2884,
+      "dense": 2884
+    },
+    "outOfOrderChecks": 3400,
+    "independentDancePhasePairsPerLOD": 4096,
+    "independentDanceDirectionalChecksBothLODs": 16384,
+    "maxima": {
+      "gripGap": 2.3551386880256624e-16,
+      "solverContact": 8.169055794461054e-16,
+      "wristBend": 1.1145339344631913,
+      "forearmTwist": 1.48,
+      "elbowFlex": 2.580235785377631,
+      "elbowRise": 0.09582646521760063,
+      "shoulderShieldGap": 0.00010287964571331631,
+      "bladePierceGap": 8.688869536365456e-16,
+      "shoulderSupportGap": 4.0053709487069576e-16,
+      "shoulderBiteGap": 0.008191383863865217,
+      "cupSupportGap": 7.28550816809042e-16,
+      "cupTilt": 1.4680000000000002,
+      "cupRimGap": 0.010593248217048728,
+      "danceRootShift": 0,
+      "danceFootContactGap": 6.804363002006077e-16,
+      "danceFootReachError": 0,
+      "danceLocalQuaternionStep": 0.08753277700772964,
+      "danceWorldQuaternionStep": 0.0913626847048645,
+      "danceCycleQuaternionGap": 2.9802322387695312e-08,
+      "danceCycleMatrixGap": 1.4432899320127035e-15,
+      "danceOutOfOrderMatrixDelta": 0,
+      "localQuaternionStep": 0.0504122720822777,
+      "worldQuaternionStep": 0.03940487559829655,
+      "shoulderReturnGap": 0,
+      "cycleQuaternionGap": 0,
+      "outOfOrderMatrixDelta": 0,
+      "neckAnchorDrift": 8.899114524108741e-16
+    },
+    "minima": {
+      "bladeToThumb": 0.9999999999999997,
+      "shoulderElbowDrop": -0.09582646521760063,
+      "bladeLipClearance": 0.1800724795503025,
+      "cupForward": 0.09034883720930222,
+      "danceHeadClearance": 0.2594162336297811,
+      "danceFreeHandClearance": 0.09106902210947672,
+      "danceSoleHeight": -0.001034883500618766,
+      "independentDanceHeadClearance": 0.2921645282703644,
+      "independentDanceFreeHandClearance": 0.08665139979998973
+    },
+    "dance": [
+      {
+        "q": "low",
+        "id": "sou",
+        "cycle": 6.8,
+        "bladePath": 9.75311363293329,
+        "peakBladeSpeed": 7.273083600866991,
+        "fastCutSpeed": 7.273083600866991,
+        "maxLocalStep": 0.08753277700772964,
+        "maxWorldStep": 0.0913626847048645,
+        "minHeadClearance": 0.2594162336297811,
+        "minFreeHandClearance": 0.09106902210947672,
+        "originalMotifScores": [
+          0.00028252697884232367,
+          0.00017093854256645792
+        ],
+        "ranges": {
+          "bodyTurn": 6.552892300396608,
+          "torsoYaw": 0.6198492845747343,
+          "bodyHeight": 0.03958276639413305,
+          "bodySway": 0.17378428268558543,
+          "LHip": 0.46061910788751503,
+          "LKnee": 0.5604832295888584,
+          "RHip": 0.33263553369843135,
+          "RKnee": 0.5483144295332096
+        },
+        "clockCycleGap": 0
+      },
+      {
+        "q": "low",
+        "id": "haku",
+        "cycle": 6.8,
+        "bladePath": 7.287190538489337,
+        "peakBladeSpeed": 7.068783499719045,
+        "fastCutSpeed": 7.068783499719045,
+        "maxLocalStep": 0.08753277700772964,
+        "maxWorldStep": 0.0913626847048645,
+        "minHeadClearance": 0.5925073547314592,
+        "minFreeHandClearance": 0.17933654095673895,
+        "originalMotifScores": [
+          0.00028252697884232367,
+          0.00017093854256645792
+        ],
+        "ranges": {
+          "bodyTurn": 0.7499643820903661,
+          "torsoYaw": 0.6198492845747343,
+          "bodyHeight": 0.03847089093362366,
+          "bodySway": 0.07543137341250941,
+          "LHip": 0.46380196833923926,
+          "LKnee": 0.550489175489868,
+          "RHip": 0.3326355336984319,
+          "RKnee": 0.538270968078618
+        },
+        "clockCycleGap": 5.551115123125783e-17
+      },
+      {
+        "q": "high",
+        "id": "sou",
+        "cycle": 6.8,
+        "bladePath": 9.75311363293329,
+        "peakBladeSpeed": 7.273083600866991,
+        "fastCutSpeed": 7.273083600866991,
+        "maxLocalStep": 0.08753277700772964,
+        "maxWorldStep": 0.0913626847048645,
+        "minHeadClearance": 0.2594162336297811,
+        "minFreeHandClearance": 0.09106902210947672,
+        "originalMotifScores": [
+          0.00028252697884232367,
+          0.00017093854256645792
+        ],
+        "ranges": {
+          "bodyTurn": 6.552892300396608,
+          "torsoYaw": 0.6198492845747343,
+          "bodyHeight": 0.03958276639413305,
+          "bodySway": 0.17378428268558543,
+          "LHip": 0.46061910788751503,
+          "LKnee": 0.5604832295888584,
+          "RHip": 0.33263553369843135,
+          "RKnee": 0.5483144295332096
+        },
+        "clockCycleGap": 0
+      },
+      {
+        "q": "high",
+        "id": "haku",
+        "cycle": 6.8,
+        "bladePath": 7.287190538489337,
+        "peakBladeSpeed": 7.068783499719045,
+        "fastCutSpeed": 7.068783499719045,
+        "maxLocalStep": 0.08753277700772964,
+        "maxWorldStep": 0.0913626847048645,
+        "minHeadClearance": 0.5925073547314592,
+        "minFreeHandClearance": 0.17933654095673895,
+        "originalMotifScores": [
+          0.00028252697884232367,
+          0.00017093854256645792
+        ],
+        "ranges": {
+          "bodyTurn": 0.7499643820903661,
+          "torsoYaw": 0.6198492845747343,
+          "bodyHeight": 0.03847089093362366,
+          "bodySway": 0.07543137341250941,
+          "LHip": 0.46380196833923926,
+          "LKnee": 0.550489175489868,
+          "RHip": 0.3326355336984319,
+          "RKnee": 0.538270968078618
+        },
+        "clockCycleGap": 5.551115123125783e-17
+      }
+    ],
+    "guzzling": [
+      {
+        "q": "low",
+        "cycle": 6.4,
+        "lipContactFrames": 418,
+        "guzzleFrames": 174,
+        "peakCupTilt": 1.4680000000000002
+      },
+      {
+        "q": "high",
+        "cycle": 6.4,
+        "lipContactFrames": 418,
+        "guzzleFrames": 174,
+        "peakCupTilt": 1.4680000000000002
+      }
+    ]
+  },
+  "bundle": {
+    "bytes": 25213551,
+    "inlineScriptsSyntaxChecked": 18,
+    "externalScripts": 0,
+    "embeddedPNG": 2
+  },
+  "visualReview": {
+    "renderer": "Actual runtime model geometry rendered on the CPU; not WebGL or PBR",
+    "dance": {
+      "frames": 64,
+      "durationSeconds": 6.8,
+      "quality": "low"
+    },
+    "drink": {
+      "frames": 48,
+      "durationSeconds": 6.4,
+      "quality": "low"
+    },
+    "fourViewSheets": {
+      "dance": {
+        "quality": "high",
+        "phase": 0.72
+      },
+      "drink": {
+        "quality": "high",
+        "phase": 0.5
+      }
+    },
+    "views": [
+      "front",
+      "side",
+      "three-quarter",
+      "overhead"
+    ],
+    "reviewed": "Original raised form, full-turn back view, stepping feet, upright sword, cup contact and anchored neck",
+    "browserStatus": "Not reverified: existing in-app tab focus timed out; a fresh tab also timed out on initial navigation",
+    "proofs": {
+      "docs/model-preview/spin-dance.gif": "2b3f1a43cbcbe040362f493d6b9bbc5328d15ec8942da51f6d4049d0e7a3085d",
+      "docs/model-preview/spin-dance.png": "0080ac19e8cb499c8d0701ebba976cd5ce3f0e1394c27eac76367351c49c1a1f",
+      "docs/model-preview/spin-turn-views.png": "524bdec87f4e2ac33ebc7367dcf4a8b728bd3924e794832fe102334e1b613cd2",
+      "docs/model-preview/spin-drink.gif": "9e980e1624825947579d8d4cb6a6ff74a6fef1835a07844a3423be5e65a2cbff",
+      "docs/model-preview/spin-drink.png": "3fb53d5d07c6ba5ba07c9c889f7222c0466819675f61697fa8d13967197e05c5",
+      "docs/model-preview/spin-drink-views.png": "6953dd52dccd46b6c69292b43d5e2c34ece873b60f11161fde2728f4c92eaf86"
+    }
+  },
+  "limits": [
+    "No new browser WebGL capture",
+    "No physical cloth simulation",
+    "No device frame-rate measurement"
+  ]
+}

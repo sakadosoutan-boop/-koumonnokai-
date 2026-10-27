@@ -1,6 +1,6 @@
 {
   "asset": "楚漢衣装アトリエ v1",
-  "generatedAt": "2026-10-25T14:55:58.881Z",
+  "generatedAt": "2026-10-26T04:47:13.176Z",
   "nativeSource": "source-assets/costumes.blend",
   "runtime": "src/js/koumon-costume.js",
   "reproduce": "node tools/author-costume-assets.cjs",

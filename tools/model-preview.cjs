@@ -1,5 +1,5 @@
 /* Offline geometry/material inspection; deliberately does not drive a browser.
- * Usage: node tools/model-preview.cjs [output-dir] [hai,u] [low|high] [--portraits|--clay-faces|--bodies|--eyes] [--gray] [--pose=stand]
+ * Usage: node tools/model-preview.cjs [output-dir] [hai,u] [low|high] [--portraits|--clay-faces|--bodies|--eyes] [--gray] [--pose=stand] [--phase=0.5|--motion-frames=48]
  * Set CANVAS_MODULE to an installed @napi-rs/canvas directory if required.
  * Lambert shading approximates material base color; no WebGL PBR, shadows,
  * normal/bump maps, antialiasing or transparency sorting is reproduced.
@@ -11,10 +11,13 @@ const canvasModule=process.env.CANVAS_MODULE||path.join(process.env.USERPROFILE,
 const {createCanvas}=require(canvasModule);
 const root=path.resolve(__dirname,'..'),out=path.resolve(process.argv[2]||path.join(root,'model-preview-output'));
 const ids=(process.argv[3]||'hai,u').split(','),quality=process.argv[4]||'low';
+const motionOption=process.argv.find(a=>a.startsWith('--motion-frames='));
+const motionFrames=motionOption?Number(motionOption.slice(16)):0;
+if(motionOption&&(!Number.isInteger(motionFrames)||motionFrames<8||motionFrames>120))throw Error('Motion frames must be an integer from 8 to 120');
 fs.mkdirSync(out,{recursive:true});
 const context={console,performance,document:{createElement(tag){if(tag!=='canvas')throw Error(tag);return createCanvas(1,1);}},setTimeout,clearTimeout};
 context.window=context;vm.createContext(context);
-const modules=['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-cast3d.js'];
+const modules=['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-banquet-props.js','src/js/koumon-cast3d.js'];
 const optional=new Set(modules.slice(2,-1));
 for(const file of modules){
   let source;
@@ -165,7 +168,26 @@ for(const id of ids){
     const entry={id,quality,vertices:model.vertices,triangles:model.triangles,bounds:box,seconds:Math.round((performance.now()-started)/100)/10};
     report.push(entry);console.log(JSON.stringify(entry));continue;
   }
-  const started=performance.now(),figure=context.KM_CAST3D.makeFigure(id);figure.userData.setPose(pose);figure.userData.update(0,0);figure.updateMatrixWorld(true);
+  const started=performance.now(),figure=context.KM_CAST3D.makeFigure(id);figure.userData.setPose(pose);
+  const phaseArg=process.argv.find(a=>a.startsWith('--phase='));if(phaseArg)figure.userData.state.actionProgress=Number(phaseArg.slice(8));
+  figure.userData.update(0,0);figure.updateMatrixWorld(true);
+  if(motionFrames){
+    // Render the real runtime geometry at deterministic phases. This is a CPU
+    // contact/motion review, not a substitute for browser PBR verification.
+    const extent=new T.Box3();
+    function motionFrame(i){figure.userData.state.actionProgress=i/motionFrames;figure.userData.update(0,0);figure.updateMatrixWorld(true);}
+    for(let i=0;i<=motionFrames;i++){motionFrame(i);extent.union(new T.Box3().setFromObject(figure));}
+    const size=extent.getSize(new V()),center=extent.getCenter(new V()),height=Math.max(size.y,size.x/.75,size.z/.75)*1.12;
+    const framesDir=path.join(out,'motion-'+id+'-'+quality);fs.mkdirSync(framesDir,{recursive:true});
+    for(let i=0;i<motionFrames;i++){
+      motionFrame(i);const frame=render(collect(figure),center,height,[25,6],420,560),g=frame.getContext('2d');
+      g.fillStyle='#24282b';g.font='12px sans-serif';g.fillText(id+' / '+pose+' / '+(i+1)+' of '+motionFrames,10,18);g.fillText('CPU geometry animation / not WebGL',10,550);
+      fs.writeFileSync(path.join(framesDir,String(i).padStart(3,'0')+'.png'),frame.toBuffer('image/png'));
+    }
+    const duration=context.KM_BANQUET&&context.KM_BANQUET.cycles[pose]||8;
+    fs.writeFileSync(path.join(framesDir,'motion.json'),JSON.stringify({id,quality,pose,frames:motionFrames,duration,renderer:'CPU geometry preview; not WebGL'},null,2));
+    console.log(JSON.stringify({id,quality,pose,frames:motionFrames,duration,framesDir}));continue;
+  }
   const model=collect(figure),box=new T.Box3().setFromObject(figure),center=box.getCenter(new V());
   const span=Math.max(box.max.y-box.min.y,(box.max.x-box.min.x)/(360/690),(box.max.z-box.min.z)/(360/690));
   const head=figure.userData.rig.headPiv.getWorldPosition(new V());head.y+=.08;

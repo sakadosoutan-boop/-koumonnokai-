@@ -24,10 +24,10 @@ for(const [i,[id,b]] of themes.entries()){
   if(c.armor)pelvis.add(K.armor(c,1,b,'skirt'));
   for(const sd of [-1,1]){
     const shoulder=new T.Group();shoulder.position.set(sd*.188*b,.145,-.005);chest.add(shoulder);
-    const armColor=c.armor?(c.legs||c.robe):c.robe,def=new V(-sd*.5,0,-.86),upper=K.sleeve({upper:true,fitted:!!c.armor,side:sd,scale:1,len:.31,y0:.005,r:u=>(1-u)*(c.armor?.062:.069)*b+u*(c.armor?.049:.062),H:u=>c.armor?0:.06*(u*u*(3-2*u)),def,color:armColor},cloth);shoulder.add(upper);
+    const armColor=c.armor?(c.legs||c.robe):c.robe,def=new V(-sd*.5,0,-.86),upper=K.sleeve({upper:true,fitted:!!c.armor,side:sd,scale:1,len:.31,y0:.005,r:u=>(1-u)*(c.armor?.062:.069)*b+u*(c.armor?.049:.062),H:u=>c.armor?0:.04*(u*u*(3-2*u)),def,color:armColor},cloth);shoulder.add(upper);
     if(c.armor)shoulder.add(K.armor(c,1,b,'shoulder',sd));
     const elbow=new T.Group();elbow.position.y=-.29;shoulder.add(elbow);
-    const fore=K.sleeve(c.armor?{fitted:true,side:sd,scale:1,len:.25,y0:.01,r:u=>.052*(1-u)+.045*u,def,color:armColor}:{side:sd,scale:1,len:.285,y0:.016,r:u=>u<.55?.068+(.078-.068)*u/.55:.078+(.046-.078)*(u-.55)/.45,H:u=>{const ease=(a,b,v)=>{const x=Math.max(0,Math.min(1,(v-a)/(b-a)));return x*x*(3-2*x);};return .06+(.25-.06)*ease(0,.62,u)-.25*.82*ease(.62,1,u);},def,color:armColor,trim:c.trim,sag:.11,slide:true},cloth);elbow.add(fore);upper.userData.elbowJoint=elbow;fore.userData.elbowJoint=elbow;upper.userData.bag(new V(0,-1,0));fore.userData.bag(new V(0,-1,0));
+    const fore=K.sleeve(c.armor?{fitted:true,side:sd,scale:1,len:.25,y0:.01,r:u=>.052*(1-u)+.045*u,def,color:armColor}:{side:sd,scale:1,len:.270,y0:.016,r:u=>u<.55?.060+(.068-.060)*u/.55:.068+(.043-.068)*(u-.55)/.45,H:u=>{const ease=(a,b,v)=>{const x=Math.max(0,Math.min(1,(v-a)/(b-a)));return x*x*(3-2*x);};return .04+(.17-.04)*ease(0,.62,u)-.17*.82*ease(.62,1,u);},def,color:armColor,trim:c.trim,sag:.065,slide:true},cloth);elbow.add(fore);upper.userData.elbowJoint=elbow;fore.userData.elbowJoint=elbow;upper.userData.bag(new V(0,-1,0));fore.userData.bag(new V(0,-1,0));
     if(c.armor)elbow.add(K.bracer(c,1));
   }
 }

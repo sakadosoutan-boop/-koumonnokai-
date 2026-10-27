@@ -22,6 +22,38 @@
     }
     return new Uint8Array(arr);
   }
+  function decodePackedIndices(encoded, count, encoding, vertexCount) {
+    if (!Number.isInteger(count) || count < 0 || !Number.isInteger(vertexCount) || vertexCount < 0 || vertexCount > 65535) throw new Error('Invalid packed head dimensions');
+    if (typeof encoded !== 'string' || encoded.length % 4 || /[^A-Za-z0-9+/=]/.test(encoded) || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) throw new Error('Invalid packed head base64');
+    var raw = bytes(encoded), result = new Uint16Array(count), previous = 0, written = 0;
+    if (!encoding || encoding === 'uint16') {
+      if (raw.length !== count * 2) throw new Error('Incomplete packed head indices');
+      var view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+      for (var j = 0; j < count; j++) {
+        var value = view.getUint16(j * 2, true);
+        if (value >= vertexCount) throw new Error('Packed head index out of bounds');
+        result[j] = value;
+      }
+      return result;
+    }
+    if (encoding !== 'delta-zigzag-varint') throw new Error('Unsupported packed head index encoding');
+    for (var offset = 0; offset < raw.length;) {
+      if (written >= count) throw new Error('Excess packed head index bytes');
+      var value = 0, shift = 0, byte;
+      do {
+        if (offset >= raw.length) throw new Error('Incomplete packed head varint');
+        byte = raw[offset++]; value |= (byte & 127) << shift; shift += 7;
+        if (shift > 21) throw new Error('Packed head varint overflow');
+      } while (byte & 128);
+      if (shift > 7 && !(byte & 127)) throw new Error('Noncanonical packed head varint');
+      if (value > 131070) throw new Error('Packed head delta overflow');
+      previous += (value >>> 1) ^ -(value & 1);
+      if (previous < 0 || previous >= vertexCount) throw new Error('Packed head index out of bounds');
+      result[written++] = previous;
+    }
+    if (written !== count) throw new Error('Incomplete packed head indices');
+    return result;
+  }
   function geometry(data, key) {
     if (CACHE[key]) return CACHE[key].clone();
     var source = window.KM_HEAD_ASSETS, packed = bytes(data.p), view = new DataView(packed.buffer);
@@ -36,7 +68,7 @@
       uv[v * 2] = hair ? Math.atan2(pos[v * 3], pos[v * 3 + 2] + .02) / (PI * 2) + .5 : pos[v * 3] / .22 + .5;
       uv[v * 2 + 1] = hair ? (pos[v * 3 + 1] + .30) / .48 : (pos[v * 3 + 1] + .165) / .31;
     }
-    var ib = bytes(source.indices[data.i]), idx = new Uint16Array(ib.buffer);
+    var idx = decodePackedIndices(source.indices[data.i],data.t * 3,source.indexEncoding,data.v);
     var g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3));
     g.setAttribute('normal', new T.BufferAttribute(nor, 3)); g.setAttribute('uv', new T.BufferAttribute(uv, 2));
     if (col) g.setAttribute('color', new T.BufferAttribute(col, 3, true));
@@ -65,8 +97,8 @@
   function material(kind, asset) {
     var skin = kind === 'skin';
     return new T.MeshStandardMaterial({color: 0xffffff, vertexColors: true,
-      roughness: skin ? (asset.age > .5 ? .63 : .53) : kind === 'hair' ? .48 : .72,
-      metalness: 0, bumpMap: detail(!skin), bumpScale: skin ? .00016 : .00030});
+      roughness: skin ? (asset.age > .5 ? .63 : .53) : kind === 'hair' ? .70 : .76,
+      metalness: 0, bumpMap: detail(!skin), bumpScale: skin ? .00016 : kind === 'hair' ? .00018 : .00006});
   }
   function irisTexture(doublePupil) {
     var key = 'iris' + !!doublePupil; if (TEXTURES[key]) return TEXTURES[key];
@@ -108,8 +140,24 @@
   }
   var ALIAS = {ko:'hai',ou:'hai',tei:'zo',rba:'u',msg:'sou',ei:'sou'};
   function fittedHeadwear(id, asset) {
+    if (['hai','zo','haku','chin'].indexOf(id) >= 0) {
+      var cap=new T.Group();cap.name=id+'-fitted-folded-cloth-crown';cap.userData.part='headwear';
+      var h=id==='zo'?.058:.070,w=id==='haku'?.030:.027;
+      var profile=[[-.022,0],[-.018,h*.83],[-.010,h],[.011,h*.96],[.025,h*.72],[.024,0]];
+      var pos=[],ix=[];[-w,w].forEach(function(x){profile.forEach(function(p){pos.push(x,p[1],p[0]);});});
+      var n=profile.length;for(var j=0;j<n;j++){var k=(j+1)%n;ix.push(j,k,n+j,k,n+k,n+j);}
+      for(var j=1;j<n-1;j++){ix.push(0,j+1,j,n,n+j,n+j+1);}
+      var geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(pos,3));geometry.setIndex(ix);geometry.computeVertexNormals();
+      var cloth=new T.MeshStandardMaterial({color:new T.Color(0x211b19).convertSRGBToLinear(),roughness:.86});
+      var crown=new T.Mesh(geometry,cloth);cap.add(crown);cap.position.set(0,.132,-.027);
+      var seat=new T.Mesh(new T.CylinderGeometry(.025,.026,.012,32),cloth);seat.scale.z=.84;seat.position.y=.003;cap.add(seat);
+      var brass=new T.MeshStandardMaterial({color:new T.Color(0x9b7b48).convertSRGBToLinear(),roughness:.56,metalness:.55});
+      [-1,1].forEach(function(side){var points=profile.slice(0,5).map(function(p){return new T.Vector3(side*w*.78,p[1]+.0005,p[0]+.001);});var seam=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points),24,.00085,5,false),brass);cap.add(seam);});
+      var pin=new T.Mesh(new T.CylinderGeometry(.0015,.0015,.116,8),brass);pin.rotation.z=PI/2;pin.position.set(0,.018,-.004);cap.add(pin);
+      cap.traverse(function(o){if(o.isMesh){o.userData.part='headwear';o.castShadow=o.receiveShadow=true;}});return cap;
+    }
     if (['ryo','u','kai','sou'].indexOf(id) < 0) return null;
-    var knot = {ryo:.025,u:.037,kai:.034,sou:.033}[id], crown = id === 'u';
+    var knot = {ryo:.025,u:.037,kai:.038,sou:.033}[id], crown = id === 'u';
     var group = new T.Group(); group.name = id + '-fitted-headwear'; group.userData.part = 'headwear';
     var color = crown ? 0x8a6c36 : id === 'sou' ? 0x71432d : id === 'kai' ? 0x243a3c : 0x1b1a18;
     var mat = new T.MeshStandardMaterial({color:new T.Color(color).convertSRGBToLinear(),roughness:crown?.4:.86,metalness:crown?.62:0});
@@ -148,5 +196,5 @@
     }
     return {group: group, surface: surface, eyes: eyes, anchors: JSON.parse(JSON.stringify(asset.anchors)), asset: true, source: key, headwear:!!headwear};
   }
-  window.KM_HEADS = {build:build};
+  window.KM_HEADS = {build:build,decodePackedIndices:decodePackedIndices};
 })();

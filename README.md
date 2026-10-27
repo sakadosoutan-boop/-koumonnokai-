@@ -42,6 +42,7 @@ src/data/kuho.js           句法の解説（ヒントで使う）
 src/js/koumon.js           進行・画面・保存・小さな遊び・音
 src/js/koumon-classroom.js 導入の紙芝居・人物案内・資料付きAI指示文
 src/js/koumon-3d.js        3D の舞台（Three.js）
+src/js/koumon-lighting.js  肌・布・金属を照らす共有の環境反射
 src/js/koumon-cast3d.js    3D の人物（衣・甲冑・冠・持ち物・姿勢）と馬
 src/js/koumon-heads.js     人物別の人体ベース頭部・眼球・髪・髭
 src/js/koumon-hands.js     解剖メッシュによる手と握り
@@ -56,6 +57,10 @@ src/styles/                画面のスタイル（study.css は読み直し・�
 src/vendor/three.min.js    Three.js r128（MIT）
 tools/build.mjs            一枚にまとめる（node tools/build.mjs → dist/index.html）
 tools/character-gallery.html 人物を回転・拡大して確認するページ
+tools/banquet-scenes.html   乗り込み・剣舞・翼蔽・飲酒・食事を再生／巻き戻しするページ
+tools/verify-banquet.cjs    握り・接触・関節範囲・動きの連続性の検査
+tools/model-preview.cjs     実モデルのCPU画像・連続フレームを出力
+tools/compose-motion-preview.py 連続フレームから確認用GIFを作成（Pillow）
 tools/worksheet-pdf.py     ワークシートの PDF 版を作る
 tests/                     回帰テスト（*.test.cjs）と実ブラウザーの画面確認（browser-smoke.cjs）
 .github/workflows/ci.yml   GitHub Actions（テスト・配布HTMLの更新漏れ・実ブラウザー確認）
@@ -64,6 +69,10 @@ tests/                     回帰テスト（*.test.cjs）と実ブラウザー�
 ## 開発時の確認
 
 `npm ci` のあと `npm test` で進行・保存・再開・学習機能の回帰テスト、`npm run build` で配布用HTMLを生成します。`npm run test:browser` は Playwright の Chromium で PC（1440×800）と縦長（390×844）の画面を開き、「次へ」が画面内にあるか、設問の縦書きが潰れていないか、3D の舞台が初期化できるかを確かめます（Playwright と縦書き対応の日本語フォントが必要。`SKIP_3D=1` で 3D を省略）。GitHub Actions では push・プルリクエストごとに、テスト、`dist/index.html` の更新漏れ、実ブラウザー確認を実行します。ソースを変えたら `npm run build` の結果もコミットしてください。画面の見た目や操作感は、PCと縦長画面のブラウザでも確認してください。導入・授業モードなどの受け入れ確認は [`docs/implementation-audit.md`](docs/implementation-audit.md)、表紙画像の制作情報は [`docs/visual-assets.md`](docs/visual-assets.md) に記録します。
+
+形状と動きをCPUで確認する場合は、`node tools/model-preview.cjs model-preview-output/dance sou low --pose=dance --motion-frames=64`、続いて `python tools/compose-motion-preview.py model-preview-output/dance/motion-sou-low model-preview-output/dance/dance.gif` を実行します。Canvas用モジュールの場所は `CANVAS_MODULE` で指定できます。このGIFは実モデルの動作確認用で、ブラウザーのPBR・影・透過の表示とは区別します。
+
+人物と宴席の確認範囲は[3D品質の記録](docs/model-quality.md)、剣舞で参照した動画と動きの設計は[参考映像と動作設計](docs/sword-dance-reference.md)を参照してください。
 
 ## ライセンス
 

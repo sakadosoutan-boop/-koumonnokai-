@@ -502,7 +502,7 @@
       { t: 'scene', stage: 'feast', light: 'day', cast: ['u', 'haku', 'hai', 'ryo', 'sou'], fade: 'black', set: { meters: true } },
       { w: 'sou', x: '君王沛公と飲す。軍中以つて楽を為す無し。請ふ剣を以つて舞はん。', at: 'sou' },
       { w: 'u', x: '諾。', at: 'u' },
-      { x: '項荘剣を抜き起ちて舞ふ。刃が灯を返し、一歩ごとに、あなたの席へ近づいてくる。', at: 'sou', pose: { sou: 'dance' }, sfx: 'clang', fx: 'flash' },
+      { x: '項荘剣を抜き起ちて舞ふ。刃が灯を返し、あなたの席をうかがう。', at: 'sou', pose: { sou: 'dance' }, sfx: 'clang', fx: 'flash' },
       { id: 'c4-dance', t: 'ask', k: 'judge', w: 'you', q: '刃が迫る。あなたは――', cp: true, timer: 15,
         o: [
           { x: '動かず、杯を手にしたまま張良に目くばせする', ok: true, go: 'c4-still' },
@@ -554,8 +554,8 @@
       { x: '噲即ち剣を帯び盾を擁して軍門より入らんとす。交戟の衛士、止めて内れざらんと欲す。', at: 'ei', pose: { kai: 'charge' } },
       { x: '樊噲其の盾を側てて以つて撞く。――衛士、地に仆る。', at: 'ei', pose: { ei: 'down' }, fx: 'shake', sfx: 'thud' },
       { t: 'gen', g: 'g12' },
-      { t: 'scene', stage: 'feast', light: 'day', cast: ['u', 'haku', 'hai', 'ryo', 'kai'], fade: 'black', set: { meters: true } },
-      { x: '帷が裂けるように開いた。樊噲、西嚮して立ち、目を瞋らして項王を視る。頭髪上指し、目眥尽く裂く。', at: 'kai', pose: { kai: 'glare' }, fx: 'shake' },
+      { t: 'scene', stage: 'feast', light: 'day', cast: ['u', 'haku', 'hai', 'ryo', 'kai'], pose: { kai: 'enter' }, set: { meters: true } },
+      { x: '帷が裂けるように開いた。樊噲、西嚮して立ち、目を瞋らして項王を視る。頭髪上指し、目眥尽く裂く。', at: 'kai', fx: 'shake' },
       { w: 'u', x: '客何為る者ぞ。', at: 'u', pose: { u: 'kneel' }, b: 'anger' },
       { t: 'ask', k: 'judge', w: 'you', q: '項王が剣に手をかけた。あなたは？',
         o: [

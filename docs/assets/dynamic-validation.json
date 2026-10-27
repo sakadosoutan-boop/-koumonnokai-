@@ -1,0 +1,198 @@
+{
+  "date": "2026-10-27",
+  "runtimeCanonicalLF": {
+    "src/js/koumon-cast3d.js": "e03643d198ff22e3053ae65731f63b34ff5e37b3dd19856f797846b65c298b63",
+    "src/js/koumon-banquet-props.js": "f7bbcfee772b94a80811213297f534895237074474d7edac73d08becd4f5d78e",
+    "src/js/koumon-3d.js": "ce7b471b801673f68e7bfa625daf75064a2a3d228ab6433225da1b35dd71cdb9",
+    "src/js/koumon-stage.js": "1da1ffa5439edda24120f33338f1ffc15c406ef04ec74b69c2f6a3ced6fcee78",
+    "src/js/koumon.js": "bcc60d4f2972fabe0daf970b791d2c5dbf57956b9caff1e901e81f4591078a07",
+    "src/data/koumon.js": "6864d3b27367a0959b0152ac94dac7484c699549e7ab82426d49e6bbf19fcd9a",
+    "tools/banquet-scenes.html": "4db1d2cb25e43f448586ee112714ddefc068fcb3f0e608ca63a41233a45e240f",
+    "tools/character-gallery.html": "23709ac890c97d1b091f7ab1c9002d9180eddec83a99bc0f400abcea0d77cef5",
+    "dist/index.html": "961350fe07fb899e73ffab1f1dee19a7ad4002d23bc82e0a81c30e668702dd86"
+  },
+  "tests": {
+    "npmPassed": 60,
+    "latestEntryLifecyclePassed": 12,
+    "geometryConditions": 360,
+    "motionAuditRows": 4520,
+    "denseDrinkEatFrames": 2884,
+    "denseDanceFrames": 1444,
+    "independentDancePhasePairs": 2048,
+    "maxima": {
+      "gripGap": 2.339755514347753e-16,
+      "solverContact": 8.169055794461054e-16,
+      "wristBend": 1.1145339344631913,
+      "forearmTwist": 1.48,
+      "elbowFlex": 2.580235785377631,
+      "shoulderShieldGap": 0.00010287964571331631,
+      "bladePierceGap": 8.688869536365456e-16,
+      "shoulderSupportGap": 4.0053709487069576e-16,
+      "shoulderBiteGap": 0.008191383863865217,
+      "cupSupportGap": 8.924035348799748e-16,
+      "cupTilt": 1.0580000000000003,
+      "cupRimGap": 0.010593248217048679,
+      "danceFootContactGap": 7.042874208602876e-16,
+      "danceFootReachError": 0,
+      "danceLocalQuaternionStep": 0.06821735222168039,
+      "danceWorldQuaternionStep": 0.07108696939708144,
+      "danceOutOfOrderMatrixDelta": 0,
+      "localQuaternionStep": 0.0504122720822777,
+      "worldQuaternionStep": 0.03940487559829655,
+      "shoulderReturnGap": 0,
+      "cycleQuaternionGap": 0,
+      "outOfOrderMatrixDelta": 0
+    },
+    "minima": {
+      "bladeToThumb": 0.9999999999999997,
+      "shoulderElbowDrop": 0.008261446266406569,
+      "bladeLipClearance": 0.1800724795503025,
+      "cupForward": 0.09034883720930222,
+      "danceHeadClearance": 0.7022236259902118,
+      "danceFreeHandClearance": 0.21094693256716093,
+      "danceSoleHeight": -0.0010348835006188527,
+      "independentDanceHeadClearance": 0.6380296644398982,
+      "independentDanceFreeHandClearance": 0.1690088956229918
+    },
+    "dance": [
+      {
+        "q": "low",
+        "id": "sou",
+        "cycle": 4.6,
+        "bladePath": 4.747182246205496,
+        "peakBladeSpeed": 4.389739042373545,
+        "maxLocalStep": 0.06821735222168039,
+        "maxWorldStep": 0.07108696939707519,
+        "minHeadClearance": 0.7227635227150275,
+        "minFreeHandClearance": 0.2453231266765434,
+        "ranges": {
+          "torsoYaw": 0.6198990352370721,
+          "bodyHeight": 0.03957735557367614,
+          "bodySway": 0.07760937126496192,
+          "LHip": 0.34415560093493175,
+          "LKnee": 0.3977952441105829,
+          "RHip": 0.34954425839881487,
+          "RKnee": 0.39272197374634377
+        },
+        "clockCycleGap": 0
+      },
+      {
+        "q": "low",
+        "id": "haku",
+        "cycle": 4.6,
+        "bladePath": 4.61383443030085,
+        "peakBladeSpeed": 4.2664317659023485,
+        "maxLocalStep": 0.06821735222168039,
+        "maxWorldStep": 0.07108696939708144,
+        "minHeadClearance": 0.7022236259902118,
+        "minFreeHandClearance": 0.21094693256716093,
+        "ranges": {
+          "torsoYaw": 0.6198990352370721,
+          "bodyHeight": 0.03846563210250553,
+          "bodySway": 0.0754293327462832,
+          "LHip": 0.34415560093493247,
+          "LKnee": 0.3977952441105816,
+          "RHip": 0.3495442583988144,
+          "RKnee": 0.39272197374634565
+        },
+        "clockCycleGap": 0
+      },
+      {
+        "q": "high",
+        "id": "sou",
+        "cycle": 4.6,
+        "bladePath": 4.747182246205496,
+        "peakBladeSpeed": 4.389739042373545,
+        "maxLocalStep": 0.06821735222168039,
+        "maxWorldStep": 0.07108696939707519,
+        "minHeadClearance": 0.7227635227150275,
+        "minFreeHandClearance": 0.2453231266765434,
+        "ranges": {
+          "torsoYaw": 0.6198990352370721,
+          "bodyHeight": 0.03957735557367614,
+          "bodySway": 0.07760937126496192,
+          "LHip": 0.34415560093493175,
+          "LKnee": 0.3977952441105829,
+          "RHip": 0.34954425839881487,
+          "RKnee": 0.39272197374634377
+        },
+        "clockCycleGap": 0
+      },
+      {
+        "q": "high",
+        "id": "haku",
+        "cycle": 4.6,
+        "bladePath": 4.61383443030085,
+        "peakBladeSpeed": 4.2664317659023485,
+        "maxLocalStep": 0.06821735222168039,
+        "maxWorldStep": 0.07108696939708144,
+        "minHeadClearance": 0.7022236259902118,
+        "minFreeHandClearance": 0.21094693256716093,
+        "ranges": {
+          "torsoYaw": 0.6198990352370721,
+          "bodyHeight": 0.03846563210250553,
+          "bodySway": 0.0754293327462832,
+          "LHip": 0.34415560093493247,
+          "LKnee": 0.3977952441105816,
+          "RHip": 0.3495442583988144,
+          "RKnee": 0.39272197374634565
+        },
+        "clockCycleGap": 0
+      }
+    ],
+    "guzzling": [
+      {
+        "q": "low",
+        "cycle": 6.4,
+        "lipContactFrames": 418,
+        "guzzleFrames": 179,
+        "peakCupTilt": 1.0580000000000003
+      },
+      {
+        "q": "high",
+        "cycle": 6.4,
+        "lipContactFrames": 418,
+        "guzzleFrames": 179,
+        "peakCupTilt": 1.0580000000000003
+      }
+    ]
+  },
+  "motionSeconds": {
+    "drink": 6.4,
+    "dance": 4.6,
+    "gateApproach": 1.9,
+    "guardFall": 0.65,
+    "tentEntry": 3.6
+  },
+  "gateContact": {
+    "lowShieldTorsoGapM": 0.00233,
+    "highShieldTorsoGapM": 0.00679,
+    "torsoSeparatingGapM": 0.12822
+  },
+  "browser": {
+    "engine": "Actual WebGL in in-app browser",
+    "reviewed": [
+      "stronger guzzle in profile and quarter view",
+      "sword dance and wing-cover at overhead cut phases",
+      "curtain opening, planted strides and tracked entry",
+      "main chapter-five gate approach, shield contact, guard fall and entry"
+    ],
+    "finalFixChecks": [
+      "head/feet projection above the story panel",
+      "weapon visibility, floor contact and scene reuse",
+      "deferred audio cancellation on close/restart"
+    ],
+    "finalCaptureStatus": "Final post-fix capture unavailable after repeated browser CDP timeouts; prior WebGL captures and final numeric/regression checks are recorded separately.",
+    "evidence": "docs/model-preview/dynamic-*.png"
+  },
+  "bundle": {
+    "bytes": 25209845,
+    "inlineScripts": 18,
+    "pngDataUris": 2
+  },
+  "limits": [
+    "Creative staging supplements the text",
+    "No physical cloth simulation or device FPS benchmark",
+    "Final post-fix/public browser screenshot pending browser connection recovery"
+  ]
+}
