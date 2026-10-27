@@ -32,3 +32,68 @@
 .km-chaplink > b, .km-chaplink > p { flex-basis: 100%; margin: 0; }
 .km-chaplink select { margin-left: 6px; padding: 8px; background: #0b2026; color: #f0e7d5; border: 1px solid var(--line); border-radius: 4px; font: 13px var(--gothic); max-width: 100%; }
 .km-home-links button small { margin-left: 4px; padding: 0 6px; border-radius: 99px; background: #973d2e; color: #fff1d4; font-size: 10px; }
+
+/* 導入「鴻門への道」：年表・用語・原文・人物比較・地図の印 */
+.km-timeline { list-style: none; display: flex; margin: 0; padding: 18px 28px 0 110px; gap: 4px; font-family: var(--gothic); }
+.km-timeline li { flex: 1; position: relative; padding-top: 14px; color: #8fa9a2; font-size: 11px; line-height: 1.5; border-top: 2px solid #4d6a66; }
+.km-timeline li::before { content: ''; position: absolute; top: -6px; left: 0; width: 10px; height: 10px; border-radius: 50%; background: #4d6a66; }
+.km-timeline li.past { border-top-color: #a9946a; color: #c8bfa6; }
+.km-timeline li.past::before { background: #a9946a; }
+.km-timeline li.now { border-top-color: #e2c58b; color: #f3e3b8; }
+.km-timeline li.now::before { background: #e2c58b; box-shadow: 0 0 0 5px #e2c58b33; }
+.km-timeline b { display: block; font-weight: 600; font-size: 12px; }
+.km-timeline span { display: block; }
+.km-guanzhong.on { fill: #e2c58b55; stroke: #e2c58baa; }
+.km-region.small { font-size: 18px; }
+.km-map-note { font: 13px var(--gothic); fill: #f2e6c4; }
+.km-spark { fill: #e0835f33; stroke: #ec9a74; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: km-spark 1.8s ease-in-out infinite; }
+@keyframes km-spark { 50% { transform: scale(1.35); opacity: .55; } }
+.km-gate rect { fill: #84493f; stroke: #e5a18a; }
+.km-gate text { text-anchor: middle; fill: #fff2d4; font: 15px var(--mincho); }
+.km-gate path { stroke: #f0b199; stroke-width: 4; stroke-linecap: round; opacity: .85; }
+.km-dusk { fill: #3a1f2a; opacity: .28; pointer-events: none; }
+.km-distance { stroke: #f3e3b8; stroke-width: 2; stroke-dasharray: 2 5; }
+.km-distance-label { font: 15px var(--gothic); fill: #f3e3b8; }
+.km-intro-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 24px 32px 8px; }
+.km-pair-card { background: #0d2328cc; border: 1px solid var(--line); border-top: 3px solid #7cc8be; border-radius: 6px; padding: 16px; font-family: var(--gothic); color: #e8ddc3; }
+.km-pair-card.so { border-top-color: #dc8b76; }
+.km-pair-card .km-portrait { width: 84px; height: 84px; }
+.km-pair-card h3 { font: 20px var(--mincho); margin: 10px 0 6px; color: #f3e6c4; }
+.km-pair-card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12.5px; line-height: 1.6; }
+.km-pair-card dt { color: #a8c2bb; }
+.km-pair-card dd { margin: 0; }
+.km-pair-card button { margin-top: 12px; background: none; border: 1px solid var(--line); color: #e0c896; border-radius: 4px; padding: 6px 12px; font: 12px var(--gothic); cursor: pointer; }
+.km-intro-copy > p + p { margin-top: 0; }
+.km-intro-terms { margin: 4px 0 18px; display: grid; gap: 8px; font-family: var(--gothic); }
+.km-intro-terms div { display: grid; grid-template-columns: 6.5em 1fr; gap: 10px; align-items: baseline; padding: 8px 12px; background: #e9dec7; border-radius: 4px; }
+.km-intro-terms dt { font-weight: 700; color: #7a4a33; font-size: 14px; }
+.km-intro-terms dd { margin: 0; font-size: 14px; line-height: 1.7; color: #33494a; }
+.km-intro-quote { margin: 0 0 18px; padding: 14px 16px; border: 1px solid #c9b48c; border-radius: 6px; background: #fbf6ea; }
+.km-intro-quote figcaption { font: 11px var(--gothic); letter-spacing: .1em; color: #8d6449; margin-bottom: 6px; }
+.km-intro-quote figcaption small { letter-spacing: 0; color: #6c7b74; }
+.km-quote-haku { font: 20px/1.7 var(--mincho); letter-spacing: .12em; color: #1d3336; margin: 0; }
+.km-quote-yomi { font: 15px/1.8 var(--mincho); color: #3d5655; margin: 4px 0 0; }
+.km-quote-yaku { font: 13px/1.8 var(--gothic); color: #546864; margin: 6px 0 0; border-top: 1px dashed #c9b48c; padding-top: 6px; }
+.km-intro-watch { margin: 0 0 18px; font-family: var(--gothic); }
+.km-intro-watch small { display: block; font-size: 11px; letter-spacing: .13em; color: #8d6449; margin-bottom: 6px; }
+.km-intro-watch ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.km-intro-watch li { padding: 8px 12px; background: #e9dec7; border-radius: 4px; font-size: 14px; line-height: 1.7; color: #33494a; }
+.km-intro-watch b { color: #7a4a33; margin-right: 10px; }
+.km-intro-watch span { float: right; font-size: 11px; color: #8d6449; }
+.km-projection .km-intro-terms dd, .km-projection .km-intro-watch li { font-size: 17px; }
+.km-projection .km-quote-haku { font-size: 26px; }
+@media (max-width:900px) {
+  .km-timeline { padding: 16px 16px 0; }
+  .km-intro-pair { padding: 18px 16px 4px; gap: 10px; }
+}
+@media (max-width:580px) {
+  .km-timeline span { display: none; }
+  .km-intro-pair { grid-template-columns: 1fr; }
+  .km-pair-card { display: grid; grid-template-columns: 64px 1fr; gap: 0 12px; }
+  .km-pair-card .km-portrait { width: 64px; height: 64px; grid-row: span 2; }
+  .km-pair-card dl, .km-pair-card button { grid-column: 1 / -1; }
+  .km-intro-terms div { grid-template-columns: 1fr; gap: 2px; }
+}
+.km-intro-visual .km-visual-no { top: auto; bottom: 18px; left: auto; right: 28px; }
+.km-intro-copy h2 { word-break: auto-phrase; }
+.km-gate-break { font: 16px var(--mincho); fill: #f0b199; }

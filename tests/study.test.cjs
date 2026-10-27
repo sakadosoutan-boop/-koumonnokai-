@@ -129,3 +129,32 @@ test('tapping the original-text panel advances, and checkpoints no longer copy t
   h.doc.querySelector('.km-yaku').click();await h.flush();assert.equal(h.app._mode(),'ask');
   assert.ok(h.app._state().rewinds.every(p=>p.snap.log.length===0));h.close();
 });
+
+test('answer order varies across questions instead of always placing the correct answer last',async()=>{
+  const h=await setup('c0-1',{classroom:true}),nodes=Object.values(h.app._nodes()).map(x=>x.n);
+  const position=(id)=>{h.app._go(id);return [...h.doc.querySelectorAll('.km-opts .km-opt')].findIndex(b=>h.node(id).o[+b.dataset.i].ok);};
+  const reads=nodes.filter(n=>n.t==='ask'&&n.k==='read').map(n=>position(n.id));
+  for(const p of [0,1,2,3])assert.ok(reads.filter(x=>x===p).length>=3,'correct answer appears in slot '+(p+1)+': '+reads.join(''));
+  const judges=nodes.filter(n=>n.t==='ask'&&n.k==='judge'&&n.o.filter(o=>o.ok).length===1).map(n=>position(n.id));
+  assert.ok(judges.some(p=>p!==0),'historical choice is not always first');
+  assert.equal(position('c0-11'),position('c0-11'),'order is stable for the same question');h.close();
+});
+test('intro "鴻門への道" covers the road before the prologue and hands off to 霸上の夕べ',async()=>{
+  const h=await setup('c0-1',{start:false,classroom:true});
+  assert.match(h.doc.querySelector('[data-km="intro"]').textContent,/鴻門への道/);assert.doesNotMatch(h.doc.body.textContent,/鴻門前夜/);
+  await h.click('[data-km="intro"]');const tags=[...h.doc.querySelectorAll('[data-intro="step"]')].map(b=>b.textContent);
+  assert.deepEqual(tags,['乱世','挙兵','約束','二つの道','先着','函谷関','霸上の夕べへ']);
+  for(let i=0;i<7;i++){
+    await h.click('[data-intro="step"][data-step="'+i+'"]');
+    assert.ok(h.doc.querySelector('.km-timeline [aria-current="true"]'),'timeline marks scene '+i);
+    assert.ok(h.doc.querySelector('.km-intro-quote .km-quote-haku'),'original text in scene '+i);
+    assert.ok(h.doc.querySelector('.km-intro-terms, .km-intro-watch'),'terms or watch list in scene '+i);
+  }
+  await h.click('[data-intro="step"][data-step="4"]');
+  await h.click('[data-intro="quiz"][data-question="take"][data-answer="burn"]');assert.match(h.doc.querySelector('.km-quiz-answer').textContent,/もう一度/);
+  await h.click('[data-intro="quiz"][data-question="take"][data-answer="seal"]');assert.match(h.doc.querySelector('.km-quiz-answer').textContent,/財物取る所無く/);
+  await h.click('[data-intro="step"][data-step="1"]');assert.equal(h.doc.querySelectorAll('.km-pair-card').length,2);
+  await h.click('.km-pair-card [data-person="u"]');assert.match(h.doc.querySelector('#km-intro-person').textContent,/項羽/);
+  await h.click('[data-intro="step"][data-step="6"]');assert.match(h.doc.querySelector('[data-intro="done"]').textContent,/霸上の夕べ/);
+  await h.click('[data-intro="done"]');assert.equal(h.app._state().ch,'c0');assert.deepEqual(h.errors,[]);h.close();
+});

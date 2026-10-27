@@ -703,7 +703,7 @@
     ST.hideBubble();
     if (n.at) ST.focus(n.at); else if (n.w && n.w !== 'you') ST.focus(n.w);
     var opts = n.o.map(function (o, i) { return { o: o, i: i }; });
-    if (n.k === 'read') opts = shuffle(opts, n.id);
+    opts = shuffle(opts, n.id);
     n._order = opts.map(function (x) { return x.i; });
     var canHint = n.k === 'read' && n.hint;
     el.panel.innerHTML =
@@ -721,10 +721,18 @@
     if (n.timer && !reduced() && !meta.classroom && !restoring) startTimer(n);
   }
   function hintWho() { return st.ch === 'c8' ? '虞' : st.ch === 'c9' ? '蕭何' : '子房（張良）'; }
+  /** 問いごとに決まった順で並べ替える。台本では正解（史記の選択）を先頭に書くため、必ず通す。
+   *  乗算は Math.imul で32ビットに収める（普通の掛け算は 2^53 を超えて下位の桁が失われ、並びが固定される）。 */
   function shuffle(arr, seedStr) {
-    var a = arr.slice(), seed = 0;
-    String(seedStr + (st ? st.q : 0)).split('').forEach(function (c) { seed = (seed * 31 + c.charCodeAt(0)) >>> 0; });
-    for (var i = a.length - 1; i > 0; i--) { seed = (seed * 1103515245 + 12345) >>> 0; var j = seed % (i + 1); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    var a = arr.slice(), seed = 2166136261;
+    String(seedStr + (st ? st.q : 0)).split('').forEach(function (c) { seed = Math.imul(seed ^ c.charCodeAt(0), 16777619) >>> 0; });
+    function next() {
+      seed = (seed + 0x6D2B79F5) >>> 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(next() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
     return a;
   }
   function startTimer(n) {
@@ -1057,7 +1065,7 @@
     modal('<h3>' + esc(G.title) + '</h3><p class="km-m-lead">' + esc(G.lead) + '</p>' + routeMap() +
       (msg ? '<div class="km-m-msg">' + msg + '</div>' : '') +
       (s ? '<div class="km-route-q"><b>' + (routeS.step + 1) + '／' + G.steps.length + '　' + esc(s.q) + '</b></div><div class="km-opts">' +
-        s.o.map(function (o, i) { return '<button class="km-opt" data-km="routepick" data-i="' + i + '"><span class="km-opt-n">' + '一二'.charAt(i) + '</span><span>' + esc(o.x) + '</span></button>'; }).join('') + '</div>'
+        shuffle(s.o.map(function (o, i) { return i; }), 'route' + routeS.step).map(function (i, k) { var o = s.o[i]; return '<button class="km-opt" data-km="routepick" data-i="' + i + '"><span class="km-opt-n">' + '一二'.charAt(k) + '</span><span>' + esc(o.x) + '</span></button>'; }).join('') + '</div>'
         : '<div class="km-nav"><span></span><button class="km-btn gold" data-km="routedone">駆ける ▶</button></div>'), 'km-m-route');
   }
   function routePick(i) {
@@ -1166,7 +1174,7 @@
     });
     html += '</div>';
     if (meta.classroom) html += '<div class="km-chaplink"><b>授業で場面を指定する</b><p class="km-m-small">ページのURLの末尾に「#c3」のように付けて開くと、その場面から始まります。生徒と同じ場所（学校のWebページや共有フォルダ）に置いたファイルで使ってください。</p>' +
-      '<label>はじめる場面 <select data-chaplink>' + [['intro', '鴻門前夜（七場面の導入）']].concat(K.chapters.map(function (c) { return [c.id, c.no + '　' + c.title]; }), [['ai', '范増として考える（AI活動）'], ['review', '読み直し帳']]).map(function (o) {
+      '<label>はじめる場面 <select data-chaplink>' + [['intro', '鴻門への道（導入）']].concat(K.chapters.map(function (c) { return [c.id, c.no + '　' + c.title]; }), [['ai', '范増として考える（AI活動）'], ['review', '読み直し帳']]).map(function (o) {
         return '<option value="' + o[0] + '">' + esc(o[1]) + '　#' + o[0] + '</option>';
       }).join('') + '</select></label><button class="km-btn" data-km="copychaplink">リンクをコピー</button><span class="km-m-small" role="status" id="km-chaplink-status"></span></div>';
     html += '<div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
