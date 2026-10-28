@@ -109,7 +109,8 @@
   function homeHTML(meta, is3D) {
     return '<div class="km-home"><div class="km-home-art" aria-hidden="true"></div><div class="km-home-shade"></div><div class="km-home-content">' +
       '<div class="km-eyebrow"><span class="km-stamp">史記</span> INTERACTIVE CLASSICS</div><p class="km-home-kicker">一席の宴が、天下を分ける。</p><h1>鴻門の会</h1><p class="km-home-description">その言葉を、どう読むか。<br>その場にいたら、どう動くか。</p>' +
-      '<div class="km-home-actions"><button class="km-btn gold" data-km="intro"><span>01</span> 鴻門への道 <small>宴の前の流れを七つの場面で</small><b>→</b></button>' +
+      '<div class="km-home-actions"><button class="km-btn km-home-tutorial" data-km="tutorial"><span>00</span> チュートリアル：霸上の夜 <small>操作と読み方を体験（教科書の前段・約15分）</small><b>→</b></button>' +
+      '<button class="km-btn gold" data-km="intro"><span>01</span> 鴻門への道 <small>宴の前の流れを七つの場面で</small><b>→</b></button>' +
       '<button class="km-btn" data-km="' + (meta.save?'continue':'new') + '"><span>02</span> ' + (meta.save?'物語の続きから':'物語をはじめる') + '<small>原文と決断で宴を体験</small><b>→</b></button>' +
       '<button class="km-btn" data-km="ai"><span>03</span> 范増として考える <small>原文をもとにAIと話す</small><b>→</b></button></div>' +
       '<div class="km-home-links"><button data-km="menu">章を選ぶ</button><button data-km="book">原文帳</button><button data-km="characters">人物相関</button><button data-km="reflection">振り返り</button><button data-km="endings">結末帳</button>' +
@@ -221,6 +222,7 @@
       dramaTextHTML(c,p)+
       '<div class="km-drama-nav"><button data-intro="cutprev"'+(cut===0?' disabled':'')+'>◀ 前のコマ</button><span class="km-drama-count">'+(cut+1)+' / '+s.drama.length+'</span>'+
       (last?'<button class="km-btn km-drama-notes" data-intro="view" data-view="notes">解説を読む</button>':'')+
+      (last&&index===scenes.length-1&&callbacks.tutorial?'<button class="km-btn km-drama-notes" data-intro="tutorial">前段を遊んでみる</button>':'')+
       '<button class="km-btn gold" data-intro="cutnext">'+(!last?'次へ ▶':index<scenes.length-1?'次の場面へ →':'本編「鴻門に謝す」へ →')+'</button></div></div></div>';
   }
   function quizHTML(s){
@@ -249,6 +251,7 @@
         var a=b.dataset.intro;
         if(a==='close-person'){document.getElementById('km-intro-person').innerHTML='';panel.querySelector('[data-person]').focus();return;}
         if(a==='exit'){hide();callbacks.exit();return;}if(a==='done'){hide();callbacks.done();return;}
+        if(a==='tutorial'&&callbacks.tutorial){hide();callbacks.tutorial();return;}
         if(a==='auto')auto=!auto;
         else auto=false;
         if(a==='next'||a==='prev'||a==='step'){goScene(a==='step'?Number(b.dataset.step):index+(a==='next'?1:-1));focusMain();return;}
