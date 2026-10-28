@@ -93,7 +93,7 @@ async function stage3d(browser) {
   await p.evaluate(() => window.Koumon._go('c9'));
   await p.waitForFunction(() => window.KoumonStage3D.S.stageId === 'nangong' && !window.KoumonStage3D.S.building && window.KoumonStage3D.S.cast.ko, null, { timeout: 120000 });
   const ko = await p.evaluate(() => window.KoumonStage3D.S.cast.ko.position.y);
-  assert.ok(ko > 0.5, '3D: 高祖が御座の段の上にいる（y=' + ko + '）');
+  assert.ok(ko > 0.75, '3D: 高祖が御座の榻（天面0.76）の上に座っている（y=' + ko + '）');
   assert.deepEqual(errors, [], '3D: ページのエラー');
   await p.close();
   console.log('ok 3D stage');
