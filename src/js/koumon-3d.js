@@ -716,7 +716,8 @@
 
   function frameAbovePanel() {
     if (!S.camera || !S.cv) return;
-    var panel = S.cv.parentNode.querySelector('.km-panel');
+    // 導入の紙芝居では字幕の札を、本編では本文のパネルを避ける
+    var panel = S.cv.parentNode.querySelector('.km-intro-drama .km-drama-card') || S.cv.parentNode.querySelector('.km-panel');
     var r = S.cv.getBoundingClientRect(), p = panel && panel.getBoundingClientRect();
     // 注視点を、本文より上に残る領域の中央へ置く。DOM計測はサイズ変更時のみ。
     var visible = p && p.height && p.top > r.top ? Math.min(r.height, p.top - r.top) : r.height;

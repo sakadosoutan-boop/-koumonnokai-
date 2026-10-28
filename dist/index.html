@@ -757,6 +757,144 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
 
 </style>
+<style>
+/* 学習・授業運営の画面部品（読み直し・史記との比較・学習記録・場面リンク）。色や質感は classroom.css に合わせる。 */
+
+/* 長いパネルでも「次へ」を常に見える位置に残す */
+.km-panel .km-nav-sticky { position: sticky; bottom: -19px; z-index: 2; margin: 10px -30px -19px; padding: 12px 30px 19px; background: #0c1e22f2; border-top: 1px solid var(--line); }
+@media (max-width:900px) { .km-panel .km-nav-sticky { bottom: -20px; margin: 10px -20px -20px; padding: 12px 20px 20px; } }
+@media (max-width:580px) { .km-panel .km-nav-sticky { bottom: -16px; margin: 10px -16px -16px; padding: 10px 16px 16px; } }
+@media (hover:none) { .km-key-hint { display: none; } }
+
+/* 授業モードの読み直し */
+.km-fb-retry { margin: 10px 0 0; border-color: #d9b46a; background: #3b3220cc; color: #f3e6c4; }
+.km-fb-retry .km-fb-h { font-weight: 700; margin-bottom: 4px; }
+
+/* あなたの道と史記の道 */
+.km-end-picks summary small { margin-left: 12px; font: 12px var(--gothic); color: #bdd3cc; }
+.km-route-h { font: 12px var(--gothic); color: #d8c397; margin: 14px 0 4px; }
+.km-route-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+.km-route-list li { border: 1px solid var(--line); border-left: 3px solid #82998e; border-radius: 5px; padding: 10px 12px; font: 13px/1.7 var(--gothic); color: #e7dcc2; }
+.km-route-list li.differ { border-left-color: #e59a87; }
+.km-route-list li.same { border-left-color: #98d9bd; }
+.km-route-list li.interp { border-left-color: #d9b46a; }
+.km-route-list li > span { display: block; color: #acc6c4; font-size: 12px; }
+.km-route-list b { display: inline-block; min-width: 3.5em; color: #d8c397; font-weight: 600; }
+.km-route-mark { color: #98d9bd; font-size: 12px; }
+
+/* 読み直し帳・学習記録・場面リンク */
+.km-m-review h3 small { font: 13px var(--gothic); color: #bdd3cc; margin-left: 8px; }
+.km-m-review .km-opts { margin-bottom: 12px; }
+.km-review-hint { margin: 10px 0; font: 14px/1.8 var(--gothic); color: #e7dcc2; }
+.km-review-hint summary { cursor: pointer; color: #d8c397; }
+.km-record { width: 100%; box-sizing: border-box; padding: 14px; background: #0b2026; color: #ced9ca; border: 1px solid var(--line); border-radius: 5px; font: 13px/1.7 var(--gothic); resize: vertical; }
+.km-chaplink { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 5px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-family: var(--gothic); color: #e7dcc2; }
+.km-chaplink > b, .km-chaplink > p { flex-basis: 100%; margin: 0; }
+.km-chaplink select { margin-left: 6px; padding: 8px; background: #0b2026; color: #f0e7d5; border: 1px solid var(--line); border-radius: 4px; font: 13px var(--gothic); max-width: 100%; }
+.km-home-links button small { margin-left: 4px; padding: 0 6px; border-radius: 99px; background: #973d2e; color: #fff1d4; font-size: 10px; }
+
+/* 導入「鴻門への道」：年表・用語・原文・人物比較・地図の印 */
+.km-timeline { list-style: none; display: flex; margin: 0; padding: 18px 28px 0 110px; gap: 4px; font-family: var(--gothic); }
+.km-timeline li { flex: 1; position: relative; padding-top: 14px; color: #8fa9a2; font-size: 11px; line-height: 1.5; border-top: 2px solid #4d6a66; }
+.km-timeline li::before { content: ''; position: absolute; top: -6px; left: 0; width: 10px; height: 10px; border-radius: 50%; background: #4d6a66; }
+.km-timeline li.past { border-top-color: #a9946a; color: #c8bfa6; }
+.km-timeline li.past::before { background: #a9946a; }
+.km-timeline li.now { border-top-color: #e2c58b; color: #f3e3b8; }
+.km-timeline li.now::before { background: #e2c58b; box-shadow: 0 0 0 5px #e2c58b33; }
+.km-timeline b { display: block; font-weight: 600; font-size: 12px; }
+.km-timeline span { display: block; }
+.km-guanzhong.on { fill: #e2c58b55; stroke: #e2c58baa; }
+.km-region.small { font-size: 18px; }
+.km-map-note { font: 13px var(--gothic); fill: #f2e6c4; }
+.km-spark { fill: #e0835f33; stroke: #ec9a74; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: km-spark 1.8s ease-in-out infinite; }
+@keyframes km-spark { 50% { transform: scale(1.35); opacity: .55; } }
+.km-gate rect { fill: #84493f; stroke: #e5a18a; }
+.km-gate text { text-anchor: middle; fill: #fff2d4; font: 15px var(--mincho); }
+.km-gate path { stroke: #f0b199; stroke-width: 4; stroke-linecap: round; opacity: .85; }
+.km-dusk { fill: #3a1f2a; opacity: .28; pointer-events: none; }
+.km-distance { stroke: #f3e3b8; stroke-width: 2; stroke-dasharray: 2 5; }
+.km-distance-label { font: 15px var(--gothic); fill: #f3e3b8; }
+.km-intro-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 24px 32px 8px; }
+.km-pair-card { background: #0d2328cc; border: 1px solid var(--line); border-top: 3px solid #7cc8be; border-radius: 6px; padding: 16px; font-family: var(--gothic); color: #e8ddc3; }
+.km-pair-card.so { border-top-color: #dc8b76; }
+.km-pair-card .km-portrait { width: 84px; height: 84px; }
+.km-pair-card h3 { font: 20px var(--mincho); margin: 10px 0 6px; color: #f3e6c4; }
+.km-pair-card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12.5px; line-height: 1.6; }
+.km-pair-card dt { color: #a8c2bb; }
+.km-pair-card dd { margin: 0; }
+.km-pair-card button { margin-top: 12px; background: none; border: 1px solid var(--line); color: #e0c896; border-radius: 4px; padding: 6px 12px; font: 12px var(--gothic); cursor: pointer; }
+.km-intro-copy > p + p { margin-top: 0; }
+.km-intro-terms { margin: 4px 0 18px; display: grid; gap: 8px; font-family: var(--gothic); }
+.km-intro-terms div { display: grid; grid-template-columns: 6.5em 1fr; gap: 10px; align-items: baseline; padding: 8px 12px; background: #e9dec7; border-radius: 4px; }
+.km-intro-terms dt { font-weight: 700; color: #7a4a33; font-size: 14px; }
+.km-intro-terms dd { margin: 0; font-size: 14px; line-height: 1.7; color: #33494a; }
+.km-intro-quote { margin: 0 0 18px; padding: 14px 16px; border: 1px solid #c9b48c; border-radius: 6px; background: #fbf6ea; }
+.km-intro-quote figcaption { font: 11px var(--gothic); letter-spacing: .1em; color: #8d6449; margin-bottom: 6px; }
+.km-intro-quote figcaption small { letter-spacing: 0; color: #6c7b74; }
+.km-quote-haku { font: 20px/1.7 var(--mincho); letter-spacing: .12em; color: #1d3336; margin: 0; }
+.km-quote-yomi { font: 15px/1.8 var(--mincho); color: #3d5655; margin: 4px 0 0; }
+.km-quote-yaku { font: 13px/1.8 var(--gothic); color: #546864; margin: 6px 0 0; border-top: 1px dashed #c9b48c; padding-top: 6px; }
+.km-intro-watch { margin: 0 0 18px; font-family: var(--gothic); }
+.km-intro-watch small { display: block; font-size: 11px; letter-spacing: .13em; color: #8d6449; margin-bottom: 6px; }
+.km-intro-watch ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.km-intro-watch li { padding: 8px 12px; background: #e9dec7; border-radius: 4px; font-size: 14px; line-height: 1.7; color: #33494a; }
+.km-intro-watch b { color: #7a4a33; margin-right: 10px; }
+.km-intro-watch span { float: right; font-size: 11px; color: #8d6449; }
+.km-projection .km-intro-terms dd, .km-projection .km-intro-watch li { font-size: 17px; }
+.km-projection .km-quote-haku { font-size: 26px; }
+@media (max-width:900px) {
+  .km-timeline { padding: 16px 16px 0; }
+  .km-intro-pair { padding: 18px 16px 4px; gap: 10px; }
+}
+@media (max-width:580px) {
+  .km-timeline span { display: none; }
+  .km-intro-pair { grid-template-columns: 1fr; }
+  .km-pair-card { display: grid; grid-template-columns: 64px 1fr; gap: 0 12px; }
+  .km-pair-card .km-portrait { width: 64px; height: 64px; grid-row: span 2; }
+  .km-pair-card dl, .km-pair-card button { grid-column: 1 / -1; }
+  .km-intro-terms div { grid-template-columns: 1fr; gap: 2px; }
+}
+.km-intro-visual .km-visual-no { top: auto; bottom: 18px; left: auto; right: 28px; }
+.km-intro-copy h2 { word-break: auto-phrase; }
+.km-gate-break { font: 16px var(--mincho); fill: #f0b199; }
+
+/* 導入の紙芝居：本編の舞台（3D・影絵）を背景に見せ、字幕の札を重ねる */
+.km.km-intro-staging .km-cv, .km.km-intro-staging .km-ov { visibility: visible; }
+.km-intro.km-intro-drama { background: transparent; }
+.km-intro.km-intro-drama > .km-intro-head, .km-intro.km-intro-drama > .km-intro-nav { background: #10272de0; backdrop-filter: blur(8px); }
+.km-intro-layout[hidden] { display: none; }
+.km-drama { flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: center; padding: 18px 24px; cursor: pointer; }
+.km-drama-card { width: min(900px, 100%); box-sizing: border-box; cursor: auto; background: linear-gradient(120deg, rgba(10,29,34,.95), rgba(17,29,31,.93)); border: 1px solid #bb9d675c; border-top: 2px solid #bda169; border-radius: 8px; padding: 18px 26px 16px; box-shadow: 0 18px 60px #0008; color: #f2e9d5; }
+.km-drama-card .km-speaker { margin-bottom: 8px; }
+.km-drama-text { font: 21px/1.85 var(--mincho); letter-spacing: .03em; margin: 4px 0 14px; }
+.km-drama-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.km-drama-nav > button:first-child { background: none; border: 0; color: #d6d6c5; font: 13px var(--gothic); cursor: pointer; padding: 8px 0; }
+.km-drama-nav > button:disabled { opacity: .35; cursor: default; }
+.km-drama-count { font: 12px var(--gothic); color: #a9c0b7; }
+.km-intro-views { display: flex; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.km-intro-views button { background: none; border: 0; color: #d6d6c5; padding: 6px 16px; font: 12px var(--gothic); cursor: pointer; }
+.km-intro-views button[aria-pressed="true"] { background: #e2c58b; color: #1b120a; }
+.km-projection .km-drama-text { font-size: 28px; }
+@media (max-width:580px) {
+  .km-drama { padding: 10px 12px; }
+  .km-drama-card { padding: 14px 16px 12px; }
+  .km-drama-text { font-size: 17px; }
+  .km-intro-views button { padding: 6px 10px; }
+}
+.km-intro-drama .km-intro-playback { display: none; }
+.km-intro-drama .km-intro-nav { padding-top: 12px; padding-bottom: 12px; }
+.km-intro-drama .km-intro-head { padding-top: 14px; padding-bottom: 14px; }
+.km-drama { padding-bottom: 12px; }
+.km-drama-card { width: min(820px, 100%); padding: 14px 22px 12px; }
+.km-drama-text { font-size: 19px; margin: 2px 0 10px; }
+.km-drama-card .km-speaker-portrait .km-portrait { width: 56px; height: 56px; }
+/* 場面の図の切り替え（以前の導入の図も残す） */
+.km-fig-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 14px 20px 0; }
+.km-fig-tabs button { background: none; border: 1px solid var(--line); color: #d6d6c5; border-radius: 99px; padding: 5px 14px; font: 12px var(--gothic); cursor: pointer; }
+.km-fig-tabs button[aria-pressed="true"] { background: #e2c58b; border-color: #e2c58b; color: #1b120a; }
+.km-fig-note { margin: 0 auto 12px; max-width: 560px; padding: 0 20px; font: 13px/1.8 var(--gothic); color: #d8e2da; text-align: center; }
+
+</style>
 </head>
 <body class="soukan">
 <noscript><p class="soukan-noscript">このページを遊ぶには JavaScript を有効にしてください。</p></noscript>
@@ -1918,11 +2056,17 @@ window.KUHO = [
       { w: 'ryo', x: '四十万。', b: 'hush', at: 'ryo' },
       { x: 'こちらは十万。夕暮れの風が、急に冷たくなった気がした。', at: 'wide' },
 
-      { t: 'scene', stage: 'koumon', light: 'night', cast: ['u', 'zo', 'msg'], fade: 'black', caption: 'そのころ、鴻門の楚の陣では――' },
-      { x: '見渡すかぎりの篝火が、地上の星のように揺れている。四十万の兵の、四十万の息づかい。', at: 'wide' },
-      { w: 'msg', x: '左司馬曹無傷より、項将軍へ申し上げます。', at: 'msg' },
-      { t: 'gen', g: 'g01' },
-      { t: 'ask', k: 'read', w: 'msg', q: '使者が伝えた沛公の「野心」とは何か。', stem: '沛公欲^レ王^二関中^一',
+      { id: 'c0-mind', t: 'ask', k: 'judge', w: 'you', q: '兵は四倍。あなたの胸に、まず浮かんだのは？（どれを選んでも物語は同じところへ流れていく）',
+        o: [
+          { x: '函谷関を閉ざしたのは、まずかったか', ok: true, r: '張良は黙ってうなずいた。関を閉ざしたわけを、いずれ問われることになる。', rw: 'ryo' },
+          { x: '項羽とは共に秦を討った仲だ。話せば分かるはずだ', ok: true, r: '「あの方に、話を聞く気があればよいのですが。」張良の声は低かった。', rw: 'ryo' },
+          { x: '十万で四十万に当たる策はないか', ok: true, r: '張良は答えなかった。答えないことが、答えだった。', rw: 'ryo' }
+        ] },
+      { id: 'c0-7', t: 'scene', stage: 'koumon', light: 'night', cast: ['u', 'zo', 'msg'], fade: 'black', caption: 'そのころ、鴻門の楚の陣では――' },
+      { id: 'c0-8', x: '見渡すかぎりの篝火が、地上の星のように揺れている。四十万の兵の、四十万の息づかい。', at: 'wide' },
+      { id: 'c0-9', w: 'msg', x: '左司馬曹無傷より、項将軍へ申し上げます。', at: 'msg' },
+      { id: 'c0-10', t: 'gen', g: 'g01' },
+      { id: 'c0-11', t: 'ask', k: 'read', w: 'msg', q: '使者が伝えた沛公の「野心」とは何か。', stem: '沛公欲^レ王^二関中^一',
         o: [
           { x: '関中に王たらんと欲す――関中の王になろうとしている', ok: true },
           { x: '王の関中を欲す――王の領地である関中を欲しがっている' },
@@ -1931,9 +2075,9 @@ window.KUHO = [
         ],
         hint: '「王」のすぐ後に場所の「関中」が来ています。名詞の「王」が、ここでは動詞として働いていないでしょうか。',
         exp: '「王」の直後に場所（関中）が来るとき、「王」は「王たり（王となる）」と動詞に読みます。本文には曹無傷がこう報告したとあります。報告された内容すべてが真実だと、ここだけで確定できるわけではありません。', kuho: 'gn03' },
-      { w: 'u', x: '旦日士卒を饗し、為に沛公の軍を撃破せん！', b: 'anger', at: 'u', sfx: 'drum', fx: 'shake' },
-      { t: 'gen', g: 'g02' },
-      { t: 'ask', k: 'read', w: 'zo', q: '范増が沛公を恐れた理由として、本文に合うものはどれか。', stem: '今入^レ関、財物無^レ所^レ取、婦女無^レ所^レ幸',
+      { id: 'c0-12', w: 'u', x: '旦日士卒を饗し、為に沛公の軍を撃破せん！', b: 'anger', at: 'u', sfx: 'drum', fx: 'shake' },
+      { id: 'c0-13', t: 'gen', g: 'g02' },
+      { id: 'c0-14', t: 'ask', k: 'read', w: 'zo', q: '范増が沛公を恐れた理由として、本文に合うものはどれか。', stem: '今入^レ関、財物無^レ所^レ取、婦女無^レ所^レ幸',
         o: [
           { x: '関中では財物を取らず女性を寵愛しないことを、志が大きい表れだと范増が考えたから', ok: true },
           { x: '関中に入ってから、財物も女性もすべて取り尽くしてしまったから' },
@@ -1942,7 +2086,7 @@ window.KUHO = [
         ],
         hint: '「無所A」は「Aする所無し」。山東にいたころの沛公と、今の沛公を比べています。',
         exp: '「無所取」「無所幸」は「取る所無く」「幸する所無し」――取らない、寵愛しない。范増はこの振る舞いから、沛公の志は小さくないと主張しています。これは范増の推論であり、沛公の心理を地の文が断定した箇所ではありません。', kuho: 'hi03' },
-      { t: 'ask', k: 'read', w: 'zo', q: '范増は項羽に何を求めたか。', stem: '急撃勿^レ失',
+      { id: 'c0-15', t: 'ask', k: 'read', w: 'zo', q: '范増は項羽に何を求めたか。', stem: '急撃勿^レ失',
         o: [
           { x: '急いで撃ち、この機会を逃してはならない', ok: true },
           { x: '急いで撃っても、兵を失ってはならない' },
@@ -1951,8 +2095,8 @@ window.KUHO = [
         ],
         hint: '「勿」は「なかれ」。打消ではなく禁止です。何を「失ふ」なと言っているのでしょう。',
         exp: '「勿かれ」は禁止。「失ふこと勿かれ」で「（機会を）逃すな」。范増は人に沛公の気を望ませたと語り、これを「天子の気」と解釈して項羽に進言しています。', kuho: 'kn01' },
-      { w: 'zo', x: '此れ天子の気なり。――項将軍、明朝を待たれますな。', at: 'zo' },
-      { x: '（創作）老人は、霸上の方角へ顔を向けた。', at: 'wide' }
+      { id: 'c0-16', w: 'zo', x: '此れ天子の気なり。――項将軍、明朝を待たれますな。', at: 'zo' },
+      { id: 'c0-17', x: '（創作）老人は、霸上の方角へ顔を向けた。', at: 'wide' }
     ],
 
     /* ---------------- 第一幕 ---------------- */
@@ -2443,8 +2587,13 @@ window.KUHO = [
       { t: 'scene', stage: 'ukou', light: 'dawn', cast: ['u', 'tei'], fade: 'black', caption: '烏江のほとり', sfx: 'drum' },
       { x: '長江の渡し場、烏江。朝靄の向こうに、江東――項王の故郷がある。', at: 'wide' },
       { w: 'tei', x: '江東小なりと雖も、地は方千里、衆は数十万人、亦王たるに足るなり。願はくは大王急ぎ渡れ。今独り臣のみ船有り。', at: 'tei' },
-      { t: 'gen', g: 'g22' },
-      { t: 'ask', k: 'read', w: 'u', q: '項王の答え「我何渡為」の意味は。', stem: '天之亡^レ我、我何渡為',
+      { id: 'c8-ukou', t: 'ask', k: 'judge', w: 'you', q: '亭長は船を岸に寄せている。項王として、どう答える？', cp: true,
+        o: [
+          { x: '天が私を滅ぼすのだ。渡りはしない', ok: true },
+          { x: '船に乗り、江東で兵を挙げ直す', go: 'c8-cross' }
+        ] },
+      { id: 'c8-22', t: 'gen', g: 'g22' },
+      { id: 'c8-23', t: 'ask', k: 'read', w: 'u', q: '項王の答え「我何渡為」の意味は。', stem: '天之亡^レ我、我何渡為',
         o: [
           { x: '天が私を滅ぼそうとしているのに、私はどうして渡ろうか（いや、渡らない）', ok: true },
           { x: '天が私を滅ぼしたので、私はどこへ渡ればよいのか' },
@@ -2453,7 +2602,7 @@ window.KUHO = [
         ],
         hint: '鴻門で樊噲が言った「何辞為」と同じ形です。',
         exp: '「何ぞ〜を為さんや」は反語。「我何ぞ渡るを為さんや」＝どうして渡ろうか、いや渡らない。鴻門で沛公を逃がした「何ぞ辞するを為さんや」と同じ形が、項王の最期でもう一度使われています。', kuho: 'hg02' },
-      { t: 'ask', k: 'read', w: 'u', q: '「縦江東父兄憐而王我、我何面目見之」の意味は。', stem: '縦江東父兄憐而王^レ我、我何面目見^レ之',
+      { id: 'c8-24', t: 'ask', k: 'read', w: 'u', q: '「縦江東父兄憐而王我、我何面目見之」の意味は。', stem: '縦江東父兄憐而王^レ我、我何面目見^レ之',
         o: [
           { x: 'たとえ江東の父兄が同情して私を王にしてくれても、私はどんな顔をして彼らに会えようか', ok: true },
           { x: '江東の父兄が私を王にしてくれたから、私は堂々と彼らに会える' },
@@ -2462,7 +2611,7 @@ window.KUHO = [
         ],
         hint: '「縦ひ〜とも」は仮定の形。後半の「何の面目ありてか」は、問いの形で強く打ち消しています。',
         exp: '「縦ひAとも」は「たとえAしても」（仮定）。「我何の面目ありてか之を見ん」は反語で「どんな顔をして会えようか、いや会えない」。八千人の若者を一人も連れ帰れなかった将の恥です。', kuho: 'kt03' },
-      { t: 'ask', k: 'read', w: 'u', q: '「籍独不愧於心乎」の意味は。', stem: '籍独不^レ愧^二於心^一乎',
+      { id: 'c8-25', t: 'ask', k: 'read', w: 'u', q: '「籍独不愧於心乎」の意味は。', stem: '籍独不^レ愧^二於心^一乎',
         o: [
           { x: '私はどうして心に恥じないでいられようか（いや、恥じる）', ok: true },
           { x: '私だけは心に恥じることがない' },
@@ -2471,18 +2620,18 @@ window.KUHO = [
         ],
         hint: '「独り〜んや」は「豈に〜んや」と同じ働きをします。',
         exp: '「独り〜んや」は反語。「籍独り心に愧ぢざらんや」＝私はどうして心に恥じずにいられようか、いや恥じる。人が責めなくても、自分自身が許さない――項王の誇りです。', kuho: 'hg05' },
-      { t: 'ask', k: 'judge', w: 'you', q: '本文は「項王笑ひて曰はく」と書く。この笑いを、あなたはどう読む？（どれも本文から説明できる読み。授業で話し合ってみよう）',
+      { id: 'c8-26', t: 'ask', k: 'judge', w: 'you', q: '本文は「項王笑ひて曰はく」と書く。この笑いを、あなたはどう読む？（どれも本文から説明できる読み。授業で話し合ってみよう）',
         o: [
           { x: '亭長の申し出に感謝し、その心意気を喜んだ笑い', ok: true, set: { warai: 1 }, r: '亭長は、敗れた王に最後まで礼を尽くした。項王は、その真心を受けとめたのかもしれない。' },
           { x: '人の好意にすがらなければ生きられない自分を嘲る笑い', ok: true, set: { warai: 2 }, r: '「笑」は史記ではあざけりの笑いに多く使われる、という指摘もある。笑ったのは、自分自身だったのかもしれない。' },
           { x: '滅びを天命として受け入れた、静かな笑い', ok: true, set: { warai: 3 }, r: '「天の我を亡ぼす」と二度言った男は、もう逃げる理由を持たなかったのかもしれない。' }
         ] },
-      { w: 'u', x: '吾公の長者なるを知る。吾此の馬に騎すること五歳、当たる所敵無し。之を殺すに忍びず、以つて公に賜はん。', at: 'u' },
-      { t: 'scene', stage: 'ukou', light: 'dawn', cast: ['u', 'rba'], pose: { u: 'stand' }, fade: 'black' },
-      { x: '項王は騎兵をみな馬から下ろし、短い武器で漢軍と斬り結んだ。項王ひとりで討った者は数百人。その身にも、十あまりの傷を負った。', at: 'u', sfx: 'clang', fx: 'flash' },
-      { w: 'u', x: '若は吾が故人に非ずや。', at: 'rba' },
-      { t: 'gen', g: 'g23' },
-      { t: 'ask', k: 'read', w: 'u', q: '項王の最後の言葉「吾為若徳」の意味は。', stem: '吾為^レ若徳',
+      { id: 'c8-27', w: 'u', x: '吾公の長者なるを知る。吾此の馬に騎すること五歳、当たる所敵無し。之を殺すに忍びず、以つて公に賜はん。', at: 'u' },
+      { id: 'c8-28', t: 'scene', stage: 'ukou', light: 'dawn', cast: ['u', 'rba'], pose: { u: 'stand' }, fade: 'black' },
+      { id: 'c8-29', x: '項王は騎兵をみな馬から下ろし、短い武器で漢軍と斬り結んだ。項王ひとりで討った者は数百人。その身にも、十あまりの傷を負った。', at: 'u', sfx: 'clang', fx: 'flash' },
+      { id: 'c8-30', w: 'u', x: '若は吾が故人に非ずや。', at: 'rba' },
+      { id: 'c8-31', t: 'gen', g: 'g23' },
+      { id: 'c8-32', t: 'ask', k: 'read', w: 'u', q: '項王の最後の言葉「吾為若徳」の意味は。', stem: '吾為^レ若徳',
         o: [
           { x: '私はおまえのために恩恵を施してやろう（首をおまえの手柄にさせよう）', ok: true },
           { x: '私はおまえのせいで徳を失った' },
@@ -2491,10 +2640,12 @@ window.KUHO = [
         ],
         hint: '「若」はここでも「なんぢ（おまえ）」。直前で項王は、自分の首に懸けられた賞を語っています。',
         exp: '「吾若の為に徳せん」＝私はおまえのために恩恵を施そう。千金と一万戸の賞が懸かった首を、昔なじみに与えるというのです。' },
-      { x: '乃ち自刎して死す。', at: 'wide', fx: 'red' },
-      { x: '鴻門で、沛公の命を救ったのは、人を殺すに「忍びず」という項王の情だった。烏江で、愛馬を殺すに「忍びず」と言ったのも、同じ項王である。', at: 'wide', b: 'think' },
-      { t: 'set', set: { part2a: true } },
-      { go: 'c9' }
+      { id: 'c8-33', x: '乃ち自刎して死す。', at: 'wide', fx: 'red' },
+      { id: 'c8-34', x: '鴻門で、沛公の命を救ったのは、人を殺すに「忍びず」という項王の情だった。烏江で、愛馬を殺すに「忍びず」と言ったのも、同じ項王である。', at: 'wide', b: 'think' },
+      { id: 'c8-35', t: 'set', set: { part2a: true } },
+      { id: 'c8-36', go: 'c9' },
+      { id: 'c8-cross', t: 'say', x: '（創作）項王は船に乗った。烏江の水が、追いすがる漢の騎兵と王とを隔てた。', at: 'wide', sfx: 'drum' },
+      { id: 'c8-cross-end', t: 'end', e: 'B9' }
     ],
 
     /* ---------------- 終章 雒陽南宮 ---------------- */
@@ -2597,7 +2748,10 @@ window.KUHO = [
       fact: '史記では、白璧一双を項王に、玉斗一双を亜父（范増）に献じた。より尊い璧を王に――贈り物にも身分の順がある。項王は璧を受けて座に置き、范増は玉斗を地に置いて剣で砕いた。' },
     B8: { kind: 'bad', title: '読み違え', sub: '言葉を読み誤りつづけた',
       text: '交わされる言葉の意味が、少しずつ分からなくなっていった。鴻門では、一つの読み違いが命取りになる。',
-      fact: '鴻門の会は、言葉の戦いでもある。反語・禁止・使役・受身――句法を一つ読み違えれば、相手の真意を見失う。直前の場面から、もう一度読み直してみよう。' }
+      fact: '鴻門の会は、言葉の戦いでもある。反語・禁止・使役・受身――句法を一つ読み違えれば、相手の真意を見失う。直前の場面から、もう一度読み直してみよう。' },
+    B9: { kind: 'bad', title: '捲土重来', sub: '烏江を渡った',
+      text: '江東の岸に、八千の若者の家々の灯が見えた。迎えに出た父兄の顔を、あなたはまともに見ることができなかった。',
+      fact: '【本文の記述】項王は「天の我を亡ぼすに、我何ぞ渡るを為さん」と笑って渡らず、「籍独り心に愧ぢざらんや」と言い、騅を亭長に与えて戦い、自刎した。【後世の解釈】晩唐の杜牧は「題烏江亭」で「江東の子弟才俊多し、捲土重来未だ知るべからず」と、渡れば再起もありえたと詠んだ。北宋の王安石は「烏江亭」で「江東の子弟今在りと雖も、肯へて君王と与に捲土して来たらんや」と反論した。渡ったあとの展開はゲーム上の創作である。' }
   };
 
   /* ============================ 小さな遊び ============================ */
@@ -6815,7 +6969,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
 
   function frameAbovePanel() {
     if (!S.camera || !S.cv) return;
-    var panel = S.cv.parentNode.querySelector('.km-panel');
+    // 導入の紙芝居では字幕の札を、本編では本文のパネルを避ける
+    var panel = S.cv.parentNode.querySelector('.km-intro-drama .km-drama-card') || S.cv.parentNode.querySelector('.km-panel');
     var r = S.cv.getBoundingClientRect(), p = panel && panel.getBoundingClientRect();
     // 注視点を、本文より上に残る領域の中央へ置く。DOM計測はサイズ変更時のみ。
     var visible = p && p.height && p.top > r.top ? Math.min(r.height, p.top - r.top) : r.height;
@@ -8825,6 +8980,44 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
 
 </script>
 <script>
+/* 導入「鴻門への道」の紙芝居で使う舞台。
+ * 本編の舞台の作り（3D の build・影絵の layers）と人物の素材はそのまま使い、立ち位置だけを足す。
+ * 3D の pos は [x, z, 向き(rad, 0=+Z), 姿勢]、影絵の pos は { x, y, h, face, pose }。 */
+(function () {
+  'use strict';
+  var PI = Math.PI;
+  var DEFS = {
+    // 楚の懐王の前に、劉邦と項羽が並んで膝をつく（玉座は空けておく）
+    'intro-court': { base: 'nangong', extra: { officials: null },
+      d3: { hai: [-.95, -.1, PI - .45, 'kneel'], u: [.95, -.1, PI + .45, 'kneel'] },
+      d2: { hai: { x: 600, y: 830, h: 320, face: 1, pose: 'kneel' }, u: { x: 1000, y: 830, h: 340, face: -1, pose: 'kneel' } } },
+    // 咸陽の宮殿。劉邦を樊噲と張良がいさめる
+    'intro-palace': { base: 'nangong', extra: { officials: null },
+      d3: { hai: [0, -1.0, 0], kai: [-1.45, .5, .55], ryo: [1.45, .5, -.55] },
+      d2: { hai: { x: 800, y: 830, h: 320, face: 1 }, kai: { x: 540, y: 836, h: 330, face: 1 }, ryo: { x: 1070, y: 830, h: 300, face: -1 } } },
+    // 陣の門の前に立つ項羽（会稽・鉅鹿・函谷関で使い回す）
+    'intro-field': { base: 'gate', extra: {},
+      d3: { u: [-.3, .9, .3], zo: [1.05, .7, -.5] },
+      d2: { u: { x: 720, y: 830, h: 360, face: 1 }, zo: { x: 980, y: 830, h: 300, face: -1 } } }
+  };
+  function register(api, key) {
+    if (!api || !api.STAGES) return;
+    Object.keys(DEFS).forEach(function (id) {
+      var d = DEFS[id], base = api.STAGES[d.base];
+      if (!base) return;
+      var v = {};
+      Object.keys(base).forEach(function (k) { v[k] = base[k]; });
+      Object.keys(d.extra).forEach(function (k) { v[k] = d.extra[k]; });
+      v.pos = d[key];
+      api.STAGES[id] = v;
+    });
+  }
+  register(window.KoumonStage3D, 'd3');
+  register(window.KoumonStage, 'd2');
+})();
+
+</script>
+<script>
 /* 導入・人物・根拠付きAI活動。描画や物語の状態から独立した授業用の表示。 */
 (function () {
   'use strict';
@@ -8839,24 +9032,118 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     sou: ['項荘', 'こうそう', '項羽の一族', '剣舞をする人', '范増の指示を受け、剣舞にかこつけて劉邦を狙う。', 'so'],
     chin: ['陳平', 'ちんぺい', '楚の都尉', '項羽の命令を伝える人', '席を立った劉邦を、項羽の命令で呼びに行く。', 'so']
   };
+  // 鴻門への道：本編（序幕「霸上の夕べ」）より前の流れ。本編で演じる密告・項伯の夜・翌朝の謝罪はここでは扱わない。
+  // year は年表（timeline）の位置。quote は『史記』からの短い引用で、書き下し・現代語訳は学習用。
+  var timeline = [['前221', '秦の統一'], ['前209', '反乱と挙兵'], ['前208', '懐王の約'], ['前207', '鉅鹿の戦い'], ['前206', '秦の滅亡・鴻門の会']];
   var scenes = [
-    {tag:'共闘',title:'二人には、共通の敵がいた。',body:'秦への反乱が広がるなか、劉邦と項羽も秦と戦う。二人は、以前に共に城陽などを攻めた仲だった。',point:'はじめから敵どうしだったわけではない。',source:'項羽本紀・高祖本紀：二人の共闘',map:'allies'},
-    {tag:'約束',title:'「先に関中へ」が、王への条件。',body:'楚の懐王は、先に関中を平定した者をその地の王にする、と将軍たちと約束した。関中は秦の都・咸陽を含む地域。',point:'関中への先着には、政治的な意味があった。',source:'高祖本紀「先入定関中者王之」',map:'promise'},
-    {tag:'進軍',title:'北で戦う項羽。西へ進む劉邦。',body:'項羽は北方で秦の大軍と戦い、軍事的な力と威信を高める。一方、劉邦は西へ進み、関中を目指した。',point:'「戦いの功績」と「関中への先着」は、同じではない。',source:'項羽本紀・高祖本紀：鉅鹿の戦いと劉邦の西進',map:'routes'},
-    {tag:'先着',title:'先に関中へ入ったのは、劉邦。',body:'秦王の子嬰は劉邦に降伏する。劉邦は咸陽に入ったあと、秦の宮室や倉庫を封じ、霸上へ軍を戻した。',point:'懐王の約束に照らすと、劉邦に王となる根拠がある。',source:'高祖本紀：子嬰の降伏と還軍霸上',map:'arrival'},
-    {tag:'対立',title:'約束は劉邦。兵力は項羽。',body:'劉邦側は関を閉ざしていたが、項羽軍は突破して鴻門に到着する。曹無傷の報告を聞いた項羽は怒り、范増は劉邦を討つよう進言した。',point:'曹無傷が「報告したこと」と、その内容が真実かどうかは分けて読む。',source:'項羽本紀：距関・曹無傷の密告・范増の進言',map:'tension',quiz:true},
-    {tag:'仲介',title:'夜の使者が、人のつながりを動かす。',body:'項伯は親しい張良を助けようと、劉邦の陣を訪れた。張良は劉邦に危機を伝え、劉邦は項伯を通じて、項羽へ弁明する。',point:'項伯 → 張良 → 劉邦。敵味方の線を越える関係がある。',source:'項羽本紀「項伯乃夜馳之沛公軍」以下',map:'people'},
-    {tag:'翌朝',title:'百余騎で、鴻門の宴へ。',body:'劉邦は翌朝、百騎あまりを従えて項羽に会い、謝罪する。かつての共闘相手に、どんな言葉をかけるのか。ここから本文を読んでいこう。',point:'言葉と人物の動きが、劉邦の運命を左右する。',source:'項羽本紀「沛公旦日従百余騎来見項王」',map:'hongmen'}
+    {tag:'乱世', era:'前210〜前209年', year:1, map:'rebellion', title:'秦の天下が、揺らぎはじめた。',
+      body:['前221年、秦の始皇帝が天下を統一した。けれども厳しい法と重い労役に、人々の不満はたまっていった。','始皇帝が亡くなった翌年の前209年、陳勝・呉広が大沢郷で反乱を起こす。反乱はたちまち各地へ広がった。'],
+      terms:[['秦','前221年に中国を統一した王朝。都は咸陽。'],['陳勝・呉広','最初に反乱を起こした農民の指導者。']],
+      quote:{src:'史記・陳渉世家', haku:'王侯将相寧有種乎', yomi:'王侯将相寧んぞ種有らんや', yaku:'王や諸侯、将軍や宰相になるのに、決まった家柄などあるものか。'},
+      point:'生まれに関係なく、だれもが天下を争う時代が始まった。',
+      alt:'秦の都・咸陽と、大沢郷・沛・会稽など各地に広がる反乱を示す模式図。'},
+    {tag:'挙兵', era:'前209年', year:1, map:'pair',
+      figs:[['pair','人物の比較'],['allies','共闘の地図','二人は同じ楚の陣営で、城陽などを共に攻めた。はじめから敵どうしだったわけではない。']], title:'村の役人・劉邦と、名将の孫・項羽。',
+      body:['劉邦は沛の村の役人（亭長）だった。反乱が広がると沛の人々に推されて立ち、「沛公」と呼ばれる。','項羽は楚の名将・項燕の孫。叔父の項梁とともに会稽で兵を挙げた。このとき二十四歳で、劉邦はずっと年上だった。','二人はやがて同じ楚の陣営に入り、城陽などを共に攻めた。はじめから敵どうしだったわけではない。'],
+      terms:[['沛公','「沛の長」という意味。鴻門の本文での劉邦の呼び名。'],['項王','項羽のこと。本文では「項羽」「項王」と書かれ、本人は名の「籍」で自分を呼ぶ。']],
+      quote:{src:'史記・高祖本紀', haku:'仁而愛人、喜施、意豁如也', yomi:'仁にして人を愛し、施しを喜み、意豁如たり', yaku:'（劉邦は）思いやりがあって人を愛し、人に施すことを好み、心がおおらかだった。'},
+      point:'出自も年齢も違う二人が、同じ楚の陣営で秦と戦っていた。'},
+    {tag:'約束', era:'前208年', year:2, map:'promise', title:'「先に関中へ」が、王への条件。',
+      body:['項梁は楚の王家の子孫を探し出し、王に立てた。楚の懐王である。反乱軍をまとめる旗印だった。','項梁が秦軍との戦いで亡くなると、懐王は将軍たちと一つの約束を結ぶ。「先に関中に入って平定した者を、関中の王にする。」'],
+      terms:[['関中','函谷関の西に広がる秦の本拠地。都の咸陽があり、守りが固く豊かな土地。'],['懐王','楚の王家の子孫。反乱軍の名目上の主君。']],
+      quote:{src:'史記・高祖本紀', haku:'与諸将約、先入定関中者王之', yomi:'諸将と約す、先に入りて関中を定むる者は之を王とせん', yaku:'（懐王は）将軍たちと約束した。先に関中に入って平定した者を、そこの王にしよう、と。'},
+      point:'関中への一番乗りには、「王になる」という政治的な意味があった。',
+      quiz:[{id:'cond', q:'懐王の約束で、王になる条件は？', choices:[['battle','秦軍を最も多く破ること'],['first','先に関中に入り、平定すること'],['army','最も多くの兵を集めること']], answer:'first', why:'条件は「先に入りて関中を定むる」こと。戦いの数や兵の多さではない。この基準が、のちの対立の火種になる。'}],
+      alt:'楚の懐王がいる彭城と、西の関中を示す模式図。'},
+    {tag:'二つの道', era:'前207年', year:3, map:'routes', title:'北で戦う項羽。西へ急ぐ劉邦。',
+      body:['懐王は項羽たちを北へ送って趙を救わせ、劉邦には西から関中を目指させた。','項羽は鉅鹿で秦の主力を破り、諸侯の軍を従える実力者になる。のちに、降伏した秦兵二十万あまりを新安で生き埋めにした。','劉邦は、城を力で落とすより降伏させる道を選びながら進み、南の入り口・武関から関中へ入った。'],
+      terms:[['鉅鹿の戦い','項羽が秦の主力を破った戦い。退路を断つ「破釜沈船」の故事で知られる。'],['武関','関中の南の入り口。劉邦はここから入った。'],['函谷関','関中の東の入り口。項羽はこちらへ向かう。']],
+      quote:{src:'史記・項羽本紀', haku:'皆沈船、破釜甑、焼廬舎、持三日糧', yomi:'皆船を沈め、釜甑を破り、廬舎を焼き、三日の糧を持つ', yaku:'船をすべて沈め、炊事の釜や甑を壊し、陣小屋を焼いて、三日分の食糧だけを持たせた（生きて帰らない覚悟を示した）。'},
+      point:'項羽は戦いで名声と大軍を得た。劉邦は早さで、関中への一番乗りを果たそうとした。',
+      alt:'項羽は彭城から北の鉅鹿へ、劉邦は南を回って武関から関中へ進む模式図。'},
+    {tag:'先着', era:'前206年（漢元年）十月', year:4, map:'arrival', title:'先に関中へ入ったのは、劉邦。',
+      body:['秦王の子嬰は、白い車を白い馬に引かせ、首に組み紐をかけて劉邦に降伏した。秦は滅びた。','咸陽の宮殿に入った劉邦は、そこにとどまりたいと思ったが、樊噲や張良にいさめられる。宝物の倉を封じて軍を霸上に戻し、関中の人々と「法は三章だけ」と約束した。人々は大いに喜んだ。'],
+      terms:[['子嬰','秦の最後の王。'],['霸上','咸陽の東にある高台。劉邦が軍を置いた場所。'],['約法三章','人を殺せば死刑、人を傷つけたり盗んだりすれば罰する、という三つだけの法。秦の厳しい法を改めた。']],
+      quote:{src:'史記・高祖本紀', haku:'与父老約、法三章耳。殺人者死、傷人及盗抵罪。', yomi:'父老と約す、法は三章のみ。人を殺す者は死し、人を傷つけ及び盗むは罪に抵る。', yaku:'土地の長老たちと約束した。法は三か条だけだ。人を殺した者は死刑。人を傷つけた者と盗んだ者は、それに見合う罰を受ける。'},
+      point:'劉邦は宝も宮殿も「取らなかった」。序幕で、范増はまさにこの点を恐れる。',
+      quiz:[{id:'take', q:'咸陽に入った劉邦が、したことは？', choices:[['burn','咸陽の宮殿を焼きはらった'],['stay','宮殿に住み、宝物を兵に分けた'],['seal','宝物の倉を封じて、霸上へ軍を戻した']], answer:'seal', why:'劉邦は財物に手をつけずに霸上へ戻った。序幕で范増は「財物取る所無く、婦女幸する所無し」と言い、そこに大きな志を見る。宮殿を焼くのは、のちに咸陽へ入る項羽である。'}],
+      alt:'咸陽で秦が降伏し、劉邦が霸上へ軍を戻す模式図。'},
+    {tag:'函谷関', era:'前206年（漢元年）', year:4, map:'tension', title:'約束は劉邦。兵力は項羽。',
+      body:['劉邦は「関を閉ざして諸侯を入れなければ、秦の地すべての王になれる」という進言を受け入れ、函谷関に兵を置いた。この進言の主を、第一幕で張良が問いただす。','遅れて着いた項羽は、関が閉ざされ、しかも劉邦がすでに咸陽を落としたと聞いて激怒する。関を破って進み、鴻門に陣を構えた。'],
+      terms:[['鴻門','新豊の近く。項羽が陣を置いた場所。'],['諸侯','各地で秦と戦った将軍や王たち。項羽はその中心にいた。']],
+      quote:{src:'史記・項羽本紀', haku:'函谷関有兵守関、不得入。又聞沛公已破咸陽、項羽大怒、使当陽君等撃関。', yomi:'函谷関に兵有りて関を守り、入るを得ず。又沛公已に咸陽を破ると聞き、項羽大いに怒り、当陽君等をして関を撃たしむ。', yaku:'函谷関には兵がいて関を守り、入れなかった。さらに沛公がすでに咸陽を破ったと聞いて、項羽はひどく怒り、当陽君（黥布）らに関を攻めさせた。'},
+      point:'約束の上では劉邦、兵力では項羽。二つの基準がぶつかる。',
+      quiz:[{id:'promise', q:'約束の上で、王となる根拠があるのは？', choices:[['hai','劉邦'],['u','項羽']], answer:'hai', why:'約束の基準は「先に関中を平定」。先に入った劉邦に根拠がある。'},
+        {id:'force', q:'この時点で、兵力が大きいのは？', choices:[['hai','劉邦'],['u','項羽']], answer:'u', why:'本文では劉邦十万、項羽四十万。兵力は項羽が上回る。'}],
+      takeaway:'約束と兵力。その二つの基準のずれが、鴻門の会の背景にある。',
+      alt:'閉ざされた函谷関を項羽の軍が破り、鴻門に陣を置く模式図。'},
+    {tag:'霸上の夕べへ', era:'前206年（漢元年）十二月', year:4, map:'eve',
+      figs:[['eve','霸上と鴻門'],['people','人のつながり','項伯は親しい張良を助けようと、夜、劉邦の陣を訪れる。項伯 → 張良 → 劉邦。敵味方の線を越える関係が、第一幕で動き出す。'],['hongmen','翌朝の道','劉邦は翌朝、百騎あまりを従えて鴻門の項羽に会い、謝罪する（第二幕）。かつての共闘相手に、どんな言葉をかけるのか。']], title:'四十里をへだてて、十万と四十万。',
+      body:['鴻門の項羽は兵四十万で百万と号し、霸上の劉邦は兵十万で二十万と号した。二つの陣のあいだは四十里（約17キロ）。','この夕べから、物語が始まる。あなたは沛公・劉邦。言葉を一つ読み違えれば、命はない。'],
+      watch:[['曹無傷','劉邦の部下。項羽に何を伝えるのか。','序幕'],['范増','項羽の参謀。劉邦の何を恐れたのか。','序幕'],['項伯と張良','敵と味方に分かれた旧友。その夜、何が起こるのか。','第一幕']],
+      quote:{src:'史記・高祖本紀', haku:'項羽兵四十万号百万、沛公兵十万号二十万、力不敵。', yomi:'項羽の兵は四十万、百万と号し、沛公の兵は十万、二十万と号す。力敵せず。', yaku:'項羽の兵は四十万で百万と称し、沛公の兵は十万で二十万と称していた。力ではかなわなかった。'},
+      point:'強い相手に、どう向き合うか。言葉と決断で、宴を生き延びよう。',
+      alt:'霸上の劉邦と鴻門の項羽が四十里をへだてて向かい合う模式図。'}
   ];
-  var panel, index=0, auto=false, timer=null, callbacks;
-  var answers={promise:null,force:null};
+  var pair = {
+    hai: ['劉邦（沛公）', '沛の村の役人（亭長）', '沛の人々に推されて挙兵', '仁にして人を愛し、施しを喜む', '沛公'],
+    u: ['項羽（籍）', '楚の名将・項燕の孫', '叔父の項梁と会稽で挙兵（二十四歳）', '力は能く鼎を扛げ、才気人に過ぐ', '項王']
+  };
+  // 紙芝居：本編と同じ舞台と人物で、各場面を数コマで演じる。stage・light・cast を省いたコマは前のコマを引き継ぐ。
+  // kind は本文との関係：shiki＝史記の記述（書き下し）、retold＝本文をもとにした再構成、fiction＝ゲーム上の創作。
+  var dramas = [
+    [ {stage:'nangong', light:'palace', cast:[], at:'wide', kind:'retold', x:'秦の都・咸陽。天下を一つにした始皇帝の宮殿には、だれも逆らえない威光があった。'},
+      {stage:'intro-palace', light:'palace', cast:['hai'], at:'hai', w:'hai', kind:'shiki', src:'高祖本紀：若いころ、咸陽で始皇帝の行列を見て', x:'嗟乎、大丈夫当に此くのごとくなるべきなり。'},
+      {stage:'koumon', light:'night', cast:['u'], at:'u', w:'u', kind:'shiki', src:'項羽本紀：会稽で、始皇帝の巡行を見て', x:'彼取りて代はるべきなり。'},
+      {stage:'gate', light:'dawn', cast:[], at:'wide', kind:'retold', fx:'pulse', sfx:'drum', x:'前209年。始皇帝が亡くなった翌年、陳勝・呉広が大沢郷で立つと、反乱の火は各地へ広がった。'} ],
+    [ {stage:'bashang', light:'dusk', cast:['hai','kai'], at:'wide', kind:'retold', src:'高祖本紀', x:'沛の町。人々は秦の役人を倒し、村の役人だった劉邦（劉季）を長に迎えた。'},
+      {at:'kai', w:'kai', kind:'fiction', x:'季どの。沛の若者は、みなあなたについて行くと申しております。'},
+      {at:'hai', w:'hai', kind:'fiction', x:'よし、旗を立てよう。今日から、わしは沛公だ。'},
+      {stage:'intro-field', light:'day', cast:['u'], at:'wide', kind:'retold', src:'項羽本紀', x:'同じころ、会稽。叔父の項梁とともに兵を挙げた項羽は、二十四歳だった。'},
+      {at:'u', w:'u', kind:'shiki', src:'項羽本紀：少年のころ、叔父の項梁に', x:'書は以て名姓を記するに足るのみ。剣は一人の敵、学ぶに足らず。万人の敵を学ばん。'} ],
+    [ {stage:'koumon', light:'night', cast:['u','zo'], at:'zo', kind:'retold', src:'項羽本紀', x:'居鄛の人、范増。七十歳。奇計を好む老人が、項梁のもとを訪ねた。'},
+      {at:'zo', w:'zo', kind:'retold', src:'項羽本紀：范増の進言の要約', x:'楚の王の子孫を立てて王とすれば、楚の人々はこぞって従いましょう。'},
+      {stage:'intro-court', light:'palace', cast:['hai','u'], at:'wide', kind:'retold', src:'高祖本紀', x:'楚の懐王は、将軍たちと約束した。「先に入りて関中を定むる者は、之を王とせん。」'},
+      {at:'u', kind:'retold', src:'高祖本紀', x:'項羽も西へ行くことを望んだ。だが懐王の老将たちは「項羽は荒々しい。寛大な長者を西へ送るべきだ」と言い、劉邦を選んだ。'} ],
+    [ {stage:'intro-field', light:'dawn', cast:['u'], at:'u', kind:'retold', src:'項羽本紀', x:'鉅鹿。項羽は河を渡ると、船を沈め、釜を壊し、陣小屋を焼いた。持たせたのは三日分の糧だけ。'},
+      {at:'u', w:'u', kind:'fiction', x:'引き返す道はない。勝つか、死ぬかだ。'},
+      {at:'wide', kind:'retold', src:'項羽本紀', fx:'shake', sfx:'clang', x:'楚の兵は一人で十人に当たり、秦の大軍を打ち破った。諸侯の将たちは膝で進み出て、項羽を仰ぎ見ることもできなかった。'},
+      {stage:'road', light:'moon', cast:['hai','kai'], at:'wide', kind:'retold', src:'高祖本紀', sfx:'hoof', x:'そのころ劉邦は、西へ急いでいた。城を力で落とすより、降伏を受け入れて道を開いた。'},
+      {at:'kai', w:'kai', kind:'fiction', x:'沛公、武関を抜ければ、関中はすぐそこです！'} ],
+    [ {stage:'intro-palace', light:'palace', cast:['hai','kai','ryo'], at:'wide', kind:'retold', src:'留侯世家', x:'咸陽の宮殿。宝物も美女も、数えきれないほどあった。劉邦は、ここにとどまりたいと思った。'},
+      {at:'kai', w:'kai', kind:'retold', src:'留侯世家', x:'沛公、宮殿を出て、外に陣を置かれませ。'},
+      {at:'ryo', w:'ryo', kind:'shiki', src:'留侯世家', x:'忠言は耳に逆らへども行ひに利あり、毒薬は口に苦けれども病に利あり。願はくは沛公、樊噲の言を聴かれよ。'},
+      {stage:'bashang', light:'dusk', cast:['hai','ryo','kai'], at:'hai', w:'hai', kind:'shiki', src:'高祖本紀：霸上に戻り、関中の長老たちに', x:'父老と約す、法は三章のみ。人を殺す者は死し、人を傷つけ及び盗むは罪に抵る。'},
+      {at:'wide', kind:'retold', src:'高祖本紀', x:'秦の人々は大いに喜び、牛や羊、酒や食べ物を持ってきて兵をもてなそうとした。劉邦は受け取らなかった。'} ],
+    [ {stage:'gate', light:'dawn', cast:[], at:'wide', kind:'retold', x:'函谷関。劉邦の兵が門を固め、諸侯の軍を通さない。'},
+      {stage:'intro-field', light:'dusk', cast:['u','zo'], at:'u', kind:'retold', src:'項羽本紀', x:'遅れて着いた項羽の前で、関は閉ざされていた。しかも劉邦は、すでに咸陽を落としたという。'},
+      {at:'u', w:'u', kind:'retold', src:'項羽本紀「項羽大いに怒り、当陽君等をして関を撃たしむ」', fx:'shake', sfx:'drum', x:'関を撃て！'},
+      {stage:'koumon', light:'night', cast:['u','zo'], at:'wide', kind:'retold', src:'項羽本紀', x:'項羽は関を破って進み、新豊の鴻門に陣を構えた。'} ],
+    [ {stage:'koumon', light:'night', cast:['u','zo'], at:'wide', kind:'retold', src:'高祖本紀', x:'鴻門。見渡すかぎりの篝火。四十万の兵が、百万と号している。'},
+      {stage:'bashang', light:'dusk', cast:['hai','ryo'], at:'wide', kind:'retold', src:'高祖本紀', x:'霸上。十万の陣。四十里の向こうに、楚の火が見える。'},
+      {at:'hai', w:'hai', kind:'fiction', x:'……あの男と、どう向き合えばよい。'},
+      {at:'wide', kind:'fiction', x:'――この夕べから、物語が始まる。'} ]
+  ];
+  // 省いた舞台・光・配役を前のコマから引き継いで、各場面に結びつける
+  dramas.forEach(function (cuts, i) {
+    var prev = {};
+    scenes[i].drama = cuts.map(function (c) {
+      var cut = {}; ['stage', 'light', 'cast'].forEach(function (k) { cut[k] = c[k] !== undefined ? c[k] : prev[k]; });
+      Object.keys(c).forEach(function (k) { if (cut[k] === undefined) cut[k] = c[k]; });
+      prev = cut; return cut;
+    });
+  });
+  var KIND = { shiki: '史記の記述（書き下し）', retold: '本文をもとにした再構成', fiction: 'ゲーム上の創作' };
+  var panel, index=0, auto=false, timer=null, callbacks, view='drama', cut=0, fig=0;
+  var answers={};
   function homeHTML(meta, is3D) {
     return '<div class="km-home"><div class="km-home-art" aria-hidden="true"></div><div class="km-home-shade"></div><div class="km-home-content">' +
       '<div class="km-eyebrow"><span class="km-stamp">史記</span> INTERACTIVE CLASSICS</div><p class="km-home-kicker">一席の宴が、天下を分ける。</p><h1>鴻門の会</h1><p class="km-home-description">その言葉を、どう読むか。<br>その場にいたら、どう動くか。</p>' +
-      '<div class="km-home-actions"><button class="km-btn gold" data-km="intro"><span>01</span> 鴻門前夜をみる <small>7つの場面で背景をつかむ</small><b>→</b></button>' +
+      '<div class="km-home-actions"><button class="km-btn gold" data-km="intro"><span>01</span> 鴻門への道 <small>宴の前の流れを七つの場面で</small><b>→</b></button>' +
       '<button class="km-btn" data-km="' + (meta.save?'continue':'new') + '"><span>02</span> ' + (meta.save?'物語の続きから':'物語をはじめる') + '<small>原文と決断で宴を体験</small><b>→</b></button>' +
       '<button class="km-btn" data-km="ai"><span>03</span> 范増として考える <small>原文を根拠にAIと対話</small><b>→</b></button></div>' +
-      '<div class="km-home-links"><button data-km="menu">章を選ぶ</button><button data-km="book">原文帳</button><button data-km="characters">人物相関</button><button data-km="reflection">振り返り</button><button data-km="endings">結末帳</button></div>' +
+      '<div class="km-home-links"><button data-km="menu">章を選ぶ</button><button data-km="book">原文帳</button><button data-km="characters">人物相関</button><button data-km="reflection">振り返り</button><button data-km="endings">結末帳</button>' +
+      '<button data-km="review">読み直し帳' + (meta.missed && Object.keys(meta.missed).length ? '<small>' + Object.keys(meta.missed).length + '</small>' : '') + '</button><button data-km="record">学習記録</button></div>' +
       '<div class="km-home-footer"><span>' + (meta.classroom?'授業モード · 時間制限なし':'挑戦モード · 命と決断') + '</span><button data-km="settings">表示・授業設定</button><span>' + (is3D?'3Dの舞台':'影絵の舞台') + '</span></div>' +
       '<p class="km-art-note">表紙・舞台は学習のためのイメージ表現です。</p></div></div>';
   }
@@ -8873,44 +9160,112 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   function charactersHTML() {
     return '<h3>同じ人に、いくつもの呼び名。</h3><p class="km-m-lead">本文の呼称を確かめよう。人物画と衣の色は、見分けるためのイメージです。</p><div class="km-relation"><span>張良が、劉邦に助言する。</span><b>張良と項伯には、以前からの交友がある。</b><span>項伯は項羽の叔父。范増は項羽に進言する。</span></div><div class="km-person-grid">'+Object.keys(people).map(personHTML).join('')+'</div>';
   }
-  function mapSVG(s) {
-    var a=s.map, routes=['routes','arrival','tension','hongmen'].indexOf(a)>=0;
-    if(a==='people') return '<div class="km-intro-people">'+['haku','ryo','hai'].map(function(id,i){return (i?'<span class="km-relation-arrow">→<small>'+(i===1?'知らせる':'伝える')+'</small></span>':'')+'<button data-person="'+id+'">'+portraitHTML(id)+'<strong>'+people[id][0]+'</strong><small>'+people[id][2]+'</small></button>';}).join('')+'</div><p class="km-map-caption">旧交が、陣営をつなぐ。</p>';
-    return '<svg class="km-intro-map '+a+'" viewBox="0 0 800 470" role="group" aria-label="劉邦と項羽の動きを示す模式図。西に関中、東に楚、北に鉅鹿。人物名を押すと紹介が開きます。">'+
-      '<defs><pattern id="map-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#b49b73" opacity=".12"/></pattern><marker id="arrow-han" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10" fill="#7cc8be"/></marker><marker id="arrow-so" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10" fill="#dc8b76"/></marker></defs>' +
-      '<rect width="800" height="470" fill="url(#map-grid)"/><path class="km-land" d="M35 230 Q95 120 190 150L270 110L380 145L490 95L650 110L750 190L715 350L615 390L450 365L340 405L200 360L80 345Z"/>'+
-      '<path class="km-river" d="M75 120Q160 85 220 165T390 180Q490 120 560 165T770 180"/><path class="km-mountain" d="M70 335L105 275L125 305L155 245L195 320L225 280L265 340 M340 110L375 68L400 95L425 54L468 115"/>'+
-      '<ellipse class="km-guanzhong" cx="190" cy="230" rx="120" ry="80"/><text class="km-region" x="150" y="213">関中</text><text class="km-region" x="610" y="330">楚</text><text class="km-water-label" x="440" y="150">黄河</text>'+
-      (routes?'<path class="km-army-path han" d="M580 300Q400 350 290 285T155 240" marker-end="url(#arrow-han)"/><path class="km-army-path so" d="M590 290Q620 180 585 90" marker-end="url(#arrow-so)"/>':'')+
-      (a==='tension'||a==='hongmen'?'<path class="km-army-path so late" d="M580 95Q490 195 265 230" marker-end="url(#arrow-so)"/>':'')+
-      '<g class="km-place"><circle cx="145" cy="240" r="5"/><text x="112" y="265">咸陽</text><circle cx="225" cy="285" r="5"/><text x="208" y="314">霸上</text><circle cx="274" cy="229" r="5"/><text x="265" y="212">鴻門</text><circle cx="583" cy="85" r="5"/><text x="605" y="91">鉅鹿</text></g>'+
-      '<g class="km-map-seal han" data-person="hai" role="button" tabindex="0" aria-label="劉邦、別名は沛公。人物紹介を開く" transform="translate('+(a==='arrival'||a==='tension'||a==='hongmen'?'205 250':'490 328')+')"><circle r="26"/><text y="6">劉邦</text></g>'+
-      '<g class="km-map-seal so" data-person="u" role="button" tabindex="0" aria-label="項羽、別名は項王。人物紹介を開く" transform="translate('+(a==='tension'||a==='hongmen'?'310 264':a==='routes'||a==='arrival'?'560 115':'635 292')+')"><circle r="26"/><text y="6">項羽</text></g>'+
-      (a==='promise'?'<g class="km-promise"><rect x="300" y="203" width="390" height="80" rx="5"/><text x="495" y="238">先に関中を平定した者を</text><text x="495" y="265">その地の王にする。</text></g>':'')+
-      (a==='tension'?'<text class="km-troops han" x="123" y="370">劉邦 十万</text><text class="km-troops so" x="343" y="370">項羽 四十万</text><text class="km-map-foot" x="123" y="395">兵力は『項羽本紀』の記述による</text>':'')+
-      (a==='hongmen'?'<path class="km-army-path han" d="M228 268Q254 251 282 249" marker-end="url(#arrow-han)"/><text class="km-troops han" x="300" y="355">翌朝、百余騎で謝罪へ</text>':'')+
-      '<text class="km-map-foot" x="24" y="445">位置・経路・距離を簡略化した模式図</text><text class="km-map-foot" x="720" y="35">北 ↑</text></svg>';
+  // 地名の座標は位置関係だけを示す模式図。[x, y, 名前, 文字のずれx, ずれy]
+  var places = {
+    kanyo:[145,240,'咸陽',-36,26], hajo:[225,285,'霸上',-46,6], koumon:[274,229,'鴻門',-8,-16], kankoku:[372,214,'函谷関',-22,28],
+    bukan:[300,352,'武関',12,22], shinan:[452,205,'新安',-8,-14], kyoroku:[583,85,'鉅鹿',14,-6], hojo:[640,262,'彭城',12,22],
+    hai:[676,226,'沛',12,-6], daitaku:[640,320,'大沢郷',12,22], kaikei:[742,392,'会稽',-48,24]
+  };
+  var mapLayers = {
+    rebellion: { places:['kanyo','daitaku','hai','kaikei'], sparks:[[640,320],[676,226],[742,392],[590,105],[705,160],[540,250]],
+      notes:[[100,290,'秦の都'],[560,352,'陳勝・呉広'],[700,198,'劉邦'],[600,448,'項梁・項羽']] },
+    promise: { places:['kanyo','hojo'], guanzhong:true, seals:{hai:[580,212],u:[704,212]},
+      notes:[[590,308,'懐王がいる']], box:true },
+    routes: { places:['kanyo','hajo','bukan','kankoku','shinan','kyoroku','hojo'], seals:{u:[560,122],hai:[440,378]},
+      paths:[['so','M640 252Q655 170 592 98'],['so late','M572 96Q505 160 458 203'],['han','M628 272Q470 380 310 356Q250 334 230 296']],
+      notes:[[500,190,'のち西へ'],[300,424,'南から関中へ']] },
+    arrival: { places:['kanyo','hajo','bukan'], guanzhong:true, seals:{hai:[290,300],u:[560,122]},
+      paths:[['han','M153 250Q185 280 216 286'],['so late','M572 96Q505 160 458 203']], notes:[[100,290,'子嬰が降伏'],[120,345,'倉を封じ霸上へ'],[80,175,'約法三章']] },
+    tension: { places:['kanyo','hajo','koumon','kankoku','shinan'], seals:{hai:[150,322],u:[318,175]}, gate:true,
+      paths:[['so','M452 205Q412 206 378 214Q330 222 284 228']], troops:true },
+    eve: { places:['kanyo','hajo','koumon','kankoku'], seals:{hai:[150,322],u:[318,175]}, dusk:true, distance:true, troops:true },
+    // 以前の導入の「共闘」「翌朝」の地図。場面の中の図として残す
+    allies: { seals:{hai:[490,328],u:[635,292]}, notes:[[430,392,'城陽などを共に攻めた（前208年）']] },
+    hongmen: { places:['kanyo','hajo','koumon'], seals:{hai:[205,250],u:[310,264]}, paths:[['han','M232 280Q258 256 270 237']], texts:[['km-troops han',300,355,'翌朝、百余騎で謝罪へ']] }
+  };
+  function placeSVG(k){var p=places[k];return '<g class="km-place"><circle cx="'+p[0]+'" cy="'+p[1]+'" r="5"/><text x="'+(p[0]+p[3])+'" y="'+(p[1]+p[4])+'">'+p[2]+'</text></g>';}
+  function sealSVG(id,xy){return '<g class="km-map-seal '+(id==='hai'?'han':'so')+'" data-person="'+id+'" role="button" tabindex="0" aria-label="'+people[id][0]+'、別名は'+people[id][2]+'。人物紹介を開く" transform="translate('+xy[0]+' '+xy[1]+')"><circle r="26"/><text y="6">'+people[id][0]+'</text></g>';}
+  /** 場面の図。figs があれば切り替えて見せる（以前の導入の図もここに残す） */
+  function figureHTML(s){
+    var f=s.figs?s.figs[fig]:null,a=f?f[0]:s.map;
+    var tabs=s.figs?'<div class="km-fig-tabs" role="group" aria-label="図を切り替える">'+s.figs.map(function(x,i){return '<button data-intro="fig" data-fig="'+i+'" aria-pressed="'+(i===fig)+'">'+x[1]+'</button>';}).join('')+'</div>':'';
+    var body=a==='pair'?pairHTML():a==='people'?peopleHTML():mapSVG(s,a);
+    return tabs+body+(f&&f[2]?'<p class="km-fig-note">'+f[2]+'</p>':'');
+  }
+  function peopleHTML(){
+    return '<div class="km-intro-people">'+['haku','ryo','hai'].map(function(id,i){return (i?'<span class="km-relation-arrow">→<small>'+(i===1?'知らせる':'伝える')+'</small></span>':'')+'<button data-person="'+id+'">'+portraitHTML(id)+'<strong>'+people[id][0]+'</strong><small>'+people[id][2]+'</small></button>';}).join('')+'</div><p class="km-map-caption">旧交が、陣営をつなぐ。</p>';
+  }
+  function mapSVG(s, a) {
+    a=a||s.map; var L=mapLayers[a]||{};
+    return '<svg class="km-intro-map '+a+'" viewBox="0 0 800 470" role="group" aria-label="'+(s.alt||'劉邦と項羽の動きを示す模式図')+'人物名を押すと紹介が開きます。">'+
+      '<defs><pattern id="map-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#b49b73" opacity=".12"/></pattern><marker id="arrow-han" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10" fill="#7cc8be"/></marker><marker id="arrow-so" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10" fill="#dc8b76"/></marker></defs>'+
+      '<rect width="800" height="470" fill="url(#map-grid)"/><path class="km-land" d="M35 230Q95 120 190 150L270 110L380 145L490 95L650 70L760 150L778 300L768 432L600 425L450 372L340 405L200 360L80 345Z"/>'+
+      '<path class="km-river" d="M75 120Q160 85 220 165T390 180Q490 120 560 165T770 180"/><path class="km-river" d="M300 418Q450 392 560 400T775 368"/><path class="km-mountain" d="M70 335L105 275L125 305L155 245L195 320L225 280L265 340 M340 110L375 68L400 95L425 54L468 115"/>'+
+      '<ellipse class="km-guanzhong'+(L.guanzhong?' on':'')+'" cx="190" cy="230" rx="120" ry="80"/><text class="km-region" x="150" y="213">関中</text><text class="km-region" x="545" y="300">楚</text><text class="km-region small" x="505" y="62">趙</text><text class="km-water-label" x="440" y="150">黄河</text><text class="km-water-label" x="470" y="418">長江</text>'+
+      (L.dusk?'<rect class="km-dusk" width="800" height="470"/>':'')+
+      (L.sparks||[]).map(function(p){return '<circle class="km-spark" cx="'+p[0]+'" cy="'+p[1]+'" r="16"/>';}).join('')+
+      (L.paths||[]).map(function(p){return '<path class="km-army-path '+p[0]+'" d="'+p[1]+'" marker-end="url(#arrow-'+p[0].split(' ')[0]+')"/>';}).join('')+
+      (L.gate?'<g class="km-gate" transform="translate(372 214)"><rect x="-17" y="-36" width="34" height="26" rx="3"/><text y="-17">閉</text><path d="M-12 -38L-2 -26L-8 -20L6 -8"/><text class="km-gate-break" x="30" y="-16">破</text></g>':'')+
+      (L.distance?'<path class="km-distance" d="M232 280L268 236"/><text class="km-distance-label" x="282" y="292">四十里（約17km）</text>':'')+
+      (L.places||[]).map(placeSVG).join('')+
+      (L.notes||[]).map(function(n){return '<text class="km-map-note" x="'+n[0]+'" y="'+n[1]+'">'+n[2]+'</text>';}).join('')+
+      (L.texts||[]).map(function(t){return '<text class="'+t[0]+'" x="'+t[1]+'" y="'+t[2]+'">'+t[3]+'</text>';}).join('')+
+      (L.box?'<g class="km-promise"><rect x="300" y="372" width="390" height="70" rx="5"/><text x="495" y="401">先に関中に入り平定した者を、</text><text x="495" y="428">その地の王にする。</text></g>':'')+
+      (L.troops?'<text class="km-troops han" x="40" y="400">霸上　劉邦 十万</text><text class="km-troops so" x="360" y="120">鴻門　項羽 四十万</text><text class="km-map-foot" x="40" y="424">兵力は『史記』の記述による</text>':'')+
+      Object.keys(L.seals||{}).map(function(id){return sealSVG(id,L.seals[id]);}).join('')+
+      '<text class="km-map-foot" x="24" y="455">位置・経路・距離を簡略化した模式図</text><text class="km-map-foot" x="720" y="35">北 ↑</text></svg>';
+  }
+  function pairHTML(){
+    return '<div class="km-intro-pair">'+['hai','u'].map(function(id){var d=pair[id];return '<article class="km-pair-card '+people[id][5]+'">'+portraitHTML(id)+'<h3>'+d[0]+'</h3><dl><dt>出身</dt><dd>'+d[1]+'</dd><dt>挙兵</dt><dd>'+d[2]+'</dd><dt>史記の評</dt><dd>'+d[3]+'</dd><dt>鴻門では</dt><dd>「'+d[4]+'」と呼ばれる</dd></dl><button data-person="'+id+'">人物紹介</button></article>';}).join('')+'</div><p class="km-map-caption">同じ楚の陣営で、秦と戦った。</p>';
+  }
+  function timelineHTML(s){
+    return '<ol class="km-timeline" aria-label="年表">'+timeline.map(function(t,i){return '<li class="'+(i<s.year?'past':i===s.year?'now':'')+'"'+(i===s.year?' aria-current="true"':'')+'><b>'+t[0]+'</b><span>'+t[1]+'</span></li>';}).join('')+'</ol>';
+  }
+  function copyHTML(s){
+    var q=s.quote;
+    return '<span class="km-eyebrow">'+s.tag+' · '+s.era+'</span><h2 tabindex="-1">'+s.title+'</h2>'+s.body.map(function(p){return '<p>'+p+'</p>';}).join('')+
+      (s.terms?'<dl class="km-intro-terms">'+s.terms.map(function(t){return '<div><dt>'+t[0]+'</dt><dd>'+t[1]+'</dd></div>';}).join('')+'</dl>':'')+
+      (s.watch?'<div class="km-intro-watch"><small>物語で注目しよう</small><ul>'+s.watch.map(function(w){return '<li><b>'+w[0]+'</b>'+w[1]+'<span>'+w[2]+'</span></li>';}).join('')+'</ul></div>':'')+
+      (q?'<figure class="km-intro-quote"><figcaption>史記の原文　<small>'+q.src+'</small></figcaption><p class="km-quote-haku">'+q.haku+'</p><p class="km-quote-yomi">'+q.yomi+'</p><p class="km-quote-yaku">'+q.yaku+'</p></figure>':'')+
+      '<div class="km-intro-point"><small>ここを押さえよう</small><b>'+s.point+'</b></div>'+
+      (s.quiz?quizHTML(s):'');
   }
   function stopAuto(){clearTimeout(timer);timer=null;}
-  function schedule(){stopAuto();if(auto&&!document.hidden&&!scenes[index].quiz&&index<scenes.length-1)timer=setTimeout(function(){index++;render();},45000);}
-  function quizHTML(){
-    return '<fieldset class="km-intro-quiz"><legend>いったん止まって、考えよう。</legend>'+[
-      ['promise','約束の上で、王となる根拠があるのは？','hai'],
-      ['force','この時点で、兵力が大きいのは？','u']
-    ].map(function(q,i){return '<div class="km-quiz-question"><p><span>問い '+(i+1)+'</span>'+q[1]+'</p><div class="km-quiz-choices" role="group" aria-label="'+q[1]+'">'+['hai','u'].map(function(id){return '<button data-intro="quiz" data-question="'+q[0]+'" data-answer="'+id+'" aria-pressed="'+(answers[q[0]]===id)+'">'+people[id][0]+'</button>';}).join('')+'</div><div class="km-quiz-answer" role="status">'+(answers[q[0]]?(answers[q[0]]===q[2]?'そうですね。':'もう一度、図を確かめよう。')+(q[0]==='promise'?'約束の基準は「先に関中を平定」。先着した劉邦に根拠があります。':'本文では劉邦十万、項羽四十万。兵力は項羽が上回ります。'):'選んでから、理由も話してみよう。')+'</div></div>';}).join('')+(answers.promise&&answers.force?'<p class="km-quiz-takeaway">約束と兵力。その二つの基準のずれが、対立の背景です。</p>':'')+'</fieldset>';
+  function schedule(){stopAuto();if(!auto||document.hidden)return;
+    if(view==='drama'){timer=setTimeout(function(){nextCut();},7000);return;}
+    if(!scenes[index].quiz&&index<scenes.length-1)timer=setTimeout(function(){goScene(index+1);},45000);}
+  function goScene(i){index=Math.max(0,Math.min(scenes.length-1,i));view='drama';cut=0;fig=0;render();}
+  function nextCut(){var d=scenes[index].drama;if(cut<d.length-1){cut++;render();}else{view='notes';render();}}
+  /** 紙芝居の一コマ。舞台は本編の描画（koumon.js の callbacks.stage）に任せる */
+  function dramaHTML(s){
+    var c=s.drama[cut],last=cut===s.drama.length-1,p=c.w&&people[c.w];
+    return '<div class="km-drama" data-intro="tap"><div class="km-drama-card">'+
+      (p?'<div class="km-speaker km-speaker-portrait">'+portraitHTML(c.w)+'<span class="km-speaker-identity"><span class="km-speaker-name"><span class="km-seal km-'+(p[5]==='han'?'han':'so')+'">'+p[0].charAt(1)+'</span><b>'+p[0]+'</b></span><small>'+p[2]+' · '+p[3]+'</small></span></div>':'')+
+      '<span class="km-evidence-label">'+KIND[c.kind]+(c.src?' · '+c.src:'')+'</span>'+
+      '<p class="km-drama-text'+(p?'':' narr')+'" aria-live="polite">'+c.x+'</p>'+
+      '<div class="km-drama-nav"><button data-intro="cutprev"'+(cut===0?' disabled':'')+'>◀ 前のコマ</button><span class="km-drama-count">'+(cut+1)+' / '+s.drama.length+'</span>'+
+      '<button class="km-btn gold" data-intro="cutnext">'+(last?'解説を読む →':'次へ ▶')+'</button></div></div></div>';
+  }
+  function quizHTML(s){
+    var all=s.quiz.every(function(q){return answers[q.id]===q.answer;});
+    return '<fieldset class="km-intro-quiz"><legend>いったん止まって、考えよう。</legend>'+s.quiz.map(function(q,i){var a=answers[q.id];
+      return '<div class="km-quiz-question"><p><span>問い '+(i+1)+'</span>'+q.q+'</p><div class="km-quiz-choices" role="group" aria-label="'+q.q+'">'+q.choices.map(function(c){return '<button data-intro="quiz" data-question="'+q.id+'" data-answer="'+c[0]+'" aria-pressed="'+(a===c[0])+'">'+c[1]+'</button>';}).join('')+'</div>'+
+        '<div class="km-quiz-answer" role="status">'+(!a?'選んでから、理由も話してみよう。':a===q.answer?'そのとおり。'+q.why:'もう一度、地図と本文を確かめよう。')+'</div></div>';}).join('')+
+      (s.takeaway&&all?'<p class="km-quiz-takeaway">'+s.takeaway+'</p>':'')+'</fieldset>';
   }
   function render(){
-    var s=scenes[index];if(s.quiz||index===scenes.length-1)auto=false;callbacks.step(index);
-    panel.innerHTML='<header class="km-intro-head"><button data-intro="exit">← 表紙</button><span>鴻門前夜 <small>背景をつかむ、7つの場面</small></span><button data-intro="auto" aria-pressed="'+auto+'">'+(auto?'Ⅱ 一時停止':'▷ 自動で進む')+'</button></header>'+
-      '<div class="km-intro-layout"><div class="km-intro-visual"><span class="km-visual-no" aria-hidden="true">0'+(index+1)+'</span>'+mapSVG(s)+'<div class="km-map-legend"><span>● 劉邦側</span><span>● 項羽側</span><small>人物名を押すと紹介</small></div><div id="km-intro-person" aria-live="polite"></div></div>'+
-      '<article class="km-intro-copy" aria-live="polite"><span class="km-eyebrow">'+s.tag+' / 0'+(index+1)+'</span><h2 tabindex="-1">'+s.title+'</h2><p>'+s.body+'</p><div class="km-intro-point"><small>ここを押さえよう</small><b>'+s.point+'</b></div>'+
-      (s.quiz?quizHTML():'')+
-      '<details class="km-intro-source"><summary>本文とのつながり</summary><p>'+s.source+'</p><a href="https://zh.wikisource.org/wiki/史記/卷007" target="_blank" rel="noopener">項羽本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷008" target="_blank" rel="noopener">高祖本紀</a><p>説明は学習用の要約。地図と人物画は模式的な表現です。</p></details></article></div>'+
-      '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前へ</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===6?'done':'next')+'">'+(index===6?'本文を読みはじめる →':'次へ →')+'</button><small class="km-intro-playback">'+(auto?'45秒ごとに進む · 問いで一時停止':'手動で進む · ← → キーでも操作')+'</small></footer>';
+    var s=scenes[index];if(view==='notes'&&(s.quiz||index===scenes.length-1))auto=false;callbacks.step(index);
+    var drama=view==='drama';panel.classList.toggle('km-intro-drama',drama);panel.parentNode.classList.toggle('km-intro-staging',drama);
+    panel.innerHTML='<header class="km-intro-head"><button data-intro="exit">← 表紙</button><span>鴻門への道 <small>宴の前の流れを、七つの場面で</small></span><div class="km-intro-views" role="group" aria-label="表示"><button data-intro="view" data-view="drama" aria-pressed="'+drama+'">場面</button><button data-intro="view" data-view="notes" aria-pressed="'+!drama+'">解説</button></div><button data-intro="auto" aria-pressed="'+auto+'">'+(auto?'Ⅱ 一時停止':'▷ 自動で進む')+'</button></header>'+
+      (drama?dramaHTML(s):'')+'<div class="km-intro-layout"'+(drama?' hidden':'')+'><div class="km-intro-visual"><span class="km-visual-no" aria-hidden="true">0'+(index+1)+'</span>'+timelineHTML(s)+figureHTML(s)+'<div class="km-map-legend"><span>● 劉邦側</span><span>● 項羽側</span><small>人物名を押すと紹介</small></div><div id="km-intro-person" aria-live="polite"></div></div>'+
+      '<article class="km-intro-copy" aria-live="polite">'+copyHTML(s)+
+      '<details class="km-intro-source"><summary>出典と表現について</summary><p>原文は『史記』から短く引きました。書き下し文・現代語訳・説明は学習用です。地図と人物画は模式的な表現です。</p><a href="https://zh.wikisource.org/wiki/史記/卷007" target="_blank" rel="noopener">項羽本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷008" target="_blank" rel="noopener">高祖本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷048" target="_blank" rel="noopener">陳渉世家</a></details></article></div>'+
+      '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前へ</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===scenes.length-1?'done':'next')+'">'+(index===scenes.length-1?'序幕「霸上の夕べ」へ →':'次へ →')+'</button><small class="km-intro-playback">'+(auto?'場面は7秒、解説は45秒ごとに進む · 問いで一時停止':'手動で進む · ← → で場面、Enter でコマ送り')+'</small></footer>';
+    if(callbacks.stage)callbacks.stage(drama?s.drama[cut]:null);
     schedule();
   }
   function open(root,start,cb){
-    if(!panel){panel=document.createElement('section');panel.id='km-intro';panel.className='km-intro';panel.setAttribute('aria-label','鴻門前夜の紙芝居');root.appendChild(panel);
+    if(!panel){panel=document.createElement('section');panel.id='km-intro';panel.className='km-intro';panel.setAttribute('aria-label','鴻門への道の紙芝居');root.appendChild(panel);
       panel.addEventListener('click',function(e){
         var p=e.target.closest('[data-person]');if(p){auto=false;stopAuto();var toggle=panel.querySelector('[data-intro="auto"]');toggle.setAttribute('aria-pressed','false');toggle.textContent='▷ 自動で進む';panel.querySelector('.km-intro-playback').textContent='手動で進む · ← → キーでも操作';document.getElementById('km-intro-person').innerHTML=personHTML(p.dataset.person)+'<button class="km-person-close" data-intro="close-person">紹介を閉じる ×</button>';return;}
         var b=e.target.closest('[data-intro]');if(!b)return;e.stopPropagation();
@@ -8919,20 +9274,25 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
         if(a==='exit'){hide();callbacks.exit();return;}if(a==='done'){hide();callbacks.done();return;}
         if(a==='auto')auto=!auto;
         else auto=false;
-        if(a==='next')index=Math.min(6,index+1);if(a==='prev')index=Math.max(0,index-1);
-        if(a==='step')index=Number(b.dataset.step);
+        if(a==='next'||a==='prev'||a==='step'){goScene(a==='step'?Number(b.dataset.step):index+(a==='next'?1:-1));focusMain();return;}
+        if(a==='cutnext'||a==='tap'){nextCut();focusMain(a==='tap');return;}
+        if(a==='fig'){fig=Number(b.dataset.fig)||0;render();var ft=panel.querySelector('[data-intro="fig"][data-fig="'+fig+'"]');if(ft)ft.focus({preventScroll:true});return;}
+        if(a==='cutprev'){cut=Math.max(0,cut-1);render();focusMain();return;}
+        if(a==='view'){var to=b.dataset.view==='notes'?'notes':'drama';if(to==='drama'&&view==='notes'&&cut===scenes[index].drama.length-1)cut=0;view=to;render();focusMain();return;}
         if(a==='quiz')answers[b.dataset.question]=b.dataset.answer;
         var question=b.dataset.question, answer=b.dataset.answer;
         render();
         var target=a==='quiz'?panel.querySelector('[data-question="'+question+'"][data-answer="'+answer+'"]'):a==='auto'?panel.querySelector('[data-intro="auto"]'):panel.querySelector('h2');
         if(target)target.focus({preventScroll:a==='quiz'||a==='auto'});
       });
-      panel.addEventListener('keydown',function(e){if(e.target.matches('input,textarea'))return;if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-person][role="button"]')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));return;}if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();auto=false;index=Math.max(0,Math.min(6,index+(e.key==='ArrowRight'?1:-1)));render();panel.querySelector('h2').focus();}if(e.key==='Escape'){hide();callbacks.exit();}});
+      panel.addEventListener('keydown',function(e){if(e.target.matches('input,textarea'))return;if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-person][role="button"]')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));return;}if(view==='drama'&&(e.key==='Enter'||e.key===' ')&&!e.target.closest('button,summary,a')){e.preventDefault();auto=false;nextCut();focusMain();return;}if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();auto=false;goScene(index+(e.key==='ArrowRight'?1:-1));focusMain();}if(e.key==='Escape'){hide();callbacks.exit();}});
       document.addEventListener('visibilitychange',function(){if(panel&&!panel.hidden){if(document.hidden)stopAuto();else schedule();}});
     }
-    callbacks=cb;index=Math.max(0,Math.min(6,Math.floor(Number(start)||0)));auto=false;answers={promise:null,force:null};panel.hidden=false;root.classList.add('km-at-intro');render();panel.querySelector('h2').focus();
+    callbacks=cb;index=Math.max(0,Math.min(scenes.length-1,Math.floor(Number(start)||0)));auto=false;answers={};view='drama';cut=0;fig=0;panel.hidden=false;root.classList.add('km-at-intro');render();focusMain();
   }
-  function hide(){stopAuto();auto=false;if(panel){panel.hidden=true;panel.parentNode.classList.remove('km-at-intro');}}
+  /** 紙芝居では「次へ」、解説では見出しへ。コマ送りの途中で画面を押したときは焦点を動かさない */
+  function focusMain(keep){if(keep)return;var t=view==='drama'?panel.querySelector('[data-intro="cutnext"]'):panel.querySelector('h2');if(t)t.focus({preventScroll:true});}
+  function hide(){stopAuto();auto=false;if(panel){panel.hidden=true;panel.classList.remove('km-intro-drama');panel.parentNode.classList.remove('km-at-intro','km-intro-staging');if(callbacks&&callbacks.stage)callbacks.stage(null);}}
   function buildPrompt(ids){
     var K=window.KOUMON;
     return K.aiPrompt+'\n\n【資料：引用はこの範囲から】\n'+ids.filter(function(id){return K.genbun[id];}).map(function(id){var g=K.genbun[id];return '['+id+'] '+g.src+'「'+g.title+'」\n原文：'+g.hakubun+'\n書き下し（学習用）：'+g.yomi;}).join('\n\n');
@@ -8968,7 +9328,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   /* ============================ 記録 ============================ */
   function blankMeta() {
     return { v: 2, save: null, endings: {}, gen: {}, cleared: {}, sound: false, plays: 0, best: null, view: '',
-      classroom: true, projection: false, instant: true, reflection: {}, introStep: 0 };
+      classroom: true, projection: false, instant: true, meters: true, reflection: {}, missed: {}, introStep: 0 };
   }
   function loadMeta() {
     meta = blankMeta();
@@ -8983,7 +9343,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       }
     } catch (e) { /* 壊れた記録は使わない */ }
     if (meta.save && (!meta.save.node || !NODES[meta.save.node])) meta.save = null;
-    ['endings', 'gen', 'cleared'].forEach(function (k) { if (!meta[k] || typeof meta[k] !== 'object' || Array.isArray(meta[k])) meta[k] = {}; });
+    ['endings', 'gen', 'cleared', 'missed'].forEach(function (k) { if (!meta[k] || typeof meta[k] !== 'object' || Array.isArray(meta[k])) meta[k] = {}; });
+    Object.keys(meta.missed).forEach(function (id) { if (!NODES[id] || NODES[id].n.k !== 'read') delete meta.missed[id]; });
     meta.v = 2;
     if (!meta.reflection || typeof meta.reflection !== 'object' || Array.isArray(meta.reflection)) meta.reflection = {};
     if (meta.save) meta.save = hydrateState(meta.save);
@@ -9026,6 +9387,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     var phase = saved.phase;
     if (phase && phase.node === state.node &&
       ((phase.kind === 'feedback' && at.n.k === 'read' && at.n.o[phase.choice]) ||
+       (phase.kind === 'retry' && at.n.k === 'read' && Array.isArray(phase.wrong) && phase.wrong.length && phase.wrong.every(function (i) { return at.n.o[i] && !at.n.o[i].ok; })) ||
        (phase.kind === 'react' && NODES[phase.after] && typeof phase.text === 'string'))) state.phase = phase;
     else state.phase = null;
     state.game = saved.game && saved.game.node === state.node ? saved.game : null;
@@ -9277,6 +9639,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     updateSoundChip();
     ST.start();
     titleScreen();
+    startFromHash();
   }
   function close() {
     if (st && mode !== 'end') persist();
@@ -9352,7 +9715,26 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     window.KoumonClassroom.open($root, meta.introStep, {
       step: function (i) { meta.introStep = i; saveMeta(); },
       done: function () { window.KoumonClassroom.hide(); ST.start(); startNew('c0'); },
-      exit: function () { ST.start(); titleScreen(); }
+      exit: function () { ST.start(); titleScreen(); },
+      stage: introCut
+    });
+  }
+  /** 導入の紙芝居：本編と同じ舞台と人物で一コマを見せる。cut が無ければ舞台を止める */
+  var introKey = '';
+  function introCut(cut) {
+    if (!cut) { introKey = ''; if (ST.speaker) ST.speaker(null); ST.hideBubble(); ST.stop(); return; }
+    ST.start();
+    if (ST.resize) ST.resize(); // 字幕の札の高さに合わせて、人物を札より上に収める
+    var key = [cut.stage, cut.light, (cut.cast || []).join(',')].join('|'), epoch = ++sceneEpoch;
+    var ready = key === introKey ? Promise.resolve() : Promise.resolve(ST.setScene(!ST.STAGES || typeof ST.STAGES !== 'object' || ST.STAGES[cut.stage] ? cut.stage : 'bashang', cut.light, cut.cast || [], cut.pose || {}));
+    introKey = key;
+    if (meta.sound) ambience(/nangong|palace/.test(cut.stage) ? 'in' : 'out');
+    ready.then(function () {
+      if (epoch !== sceneEpoch || mode !== 'intro') return;
+      ST.focus(cut.at || 'wide');
+      if (ST.speaker) ST.speaker(cut.w || null);
+      if (cut.fx) ST.effect(cut.fx);
+      if (cut.sfx) sfx(cut.sfx);
     });
   }
 
@@ -9410,6 +9792,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     renderStatus();
     if (resuming && st.phase && st.phase.node === id) {
       if (st.phase.kind === 'feedback') { doAsk(n, true); return judgeRead(n, n.o[st.phase.choice], true); }
+      if (st.phase.kind === 'retry') { doAsk(n, true); return markRetry(n); }
       if (st.phase.kind === 'react') return renderReaction(st.phase);
     }
     switch (n.t) {
@@ -9427,8 +9810,9 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   function snapshot() {
     // 復帰点の中へ履歴や復帰点を入れ子にしない。
     var s = {};
-    Object.keys(st).forEach(function (key) { if (key !== 'cp' && key !== 'rewinds') s[key] = st[key]; });
-    s.cp = null; s.rewinds = [];
+    // 台詞の履歴は復帰点ごとに複製せず、選び直したあとも続けて残す。
+    Object.keys(st).forEach(function (key) { if (key !== 'cp' && key !== 'rewinds' && key !== 'log') s[key] = st[key]; });
+    s.cp = null; s.rewinds = []; s.log = [];
     return clone(s);
   }
   function retryPoint(eid) {
@@ -9586,6 +9970,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       go(nextOf(cur));
     } else if (mode === 'react') {
       go(cur._after);
+    } else if (mode === 'gen') {
+      go(nextOf(cur));
     }
   }
 
@@ -9631,7 +10017,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       '<div class="km-yaku-label">現代語訳</div>' +
       '<div class="km-yaku">' + esc(g.yaku) + '</div>' +
       '<div class="km-note">' + esc(g.note) + '</div>' +
-      '<div class="km-nav"><span class="km-hint-key">本文は横にスクロールできます</span><button class="km-btn gold km-next" data-km="gennext">次へ ▶</button></div>';
+      '<div class="km-nav km-nav-sticky"><span class="km-hint-key">本文は横にスクロールできます</span><button class="km-btn gold km-next" data-km="gennext">次へ ▶</button></div>';
   }
 
   /* ---------- 選択 ---------- */
@@ -9640,7 +10026,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     ST.hideBubble();
     if (n.at) ST.focus(n.at); else if (n.w && n.w !== 'you') ST.focus(n.w);
     var opts = n.o.map(function (o, i) { return { o: o, i: i }; });
-    if (n.k === 'read') opts = shuffle(opts, n.id);
+    opts = shuffle(opts, n.id);
     n._order = opts.map(function (x) { return x.i; });
     var canHint = n.k === 'read' && n.hint;
     el.panel.innerHTML =
@@ -9651,15 +10037,25 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       '<div class="km-opts">' + opts.map(function (x, k) {
         return '<button class="km-opt" data-km="pick" data-i="' + x.i + '"><span class="km-opt-n">' + '一二三四'.charAt(k) + '</span><span>' + esc(x.o.x) + '</span></button>';
       }).join('') + '</div>' +
-      (canHint ? '<div class="km-nav"><button class="km-btn km-hint-btn" data-km="hint"' + (meta.classroom || st.saku > 0 || st.hinted[n.id] ? '' : ' disabled') + '>' + esc(hintWho()) + 'に問う<small>' + (meta.classroom ? '何度でも確認できます' : '策 残り ' + st.saku) + '</small></button></div><div class="km-hint" id="km-hint" hidden></div>' : '');
+        '<div class="km-nav">' + (canHint ? '<button class="km-btn km-hint-btn" data-km="hint"' + (meta.classroom || st.saku > 0 || st.hinted[n.id] ? '' : ' disabled') + '>' + esc(hintWho()) + 'に問う<small>' + (meta.classroom ? '何度でも確認できます' : '策 残り ' + st.saku) + '</small></button>' : '<span></span>') +
+        '<span class="km-hint-key km-key-hint">1〜' + opts.length + ' キーでも選べます</span></div>' +
+      (canHint ? '<div class="km-hint" id="km-hint" hidden></div>' : '');
     if (st.hinted[n.id]) showHint(n);
     if (n.timer && !reduced() && !meta.classroom && !restoring) startTimer(n);
   }
   function hintWho() { return st.ch === 'c8' ? '虞' : st.ch === 'c9' ? '蕭何' : '子房（張良）'; }
+  /** 問いごとに決まった順で並べ替える。台本では正解（史記の選択）を先頭に書くため、必ず通す。
+   *  乗算は Math.imul で32ビットに収める（普通の掛け算は 2^53 を超えて下位の桁が失われ、並びが固定される）。 */
   function shuffle(arr, seedStr) {
-    var a = arr.slice(), seed = 0;
-    String(seedStr + (st ? st.q : 0)).split('').forEach(function (c) { seed = (seed * 31 + c.charCodeAt(0)) >>> 0; });
-    for (var i = a.length - 1; i > 0; i--) { seed = (seed * 1103515245 + 12345) >>> 0; var j = seed % (i + 1); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    var a = arr.slice(), seed = 2166136261;
+    String(seedStr + (st ? st.q : 0)).split('').forEach(function (c) { seed = Math.imul(seed ^ c.charCodeAt(0), 16777619) >>> 0; });
+    function next() {
+      seed = (seed + 0x6D2B79F5) >>> 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(next() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
     return a;
   }
   function startTimer(n) {
@@ -9711,8 +10107,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     stopTimer();
     var o = n.o[i]; if (!o) return;
     if (n.k === 'read') return judgeRead(n, o);
-    st.picks.push({ q: n.q, a: o.x, ch: st.ch });
-    if (st.picks.length > 40) st.picks.shift();
+    recordPick(n.q, o.x, n.o, o);
     logLine('you', o.x);
     apply(o);
     var to = o.go || nextOf(n);
@@ -9725,19 +10120,60 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     go(to);
   }
 
+  /** 決断の記録。史記の道が一つに定まる問いだけ、史記の選択を添える。 */
+  function recordPick(q, a, options, chosen) {
+    var hist = options ? options.filter(function (x) { return x.ok; }) : [];
+    var pick = { q: q, a: a, ch: st.ch };
+    if (hist.length === 1 && hist.length < options.length) { pick.hist = hist[0].x; pick.same = chosen === hist[0]; }
+    else if (options) pick.interp = true;
+    st.picks.push(pick);
+    if (st.picks.length > 40) st.picks.shift();
+  }
+  function noteMissed(n) {
+    meta.missed[n.id] = (meta.missed[n.id] || 0) + 1;
+    saveMeta();
+  }
+
   function renderReaction(phase) {
     mode = 'react'; cur = { _after: phase.after };
     el.panel.innerHTML = speakerHTML(phase.speaker) + '<span class="km-evidence-label">ゲーム上の創作</span><div class="km-text">' + esc(phase.text) + '</div>' +
       '<div class="km-nav"><span></span><button class="km-btn gold km-next" data-km="next">次へ →</button></div>';
     el.panel.querySelector('.km-next').focus({ preventScroll: true });
   }
+  /** 授業モードでは、最初の読み違いで答えを見せず、ヒントを添えてもう一度考えさせる。 */
+  function retryRead(n, i) {
+    st.phase = { node: n.id, kind: 'retry', wrong: [i] };
+    noteMissed(n);
+    markRetry(n);
+    persist();
+  }
+  function markRetry(n) {
+    mode = 'ask';
+    st.phase.wrong.forEach(function (i) {
+      var b = $root.querySelector('.km-opt[data-i="' + i + '"]');
+      if (b) { b.disabled = true; b.classList.add('ng'); }
+    });
+    if (n.hint) showHint(n);
+    var fb = document.createElement('div');
+    fb.className = 'km-fb km-fb-retry';
+    fb.setAttribute('role', 'status');
+    fb.innerHTML = '<div class="km-fb-h">もう一度、読み直そう</div><p>' + (n.hint ? '下のヒントを手がかりに、' : '') + '残りの選択肢から選び直してください。</p>';
+    var opts = $root.querySelector('.km-opts');
+    if (opts) opts.parentNode.insertBefore(fb, opts.nextSibling);
+    fb.scrollIntoView({ block: 'nearest' });
+    var first = $root.querySelector('.km-opt:not([disabled])'); if (first) first.focus({ preventScroll: true });
+  }
   function judgeRead(n, o, restoring) {
+    var retried = !!(st.phase && st.phase.node === n.id && (st.phase.kind === 'retry' || st.phase.retried));
+    if (!restoring && !o.ok && meta.classroom && !retried) return retryRead(n, n.o.indexOf(o));
     mode = 'feedback';
     var ok = !!o.ok, safe = meta.classroom || !!chap(st.ch).safe;
     var lifeNote = '';
     if (!restoring) {
     st.q++;
-    if (ok) { st.ok++; st.streak++; } else st.streak = 0;
+    // 読解率は一度目の読みで数える。読み直して正解したときは連続正解にも数えない。
+    if (ok && !retried) { st.ok++; st.streak++; } else st.streak = 0;
+    if (!ok && !retried) noteMissed(n);
     apply(o);
     if (!ok && !safe) {
       st.life = Math.max(0, st.life - 1);
@@ -9748,8 +10184,9 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       lifeNote = '<div class="km-life-note up">三つ続けて読み解いた。命が一つ戻った。</div>';
     }
     if (window.Store && window.Store.record) window.Store.record(null, ok, kanjiCount(n.stem || ''));
-    st.phase = { node: n.id, kind: 'feedback', choice: n.o.indexOf(o), lifeNote: lifeNote };
-    } else lifeNote = st.phase.lifeNote || '';
+    st.phase = { node: n.id, kind: 'feedback', choice: n.o.indexOf(o), lifeNote: lifeNote, retried: retried };
+    } else { lifeNote = st.phase.lifeNote || ''; retried = !!st.phase.retried; }
+    var oldRetry = $root.querySelector('.km-fb-retry'); if (oldRetry) oldRetry.parentNode.removeChild(oldRetry);
     renderStatus();
     var right = n.o.filter(function (x) { return x.ok; })[0];
     var kuho = n.kuho && window.KUHO ? window.KUHO.filter(function (k) { return k.id === n.kuho; })[0] : null;
@@ -9762,12 +10199,12 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     });
     var fb = document.createElement('div');
     fb.className = 'km-fb ' + (ok ? 'ok' : 'ng');
-    fb.innerHTML = '<div class="km-fb-h">' + (ok ? '◯ 読み解いた' : '✕ 読み違えた') + '</div>' +
+    fb.innerHTML = '<div class="km-fb-h">' + (ok ? (retried ? '◯ 読み直して、読み解いた' : '◯ 読み解いた') : '✕ 読み違えた') + '</div>' +
       (ok ? '' : '<div class="km-fb-right">正しくは：' + esc(right ? right.x : '') + '</div>') +
       '<span class="km-evidence-label">読解の解説 · 本文の理解と解釈</span><p>' + esc(n.exp || '') + '</p>' +
       (kuho ? '<div class="km-kuho"><span class="km-kuho-tag">句法</span><b>' + esc(kuho.form) + '</b>　' + esc(kuho.read || '') + '<br><small>' + esc(kuho.mean || '') + '</small></div>' : '') +
       lifeNote +
-      '<div class="km-nav"><span></span><button class="km-btn gold km-next" data-km="fbnext">次へ ▶</button></div>';
+      '<div class="km-nav km-nav-sticky"><span></span><button class="km-btn gold km-next" data-km="fbnext">次へ ▶</button></div>';
     var old = $root.querySelector('.km-hint-btn'); if (old) old.parentNode.parentNode.removeChild(old.parentNode);
     el.panel.appendChild(fb);
     fb.scrollIntoView({ block: 'nearest' });
@@ -9785,7 +10222,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     var safe = meta.classroom || chap(st.ch).safe;
     var hearts = '';
     for (var i = 0; i < st.maxLife; i++) hearts += '<i class="' + (i < st.life ? 'on' : '') + '"></i>';
-    var meters = st.flags.meters && !safe && chapIndex(st.ch) <= 7;
+    // 授業モードでは命に響かないが、言葉づかいの因果が見えるよう怒気・殺気は参考として示す。
+    var meters = st.flags.meters && chapIndex(st.ch) <= 7 && (!safe || (meta.classroom && meta.meters));
     function meter(label, v, cls) {
       var p = Math.max(0, Math.min(100, v));
       return '<div class="km-meter ' + cls + (p >= 75 ? ' hot' : '') + '" title="' + label + ' ' + p + '"><span>' + label + '</span><b><i style="width:' + p + '%"></i></b></div>';
@@ -9914,7 +10352,9 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     var G = K.games.gift;
     var ok = Object.keys(G.ans).every(function (k) { return giftS.to[k] === G.ans[k]; });
     st.flags.giftWrong = !ok;
-    st.picks.push({ q: '献上の品', a: G.items.map(function (it) { return it.name + '→' + (giftS.to[it.id] === 'u' ? '項王' : '亜父'); }).join('、'), ch: st.ch });
+    var giftText = function (to) { return G.items.map(function (it) { return it.name + '→' + (to[it.id] === 'u' ? '項王' : '亜父'); }).join('、'); };
+    st.picks.push({ q: '献上の品', a: giftText(giftS.to), ch: st.ch, hist: giftText(G.ans), same: ok });
+    if (st.picks.length > 40) st.picks.shift();
     apply({ take: ['heki', 'to'] });
     closeModal();
     var n = giftS.n;
@@ -9948,14 +10388,14 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     modal('<h3>' + esc(G.title) + '</h3><p class="km-m-lead">' + esc(G.lead) + '</p>' + routeMap() +
       (msg ? '<div class="km-m-msg">' + msg + '</div>' : '') +
       (s ? '<div class="km-route-q"><b>' + (routeS.step + 1) + '／' + G.steps.length + '　' + esc(s.q) + '</b></div><div class="km-opts">' +
-        s.o.map(function (o, i) { return '<button class="km-opt" data-km="routepick" data-i="' + i + '"><span class="km-opt-n">' + '一二'.charAt(i) + '</span><span>' + esc(o.x) + '</span></button>'; }).join('') + '</div>'
+        shuffle(s.o.map(function (o, i) { return i; }), 'route' + routeS.step).map(function (i, k) { var o = s.o[i]; return '<button class="km-opt" data-km="routepick" data-i="' + i + '"><span class="km-opt-n">' + '一二'.charAt(k) + '</span><span>' + esc(o.x) + '</span></button>'; }).join('') + '</div>'
         : '<div class="km-nav"><span></span><button class="km-btn gold" data-km="routedone">駆ける ▶</button></div>'), 'km-m-route');
   }
   function routePick(i) {
     var G = K.games.route, s = routeS && G.steps[routeS.step], o = s && s.o[i];
     if (mode !== 'game' || !o) return;
     if (!o.ok) routeS.bad = true;
-    st.picks.push({ q: s.q, a: o.x, ch: st.ch });
+    recordPick(s.q, o.x, s.o, o);
     routeS.step++;
     renderRoute(esc(o.r));
   }
@@ -9985,7 +10425,6 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       }
     }
     var grade = rate >= 95 ? '子房の智' : rate >= 80 ? '樊噲の胆' : rate >= 60 ? '項伯の情' : '鯫生の言';
-    var picks = st.picks.slice(-5).map(function (p) { return '<li><span>' + esc(p.q) + '</span>' + esc(p.a) + '</li>'; }).join('');
     var btns = [];
     if (E.kind === 'bad' && st.cp) {
       var retryNode = NODES[st.cp.node].n;
@@ -9994,12 +10433,14 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     }
     if (E.unlock) btns.push('<button class="km-btn gold" data-km="part2">第二部「垓下」へ進む</button>');
     if (E.ai || eid === 'T1') btns.push('<button class="km-btn gold" data-km="ai">范増として考える（AI活動）</button>');
+    if (missedIds().length) btns.push('<button class="km-btn" data-km="review">読み直し帳<small>' + missedIds().length + ' 問</small></button>');
+    btns.push('<button class="km-btn" data-km="record">学習記録を書き出す</button>');
     btns.push('<button class="km-btn" data-km="endings">結末帳</button>');
     btns.push('<button class="km-btn" data-km="totitle">表紙へ</button>');
     if (E.kind === 'bad') sfx('drum'); else sfx('pluck');
     // 異聞の結末では、原因となった選択の前を続きとして保存する。
     if (E.kind === 'true') meta.save = null;
-    else if (st.cp) { meta.save = clone(st.cp.snap); meta.save.cp = clone(st.cp); meta.save.node = st.cp.node; }
+    else if (st.cp) { meta.save = clone(st.cp.snap); meta.save.cp = clone(st.cp); meta.save.node = st.cp.node; meta.save.log = clone(st.log); }
     saveMeta();
     modal('<div class="km-end ' + E.kind + '">' +
       '<div class="km-end-kind">' + (E.kind === 'true' ? '正史' : '異聞') + '　結末' + (firstTime ? '<span class="km-new">初めて見た</span>' : '') + '</div>' +
@@ -10007,17 +10448,36 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       '<p class="km-end-text">' + esc(E.text) + '</p>' +
       '<div class="km-end-fact"><b>史記の記述と、このゲームの解釈</b>' + esc(E.fact) + '</div>' +
       (E.kind === 'true' ? '<div class="km-end-stats"><div><b>' + st.ok + ' / ' + st.q + '</b><span>読み解いた句</span></div><div><b>' + rate + '%</b><span>読解率</span></div><div><b>' + esc(grade) + '</b><span>評</span></div><div><b>' + st.hints + '</b><span>策を用いた</span></div></div>' : '') +
-      (picks ? '<details class="km-end-picks"><summary>この旅の選択を振り返る</summary><ol>' + picks + '</ol></details>' : '') +
+      routeHTML(st.picks, E.kind === 'true') +
       '<div class="km-end-btns">' + btns.join('') + '</div></div>', 'km-m-end');
+  }
+  /** あなたの道と史記の道を並べる。史記の道が一つに定まらない問いは「あなたの読み」として分ける。 */
+  function routeHTML(picks, open) {
+    var compared = picks.filter(function (p) { return p.hist; }), interp = picks.filter(function (p) { return p.interp; });
+    var plain = picks.filter(function (p) { return !p.hist && !p.interp; });
+    if (!compared.length && !interp.length && !plain.length) return '';
+    var differ = compared.filter(function (p) { return !p.same; }).length;
+    return '<details class="km-end-picks"' + (open ? ' open' : '') + '><summary>あなたの道と史記の道' +
+      (compared.length ? '<small>' + (differ ? '史記と違う選択 ' + differ + ' / ' + compared.length : compared.length + ' の決断すべてが史記どおり') + '</small>' : '') + '</summary>' +
+      (compared.length ? '<ol class="km-route-list">' + compared.map(function (p) {
+        return '<li class="' + (p.same ? 'same' : 'differ') + '"><span>' + esc(p.q) + '</span>' +
+          '<div><b>あなた</b>' + esc(p.a) + '</div>' +
+          (p.same ? '<div class="km-route-mark">史記と同じ</div>' : '<div><b>史記</b>' + esc(p.hist) + '</div>') + '</li>';
+      }).join('') + '</ol>' : '') +
+      (interp.length ? '<p class="km-route-h">あなたの読み（本文からいくつも説明できる問い）</p><ol class="km-route-list">' + interp.map(function (p) {
+        return '<li class="interp"><span>' + esc(p.q) + '</span><div><b>あなた</b>' + esc(p.a) + '</div></li>';
+      }).join('') + '</ol>' : '') +
+      (plain.length ? '<ol class="km-route-list">' + plain.map(function (p) { return '<li><span>' + esc(p.q) + '</span><div>' + esc(p.a) + '</div></li>'; }).join('') + '</ol>' : '') +
+      '</details>';
   }
   function retry() {
     if (!st || !st.cp) return titleScreen();
     var cp = st.cp;
-    var keep = { q: st.q, ok: st.ok, hints: st.hints };
+    var keep = { q: st.q, ok: st.ok, hints: st.hints, log: st.log };
     st = hydrateState(cp.snap);
     if (!st) return titleScreen();
     st.cp = cp;
-    st.q = keep.q; st.ok = keep.ok; st.hints = keep.hints;
+    st.q = keep.q; st.ok = keep.ok; st.hints = keep.hints; st.log = keep.log;
     if (st.life <= 0) st.life = 1;
     closeModal();
     cancelScene(); var epoch = sceneEpoch;
@@ -10030,14 +10490,35 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   function chapterMenu() {
     var html = '<h3>目次</h3><p class="km-m-lead">読み終えた章から、もう一度始められます。途中の章から始めるときは、それまでを史記どおりに選んだものとします。</p><div class="km-chaps">';
     K.chapters.forEach(function (c, i) {
-      var open = meta.classroom || i === 0 || meta.cleared[K.chapters[i - 1].id] || meta.cleared[c.id];
-      if (c.part2 && !meta.classroom) open = !!meta.endings.T1 && (c.id === 'c8' || meta.cleared.c8);
+      var open = chapterOpen(i);
       html += '<button class="km-chap" data-km="chap" data-c="' + c.id + '"' + (open ? '' : ' disabled') + '>' +
         '<span class="km-chap-no">' + esc(c.no) + '</span><b>' + (open ? esc(c.title) : '？？？') + '</b><small>' + (open ? esc(c.sub) : 'まだ開いていない') + '</small>' +
         (meta.cleared[c.id] ? '<span class="km-chap-done">読了</span>' : '') + '</button>';
     });
-    html += '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
+    html += '</div>';
+    if (meta.classroom) html += '<div class="km-chaplink"><b>授業で場面を指定する</b><p class="km-m-small">ページのURLの末尾に「#c3」のように付けて開くと、その場面から始まります。生徒と同じ場所（学校のWebページや共有フォルダ）に置いたファイルで使ってください。</p>' +
+      '<label>はじめる場面 <select data-chaplink>' + [['intro', '鴻門への道（導入）']].concat(K.chapters.map(function (c) { return [c.id, c.no + '　' + c.title]; }), [['ai', '范増として考える（AI活動）'], ['review', '読み直し帳']]).map(function (o) {
+        return '<option value="' + o[0] + '">' + esc(o[1]) + '　#' + o[0] + '</option>';
+      }).join('') + '</select></label><button class="km-btn" data-km="copychaplink">リンクをコピー</button><span class="km-m-small" role="status" id="km-chaplink-status"></span></div>';
+    html += '<div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
     modal(html, 'km-m-menu');
+  }
+  function chapterOpen(i) {
+    var c = K.chapters[i];
+    if (c.part2 && !meta.classroom) return !!meta.endings.T1 && (c.id === 'c8' || !!meta.cleared.c8);
+    return !!(meta.classroom || i === 0 || meta.cleared[K.chapters[i - 1].id] || meta.cleared[c.id]);
+  }
+  function chapterLink(id) { return location.href.split('#')[0] + '#' + id; }
+  /** URLの #c3・#intro などから、その場面を開く。挑戦モードでまだ開いていない章は表紙のまま。 */
+  function startFromHash() {
+    var id = decodeURIComponent((location.hash || '').replace(/^#/, ''));
+    if (!id) return;
+    if (id === 'intro' && window.KoumonClassroom) return intro();
+    if (id === 'ai') return aiScreen();
+    if (id === 'review') return review();
+    if (id === 'book') return bookMenu();
+    var i = K.chapters.map(function (c) { return c.id; }).indexOf(id);
+    if (i >= 0 && chapterOpen(i)) startNew(id);
   }
   function bookMenu(openId, back) {
     var ids = Object.keys(K.genbun);
@@ -10078,6 +10559,9 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       '<p><b>決断</b>　沛公としての判断です。史記と違う道を選ぶと、<b>異聞の結末</b>にたどり着くことがあります。結末からは、原因になった選択へ戻って選び直せます。戻り先はボタンに表示されます。</p>' +
       '<p><b>項王の怒気・范増の殺気</b>　言葉づかい一つで上下します。どちらも満ちれば命はありません。</p>' +
       '<p><b>策</b>　「子房に問う」でヒントがもらえます。数には限りがあります。</p>' +
+      '<p><b>授業モード</b>　読み違えても命は減らず、一度目はヒントを添えて選び直せます。怒気・殺気は参考として表示されます（授業設定で切り替え）。</p>' +
+      '<p><b>読み直し帳</b>　読み違えた問いが集まり、表紙や結末からあとで解き直せます。読み解くと帳から外れます。</p>' +
+      '<p><b>あなたの道と史記の道</b>　結末で、あなたの決断と史記の記述を並べて振り返れます。「学習記録」でテキストに書き出せます。</p>' +
       '<p><b>原文帳</b>　物語で読んだ史記の原文（白文・書き下し・現代語訳・注）が綴じられます。読んだ字数は「学びの記録」にも加算されます。</p>' +
       '<p><b>絵を見る</b>　本文を隠して場面の絵だけを眺められます（H キー）。</p>' +
       '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>', 'km-m-howto');
@@ -10105,7 +10589,9 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     function done(ok) {
       var b = el.modal.querySelector('[data-km="copyai"]');
       if (b) b.textContent = ok ? 'コピーしました' : '選択して手動でコピーしてください';
-      if (!ok && ta) { ta.focus(); ta.select(); }
+      var status = document.getElementById('km-ai-copy-status');
+      if (status) status.textContent = ok ? '次は ① 授業で使うAIの入力欄に貼り付けて送信 → ② 范増として5回まで話す → ③ このページに戻り「対話を振り返る」へ。' : '指示文の欄を開いて全体を選び、コピーしてください。';
+      if (!ok && ta) { var d = ta.closest('details'); if (d) d.open = true; ta.focus(); ta.select(); }
     }
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(window.KoumonClassroom.buildPrompt(aiSources)).then(function () { done(true); }, function () { done(false); });
     else done(false);
@@ -10114,6 +10600,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   function settings() {
     modal('<h3>授業に合わせる</h3><p class="km-m-lead">設定はこのブラウザーに保存されます。</p><div class="km-settings">' +
       '<label><input type="checkbox" data-pref="classroom"' + (meta.classroom?' checked':'') + '><span><b>授業モード</b><small>命を減らさず、時間制限なし。全章・全原文へ移動できます。</small></span></label>' +
+      '<label><input type="checkbox" data-pref="meters"' + (meta.meters?' checked':'') + '><span><b>怒気・殺気を示す</b><small>授業モードでも、言葉づかいで項王の怒気・范増の殺気がどう動くかを表示します。</small></span></label>' +
       '<label><input type="checkbox" data-pref="projection"' + (meta.projection?' checked':'') + '><span><b>投影して、みんなで読む</b><small>本文・選択肢を大きく表示。個人学習ではオフに。</small></span></label>' +
       '<label><input type="checkbox" data-pref="instant"' + (meta.instant?' checked':'') + '><span><b>文字を一度に表示</b><small>オフにすると、台詞を少しずつ表示します。</small></span></label></div>' +
       '<div class="km-viewsel"><span>舞台</span><button class="km-btn" data-km="view3d"' + (window.KoumonStage3D && window.KoumonStage3D.supported()?'':' disabled') + '>3D</button><button class="km-btn" data-km="view2d">影絵（軽量）</button></div>' +
@@ -10131,8 +10618,99 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   function exportReflection() {
     var labels = {quote:'根拠にした本文',reason:'考えと伝えた言葉',difference:'AIと本文の違い',next:'読み直して気づいたこと'};
     var content = '鴻門の会 — 振り返り\n\n' + Object.keys(labels).map(function(k){return labels[k]+'\n'+(meta.reflection[k]||'（未記入）');}).join('\n\n');
-    var url = URL.createObjectURL(new Blob([content], {type:'text/plain;charset=utf-8'}));
-    var a = document.createElement('a'); a.href=url; a.download='鴻門の会_振り返り.txt'; a.click(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
+    downloadText('鴻門の会_振り返り.txt', content);
+  }
+
+  /* ============================ 読み直し帳 ============================ */
+  function missedIds() { return ORDER.filter(function (id) { return meta.missed[id]; }); }
+  var reviewS = null;
+  function review() { reviewS = { ids: missedIds(), i: 0, cleared: 0, answered: null }; renderReview(); }
+  function kuhoHTML(n) {
+    var k = n.kuho && window.KUHO ? window.KUHO.filter(function (x) { return x.id === n.kuho; })[0] : null;
+    return k ? '<div class="km-kuho"><span class="km-kuho-tag">句法</span><b>' + esc(k.form) + '</b>　' + esc(k.read || '') + '<br><small>' + esc(k.mean || '') + '</small></div>' : '';
+  }
+  function renderReview() {
+    var ids = reviewS.ids, close = '<button class="km-btn" data-km="closemodal">閉じる</button>';
+    if (!ids.length) return modal('<h3>読み直し帳</h3><p class="km-m-lead">読み違えた「読み解け」の問いが、ここに集まります。いまは読み直す問いがありません。</p><div class="km-nav"><span></span>' + close + '</div>', 'km-m-review');
+    if (reviewS.i >= ids.length) {
+      var left = missedIds().length;
+      return modal('<h3>読み直し帳</h3><p class="km-m-lead">' + ids.length + ' 問を読み直し、' + reviewS.cleared + ' 問を読み解いた。' + (left ? 'まだ ' + left + ' 問が残っています。' : '読み直す問いは、すべて読み解きました。') + '</p>' +
+        '<div class="km-nav">' + (left ? '<button class="km-btn gold" data-km="review">残りをもう一度</button>' : '<span></span>') + close + '</div>', 'km-m-review');
+    }
+    var id = ids[reviewS.i], n = NODES[id].n, answered = reviewS.answered;
+    var order = shuffle(n.o.map(function (o, i) { return i; }), 'review' + id);
+    var html = '<h3>読み直し帳 <small>' + (reviewS.i + 1) + ' / ' + ids.length + '</small></h3>' +
+      '<p class="km-m-lead">' + esc(chap(NODES[id].ch).no + '　' + chap(NODES[id].ch).title) + '　·　読み違えた回数 ' + (meta.missed[id] || 0) + '</p>' +
+      '<div class="km-ask-h"><span class="km-ask-tag read">読み解け</span><span class="km-ask-q">' + esc(n.q) + '</span></div>' +
+      (n.stem ? '<div class="km-stem-wrap"><div class="km-vt km-stem">' + kanbunHTML(n.stem) + '</div></div>' : '') +
+      '<div class="km-opts">' + order.map(function (i, k) {
+        var o = n.o[i], cls = answered === null ? '' : o.ok ? ' ok' : i === answered ? ' ng' : '';
+        return '<button class="km-opt' + cls + '" data-km="revpick" data-i="' + i + '"' + (answered === null ? '' : ' disabled') + '><span class="km-opt-n">' + '一二三四'.charAt(k) + '</span><span>' + esc(o.x) + '</span></button>';
+      }).join('') + '</div>';
+    if (answered !== null) {
+      var ok = !!n.o[answered].ok;
+      html += '<div class="km-fb ' + (ok ? 'ok' : 'ng') + '"><div class="km-fb-h">' + (ok ? '◯ 読み解いた。読み直し帳から外します' : '✕ まだ読み違えている') + '</div>' +
+        '<span class="km-evidence-label">読解の解説 · 本文の理解と解釈</span><p>' + esc(n.exp || '') + '</p>' + kuhoHTML(n) + '</div>';
+    } else if (n.hint) html += '<details class="km-review-hint"><summary>ヒントを見る</summary><p>' + esc(n.hint) + '</p></details>';
+    html += '<div class="km-nav">' + close + (answered !== null ? '<button class="km-btn gold" data-km="revnext">' + (reviewS.i + 1 < ids.length ? '次の問いへ ▶' : '結果を見る ▶') + '</button>' : '<span></span>') + '</div>';
+    modal(html, 'km-m-review');
+  }
+  function reviewPick(i) {
+    if (!reviewS || reviewS.answered !== null) return;
+    var id = reviewS.ids[reviewS.i], o = NODES[id].n.o[i];
+    if (!o) return;
+    reviewS.answered = i;
+    if (o.ok) { delete meta.missed[id]; reviewS.cleared++; } else meta.missed[id] = (meta.missed[id] || 0) + 1;
+    saveMeta();
+    renderReview();
+  }
+
+  /* ============================ 学習記録 ============================ */
+  function recordText() {
+    var L = ['鴻門の会 — 学習記録', '書き出した日時：' + new Date().toLocaleString('ja-JP'), '（提出するときは、先生の指示に従って名前や番号を書き加えてください）', ''];
+    L.push('■ 進み具合', 'モード：' + (meta.classroom ? '授業モード' : '挑戦モード'));
+    var read = K.chapters.filter(function (c) { return meta.cleared[c.id]; });
+    L.push('読み終えた章：' + (read.length ? read.map(function (c) { return c.no; }).join('・') : 'まだない') + '（' + read.length + ' / ' + K.chapters.length + '）');
+    L.push('原文帳：' + Object.keys(meta.gen).filter(function (g) { return K.genbun[g]; }).length + ' / ' + Object.keys(K.genbun).length + ' 段', '');
+    L.push('■ 結末（' + Object.keys(meta.endings).filter(function (e) { return K.endings[e]; }).length + ' / ' + Object.keys(K.endings).length + '）');
+    Object.keys(K.endings).forEach(function (e) { var E = K.endings[e]; L.push((meta.endings[e] ? '◯ ' : '－ ') + (E.kind === 'true' ? '正史' : '異聞') + '「' + (meta.endings[e] ? E.title : '？？？') + '」'); });
+    L.push('', '■ 読解');
+    if (meta.best) L.push('結末までの最高の読解率：' + meta.best.rate + '%（' + meta.best.q + ' 問）');
+    if (st && st.q) L.push('今回の記録：' + st.ok + ' / ' + st.q + ' 問を一度で読み解いた（策を用いた回数 ' + st.hints + '）');
+    if (!meta.best && !(st && st.q)) L.push('まだ記録がない');
+    var differ = st ? st.picks.filter(function (p) { return p.hist && !p.same; }) : [];
+    if (differ.length) {
+      L.push('', '■ 今回、史記と違う道を選んだ決断');
+      differ.forEach(function (p) { L.push('・' + p.q, '　あなた：' + p.a, '　史記：' + p.hist); });
+    }
+    var interp = st ? st.picks.filter(function (p) { return p.interp; }) : [];
+    if (interp.length) { L.push('', '■ あなたの読み'); interp.forEach(function (p) { L.push('・' + p.q, '　' + p.a); }); }
+    var miss = missedIds();
+    L.push('', '■ 読み直し帳（まだ読み解けていない問い ' + miss.length + ' 問）');
+    if (miss.length) miss.forEach(function (id) { L.push('・' + NODES[id].n.q + '（' + chap(NODES[id].ch).no + '、読み違え ' + meta.missed[id] + ' 回）'); });
+    else L.push('なし');
+    var labels = { quote: '根拠にした本文', reason: '考えと伝えた言葉', difference: 'AIと本文の違い', next: '読み直して気づいたこと' };
+    if (Object.keys(labels).some(function (k) { return meta.reflection[k]; })) {
+      L.push('', '■ 振り返り');
+      Object.keys(labels).forEach(function (k) { L.push(labels[k] + '：' + (meta.reflection[k] || '（未記入）')); });
+    }
+    return L.join('\n');
+  }
+  function recordScreen() {
+    modal('<h3>学習記録を書き出す</h3><p class="km-m-lead">結末・原文帳・読解・史記と違う決断・読み直し帳・振り返りを、テキストにまとめます。コピーして提出フォームに貼るか、ファイルで保存してください。</p>' +
+      '<textarea class="km-record" readonly rows="12" aria-label="学習記録">' + esc(recordText()) + '</textarea>' +
+      '<p class="km-m-small" role="status" id="km-record-status">記録はこの端末のブラウザーにだけ保存されています。</p>' +
+      '<div class="km-nav"><button class="km-btn" data-km="closemodal">閉じる</button><button class="km-btn" data-km="saverecord">ファイルで保存</button><button class="km-btn gold" data-km="copyrecord">コピー</button></div>', 'km-m-record');
+  }
+  function downloadText(name, content) {
+    var url = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
+    var a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  function copyText(text, statusId, okMsg) {
+    var status = document.getElementById(statusId);
+    function done(ok) { if (status) status.textContent = ok ? okMsg : 'コピーできませんでした。文字を選んでコピーしてください。'; }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+    else done(false);
   }
 
   function updateSoundChip() {
@@ -10199,6 +10777,16 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
         else close();
         break;
       case 'retry': retry(); break;
+      case 'review': review(); break;
+      case 'revpick': reviewPick(Number(t.getAttribute('data-i'))); break;
+      case 'revnext': reviewS.i++; reviewS.answered = null; renderReview(); break;
+      case 'record': recordScreen(); break;
+      case 'copyrecord': copyText(recordText(), 'km-record-status', 'コピーしました。提出フォームなどに貼り付けてください。'); break;
+      case 'saverecord': downloadText('鴻門の会_学習記録.txt', recordText()); break;
+      case 'copychaplink':
+        var sel = el.modal.querySelector('[data-chaplink]');
+        if (sel) copyText(chapterLink(sel.value), 'km-chaplink-status', 'コピーしました：' + chapterLink(sel.value));
+        break;
       case 'part2': closeModal(); startNew('c8'); break;
       case 'ai': aiScreen(); break;
       case 'copyai': copyAI(); break;
@@ -10255,9 +10843,10 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     if (modalOpen) return;
     if (e.key === 'h' || e.key === 'H') { $root.classList.toggle('km-view'); e.preventDefault(); return; }
     if (mode === 'ask') {
+      // 番号は画面に並んだ順。読み直しで無効になった選択肢があっても番号はずらさない。
       var k = '1234'.indexOf(e.key);
-      var btns = $root.querySelectorAll('.km-opt:not([disabled])');
-      if (k >= 0 && btns[k]) { e.preventDefault(); btns[k].click(); }
+      var btns = $root.querySelectorAll('.km-opts .km-opt');
+      if (k >= 0 && btns[k] && !btns[k].disabled) { e.preventDefault(); btns[k].click(); }
       return;
     }
     if (e.key === 'Enter' || e.key === ' ') {

@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const {JSDOM}=require('jsdom');
 const root=path.resolve(__dirname,'..'),KEY='kanbun-dojo:koumon:v1';
 async function setup(id='c0-1',options={}){
-  const dom=new JSDOM('<!doctype html><html><body></body></html>',{url:'http://localhost/',runScripts:'outside-only',pretendToBeVisual:true});
+  const dom=new JSDOM('<!doctype html><html><body></body></html>',{url:options.url||'http://localhost/',runScripts:'outside-only',pretendToBeVisual:true});
   const w=dom.window,intervals=new Map(),timeouts=new Map(),errors=[];
   let clock=0,serial=0,maxSaveLength=0;
   const setItem=w.Storage.prototype.setItem;
@@ -64,7 +64,7 @@ test('classroom mode unlocks all chapters, books and removes time/life penalties
 });
 test('intro has seven navigable scenes, stops for quiz and exits to game',async()=>{
   const h=await setup('c0-1',{start:false,classroom:true});await h.click('[data-km="intro"]');assert.equal(h.app._mode(),'intro');assert.equal(h.doc.querySelectorAll('[data-intro="step"]').length,7);
-  await h.click('[data-intro="step"][data-step="4"]');await h.click('[data-intro="auto"]');assert.ok(![...h.timeouts.values()].some(x=>x.ms===45000));
+  await h.click('[data-intro="step"][data-step="5"]');await h.click('[data-intro="auto"]');assert.ok(![...h.timeouts.values()].some(x=>x.ms===45000));
   await h.click('[data-intro="quiz"][data-question="promise"][data-answer="hai"]');
   await h.click('[data-intro="quiz"][data-question="force"][data-answer="u"]');assert.match(h.doc.querySelector('.km-intro-quiz').textContent,/兵力は項羽/);assert.ok(h.doc.querySelector('.km-quiz-takeaway'));
   await h.click('[data-intro="step"][data-step="6"]');await h.click('[data-intro="done"]');assert.equal(h.doc.querySelector('#km-intro').hidden,true);assert.equal(h.app._state().ch,'c0');h.close();
