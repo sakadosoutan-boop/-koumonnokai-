@@ -58,6 +58,18 @@ async function story(browser, name, viewport) {
   assert.ok(await inView(p, '[data-intro="cutnext"]'), name + ': 紙芝居の「次へ」が画面内にある');
   for (let i = 0; i < 4; i++) await p.click('[data-intro="cutnext"]');
   assert.ok(await p.isVisible('.km-intro-copy h2'), name + ': 紙芝居のあとに解説');
+  // 解説の図の欄：上（年表）が切れず、下（凡例）までスクロールで届く
+  for (let i = 0; i < 7; i++) {
+    await p.evaluate((i) => { document.querySelector(`[data-intro="step"][data-step="${i}"]`).click(); document.querySelector('[data-intro="view"][data-view="notes"]').click(); }, i);
+    const fit = await p.evaluate(() => {
+      const v = document.querySelector('.km-intro-visual'), vr = v.getBoundingClientRect();
+      const top = document.querySelector('.km-timeline').getBoundingClientRect().top >= vr.top - 1;
+      v.scrollTop = v.scrollHeight;
+      const bottom = document.querySelector('.km-map-legend').getBoundingClientRect().bottom <= v.getBoundingClientRect().bottom + 1;
+      v.scrollTop = 0; return top && bottom;
+    });
+    assert.ok(fit, name + ': 導入の場面 ' + (i + 1) + ' の図が切れずに見られる');
+  }
   await p.click('[data-intro="exit"]');
   await p.click('[data-km="record"]');
   assert.match(await p.inputValue('.km-record'), /読み直し帳/);
@@ -83,6 +95,8 @@ async function stage3d(browser) {
   try {
     await story(browser, 'PC 1440×800', { width: 1440, height: 800 });
     await story(browser, 'スマホ 390×844', { width: 390, height: 844 });
+    await story(browser, 'タブレット 1024×768', { width: 1024, height: 768 });
+    await story(browser, 'スマホ横 932×430', { width: 932, height: 430 });
     if (!process.env.SKIP_3D) await stage3d(browser);
   } finally { await browser.close(); }
 })().catch((e) => { console.error(e); process.exit(1); });

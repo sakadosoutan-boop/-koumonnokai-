@@ -136,3 +136,18 @@
 .km-drama-text + .km-drama-gloss { margin: -4px 0 12px; font: 14px/1.75 var(--gothic); color: #cfdcd4; }
 .km-drama-gloss span { display: inline-block; margin-right: 8px; padding: 0 6px; border: 1px solid var(--line); border-radius: 3px; font-size: 11px; color: #d8c397; }
 .km-projection .km-drama-gloss { font-size: 18px; }
+
+/* 導入の図の欄：入りきらないときは上から並べてスクロールできるようにする。
+   入るときは自動の余白で上下中央に置く（justify-content:center だと上下が同時に切れる） */
+.km-intro-visual { justify-content: flex-start; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.km-intro-visual > .km-timeline { flex-shrink: 0; }
+.km-intro-visual > .km-timeline + * { margin-top: auto; }
+.km-intro-visual > #km-intro-person { margin-bottom: auto; }
+.km-intro-visual > .km-intro-map, .km-intro-visual > .km-intro-pair, .km-intro-visual > .km-intro-people, .km-intro-visual > .km-fig-tabs, .km-intro-visual > .km-map-legend { flex-shrink: 0; }
+@media (min-width:901px) and (max-height:820px) {
+  .km-intro-visual .km-intro-map { max-height: calc(100vh - 330px); }
+  .km-intro-pair { padding-top: 14px; }
+  .km-pair-card { padding: 12px 14px; }
+  .km-pair-card .km-portrait { width: 64px; height: 64px; }
+  .km-pair-card h3 { margin: 6px 0 4px; }
+}
