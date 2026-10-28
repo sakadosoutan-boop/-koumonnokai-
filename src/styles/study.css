@@ -133,3 +133,6 @@
 .km-fig-tabs button { background: none; border: 1px solid var(--line); color: #d6d6c5; border-radius: 99px; padding: 5px 14px; font: 12px var(--gothic); cursor: pointer; }
 .km-fig-tabs button[aria-pressed="true"] { background: #e2c58b; border-color: #e2c58b; color: #1b120a; }
 .km-fig-note { margin: 0 auto 12px; max-width: 560px; padding: 0 20px; font: 13px/1.8 var(--gothic); color: #d8e2da; text-align: center; }
+.km-drama-text + .km-drama-gloss { margin: -4px 0 12px; font: 14px/1.75 var(--gothic); color: #cfdcd4; }
+.km-drama-gloss span { display: inline-block; margin-right: 8px; padding: 0 6px; border: 1px solid var(--line); border-radius: 3px; font-size: 11px; color: #d8c397; }
+.km-projection .km-drama-gloss { font-size: 18px; }

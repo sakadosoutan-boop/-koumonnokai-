@@ -207,3 +207,12 @@ test('figures from the earlier intro (alliance map, relation diagram, next-morni
   for(const m of ['promise','routes','arrival','tension']){assert.ok(h.w.KoumonClassroom.scenes.some(s=>s.map===m),m+' map kept');}
   assert.deepEqual(h.errors,[]);h.close();
 });
+test('plain-language labels: picture-story Shiji lines show the reading and a separate modern translation',async()=>{
+  const h=await setup('c0-1',{start:false,classroom:true});await h.click('[data-km="intro"]');
+  await h.click('[data-intro="cutnext"]');
+  assert.match(h.doc.querySelector('.km-drama-card .km-evidence-label').textContent,/史記の言葉/);
+  assert.match(h.doc.querySelector('.km-drama-text').textContent,/^嗟乎、大丈夫当に此くのごとくなるべきなり。$/);
+  assert.match(h.doc.querySelector('.km-drama-gloss').textContent,/現代語訳ああ、男と生まれたからには/);
+  await h.click('[data-intro="exit"]');await h.click('[data-km="endings"]');
+  assert.match(h.doc.querySelector('.km-m-ends').textContent,/史記と違う結末（異聞）/);h.close();
+});
