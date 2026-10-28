@@ -75,7 +75,7 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .km-at-title .km-panel { margin:0; padding:0; max-height:none; height:100%; border:0; border-radius:0; background:#07191e; overflow:auto; backdrop-filter:none; }
 .km-home { position:relative; min-height:100%; isolation:isolate; display:flex; align-items:center; }
 .km-home-art,.km-home-shade { position:absolute; inset:0; z-index:-1; }
-.km-home-art { background:url('../assets/hongmen-cover.png') 65% center/cover; }
+.km-home-art { background:url('../assets/hongmen-cover.jpg') 65% center/cover; }
 .km-home-shade { background:linear-gradient(90deg,#06171de8 0%,#071a20b8 36%,#081c2033 70%),linear-gradient(0deg,#06151ed9,transparent 40%); }
 .km-home-content { width:min(1400px,100%); padding:clamp(28px,5vw,80px) clamp(24px,6vw,100px); }
 .km-eyebrow { font:11px var(--gothic); font-weight:600; color:#d8c397; letter-spacing:.2em; display:flex; align-items:center; gap:12px; }
@@ -166,7 +166,7 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .km-intro-people strong,.km-intro-people small { display:block; margin-top:10px; }
 .km-intro-people strong { font-size:22px; font-weight:500; }
 .km-intro-people small { font:11px var(--gothic); }
-.km-portrait { display:inline-block; width:112px; height:112px; flex-shrink:0; background-color:#152e33; background-image:url('../assets/character-atlas.png'); background-size:400% 200%; background-repeat:no-repeat; border:1px solid #b39b6b80; border-radius:8px 8px 3px 3px; box-shadow:0 5px 18px #0004; vertical-align:middle; }
+.km-portrait { display:inline-block; width:112px; height:112px; flex-shrink:0; background-color:#152e33; background-image:url('../assets/character-atlas.jpg'); background-size:400% 200%; background-repeat:no-repeat; border:1px solid #b39b6b80; border-radius:8px 8px 3px 3px; box-shadow:0 5px 18px #0004; vertical-align:middle; }
 .km-portrait-hai,.km-portrait-ryo,.km-portrait-kai { border-color:#7fb9ac99; }
 .km-portrait-u,.km-portrait-zo,.km-portrait-haku,.km-portrait-sou,.km-portrait-chin { border-color:#bb877099; }
 .km-intro-people button:hover .km-portrait,.km-intro-people button:focus-visible .km-portrait { outline:2px solid #e6cc8b; outline-offset:3px; }

@@ -813,7 +813,7 @@
     ids.forEach(function (id) { if (warmQ.indexOf(id) === -1 && !FIGCACHE[id]) warmQ.push(id); });
     if (prewarm.t) return;
     prewarm.t = setInterval(function () {
-      if (S.building) return;
+      if (S.building || (window.KoumonAssets && !window.KoumonAssets.loaded())) return;
       var id = warmQ.shift();
       if (!id) { clearInterval(prewarm.t); prewarm.t = null; return; }
       if (!FIGCACHE[id]) { try { getFigure(id); } catch (e) { FIGCACHE[id] = null; } }
@@ -846,7 +846,13 @@
     if (st.officials) ids.push('ou');
     var need = ids.filter(function (id) { return CAST[id] && !FIGCACHE[id]; });
     S.building = true;
-    var prep = need.length ? (showPrep(true), ensureFigures(ids, function (i, n) { if (token === S.buildEpoch) showPrep(true, '絵を整えています… ' + i + ' / ' + n); })) : Promise.resolve();
+    // 人物の大きなデータを裏で読み込み中なら、それを待ってから人物を作る（koumon-asset-loader.js）
+    var A = window.KoumonAssets, waitAssets = need.length && A && !A.loaded() ? (showPrep(true, '人物のデータを読み込んでいます…（回線が混んでいるときは、授業設定の「影絵（軽量）」ですぐに遊べます）'), A.ready()) : Promise.resolve();
+    var prep = waitAssets.then(function () {
+      if (token !== S.buildEpoch || !need.length) return;
+      showPrep(true);
+      return ensureFigures(ids, function (i, n) { if (token === S.buildEpoch) showPrep(true, '絵を整えています… ' + i + ' / ' + n); });
+    });
     return prep.then(function () {
       if (token !== S.buildEpoch) return;
       showPrep(false);

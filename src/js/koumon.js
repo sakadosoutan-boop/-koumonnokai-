@@ -335,6 +335,7 @@
     updateSoundChip();
     ST.start();
     titleScreen();
+    var boot = document.getElementById('km-boot'); if (boot) boot.parentNode.removeChild(boot);
     startFromHash();
   }
   function close() {
@@ -486,7 +487,8 @@
     }
     cur = n;
     if (n.t !== 'end') persist();
-    el.title.textContent = chap(st.ch).no + '　' + chap(st.ch).title;
+    var prog = chapProgress(st.ch);
+    el.title.innerHTML = esc(chap(st.ch).no + '　' + chap(st.ch).title) + (prog ? '<small class="km-title-prog">' + prog + '</small>' : '');
     renderStatus();
     if (resuming && st.phase && st.phase.node === id) {
       if (st.phase.kind === 'feedback') { doAsk(n, true); return judgeRead(n, n.o[st.phase.choice], true); }
@@ -1127,7 +1129,8 @@
         void got;
       }
     }
-    var grade = rate >= 95 ? '子房の智' : rate >= 80 ? '樊噲の胆' : rate >= 60 ? '項伯の情' : '鯫生の言';
+    // 評価：鴻門の人物にたとえる。意味も添える
+    var grade = rate >= 95 ? ['子房の智', '張良のような知恵'] : rate >= 80 ? ['樊噲の胆', '樊噲のような度胸'] : rate >= 60 ? ['項伯の情', '項伯のような情け'] : ['鯫生の言', 'まだ伸びしろあり。読み直そう'];
     var btns = [];
     if (E.kind === 'bad' && st.cp) {
       var retryNode = NODES[st.cp.node].n;
@@ -1150,7 +1153,7 @@
       '<h3 class="km-end-t">' + esc(E.title) + '</h3><div class="km-end-sub">' + esc(E.sub) + '</div>' +
       '<p class="km-end-text">' + esc(E.text) + '</p>' +
       '<div class="km-end-fact"><b>史記に書かれていること・このゲームの読み方</b>' + esc(E.fact) + '</div>' +
-      (E.kind === 'true' ? '<div class="km-end-stats"><div><b>' + st.ok + ' / ' + st.q + '</b><span>読み解いた問い</span></div><div><b>' + rate + '%</b><span>読解率</span></div><div><b>' + esc(grade) + '</b><span>評価</span></div><div><b>' + st.hints + '</b><span>ヒントを使った</span></div></div>' : '') +
+      (E.kind === 'true' ? '<div class="km-end-stats"><div><b>' + st.ok + ' / ' + st.q + '</b><span>読み解いた問い</span></div><div><b>' + rate + '%</b><span>読解率</span></div><div><b>' + esc(grade[0]) + '</b><span>評価：' + esc(grade[1]) + '</span></div><div><b>' + st.hints + '</b><span>ヒントを使った</span></div></div>' : '') +
       routeHTML(st.picks, E.kind === 'true') +
       '<div class="km-end-btns">' + btns.join('') + '</div></div>', 'km-m-end');
   }
@@ -1248,6 +1251,11 @@
       '<button class="km-btn" data-km="totitle">表紙へ（あとで「続きから」で本編へ）</button></div></div>', 'km-m-end');
   }
 
+  /** 章の進み具合（本編・第二部・補それぞれの中で何番目か） */
+  function chapProgress(id) {
+    var c = chap(id), group = K.chapters.filter(function (x) { return !!x.supp === !!c.supp && !!x.part2 === !!c.part2; });
+    return group.length > 1 ? (group.indexOf(c) + 1) + ' / ' + group.length : '';
+  }
   /** 本編の始まり（教科書の範囲）。前段は導入「鴻門への道」で扱う */
   function mainStart() { return K.mainStart || K.chapters[0].id; }
   function chapterOpen(i) {
