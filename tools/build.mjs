@@ -9,8 +9,11 @@ fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 
 let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 html = html.replace(/<link rel="stylesheet" href="([^"]+)">/g, (_, href) => '<style>\n' + fs.readFileSync(path.join(root, href.split(/[?#]/)[0]), 'utf8') + '\n</style>');
+// 配布用の一枚HTMLはオフラインで開くため、裏読み込みの人物データも先に埋め込む。
+html = html.replace(/<script src="(src\/js\/koumon-asset-loader\.js[^"]*)"><\/script>/, (tag) =>
+  ['src/js/koumon-head-assets.js', 'src/js/koumon-hand-assets.js'].map((f) => '<script src="' + f + '"></script>').join('\n') + '\n' + tag);
 html = html.replace(/<script src="([^"]+)"><\/script>/g, (_, s) => '<script>\n' + fs.readFileSync(path.join(root, s.split(/[?#]/)[0]), 'utf8') + '\n</script>');
 // 表紙の画像も埋め込み、配布版のオフライン利用を保つ。
-html = html.replace(/\.\.\/assets\/([\w.-]+\.png)/g, (_, name) => 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'src/assets', name)).toString('base64'));
+html = html.replace(/\.\.\/assets\/([\w.-]+\.(png|jpg))/g, (_, name, ext) => 'data:image/' + (ext === 'jpg' ? 'jpeg' : 'png') + ';base64,' + fs.readFileSync(path.join(root, 'src/assets', name)).toString('base64'));
 fs.writeFileSync(path.join(root, 'dist/index.html'), html);
 console.log('✔ dist/index.html  (' + Math.round(Buffer.byteLength(html) / 1024) + ' KB)');
