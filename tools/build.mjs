@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 
 let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-html = html.replace(/<link rel="stylesheet" href="([^"]+)">/g, (_, href) => '<style>\n' + fs.readFileSync(path.join(root, href), 'utf8') + '\n</style>');
+html = html.replace(/<link rel="stylesheet" href="([^"]+)">/g, (_, href) => '<style>\n' + fs.readFileSync(path.join(root, href.split(/[?#]/)[0]), 'utf8') + '\n</style>');
 html = html.replace(/<script src="([^"]+)"><\/script>/g, (_, s) => '<script>\n' + fs.readFileSync(path.join(root, s.split(/[?#]/)[0]), 'utf8') + '\n</script>');
 // 表紙の画像も埋め込み、配布版のオフライン利用を保つ。
 html = html.replace(/\.\.\/assets\/([\w.-]+\.png)/g, (_, name) => 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'src/assets', name)).toString('base64'));
