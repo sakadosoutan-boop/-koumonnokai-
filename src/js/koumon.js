@@ -375,7 +375,7 @@
         '<div class="km-t-src">' + esc(K.src) + '</div>' +
         '<h2 class="km-t-h">' + esc(K.title) + '</h2>' +
         '<div class="km-t-sub">' + esc(K.subtitle) + '</div>' +
-        '<p class="km-t-lead">あなたは沛公・劉邦。四十万の楚軍が待つ鴻門の宴へ、百余騎で向かう。言葉を一つ読み違えれば、命はない。</p>' +
+        '<p class="km-t-lead">あなたは沛公・劉邦。四十万の楚軍が待つ鴻門の宴へ、わずか百騎あまりで向かう。言葉を一つ読み違えれば、命はない。</p>' +
         '<div class="km-t-btns">' +
           (save ? '<button class="km-btn gold" data-km="continue">続きから<small>' + esc(chap(save.ch).no + '　' + chap(save.ch).title) + '</small></button>' : '') +
           '<button class="km-btn' + (save ? '' : ' gold') + '" data-km="new">はじめから</button>' +
@@ -642,7 +642,7 @@
     else if (n.b === 'think' && n.at && n.at !== 'wide') ST.showBubble(n.at, '（……）', 'think');
     else ST.hideBubble();
     logLine(n.w, n.x);
-    el.panel.innerHTML = speakerHTML(n.w) + '<span class="km-evidence-label">本文をもとにした再構成 · 創作の台詞を含む</span>' +
+    el.panel.innerHTML = speakerHTML(n.w) + '<span class="km-evidence-label">史記をもとにした場面（ゲームで作った台詞もふくむ）</span>' +
       '<div class="km-text' + (n.w ? '' : ' narr') + (n.w === 'you' ? ' inner' : '') + '" id="km-text"></div>' +
       '<div class="km-nav"><span class="km-hint-key">タップ／Enter で次へ</span><button class="km-btn gold km-next" data-km="next">次へ ▶</button></div>';
     typeText(document.getElementById('km-text'), n.x);
@@ -704,7 +704,7 @@
     st.genView = view;
     el.panel.innerHTML =
       '<div class="km-gen-h"><span class="km-gen-tag">原文の段</span><b>' + esc(g.title) + '</b><span class="km-gen-src">' + esc(g.src) + '</span>' + tbTag(g) +
-        (first ? '<span class="km-new">原文帳に綴じた</span>' : '') + '</div>' +
+        (first ? '<span class="km-new">原文帳に入れた</span>' : '') + '</div>' +
       '<div class="km-tabs" role="tablist">' +
         '<button role="tab" aria-selected="' + (view === 'yomi') + '" class="km-tab' + (view === 'yomi' ? ' on' : '') + '" data-km="genview" data-v="yomi" data-g="' + gid + '">書き下し文</button>' +
         '<button role="tab" aria-selected="' + (view === 'haku') + '" class="km-tab' + (view === 'haku' ? ' on' : '') + '" data-km="genview" data-v="haku" data-g="' + gid + '">白文</button>' +
@@ -733,7 +733,7 @@
       '<div class="km-opts">' + opts.map(function (x, k) {
         return '<button class="km-opt" data-km="pick" data-i="' + x.i + '"><span class="km-opt-n">' + '一二三四'.charAt(k) + '</span><span>' + esc(x.o.x) + '</span></button>';
       }).join('') + '</div>' +
-        '<div class="km-nav">' + (canHint ? '<button class="km-btn km-hint-btn" data-km="hint"' + (meta.classroom || st.saku > 0 || st.hinted[n.id] ? '' : ' disabled') + '>' + esc(hintWho()) + 'に問う<small>' + (meta.classroom ? '何度でも確認できます' : '策 残り ' + st.saku) + '</small></button>' : '<span></span>') +
+        '<div class="km-nav">' + (canHint ? '<button class="km-btn km-hint-btn" data-km="hint"' + (meta.classroom || st.saku > 0 || st.hinted[n.id] ? '' : ' disabled') + '>' + esc(hintWho()) + 'に問う<small>' + (meta.classroom ? '何度でも確認できます' : 'ヒント 残り ' + st.saku) + '</small></button>' : '<span></span>') +
         '<span class="km-hint-key km-key-hint">1〜' + opts.length + ' キーでも選べます</span></div>' +
       (canHint ? '<div class="km-hint" id="km-hint" hidden></div>' : '');
     if (st.hinted[n.id]) showHint(n);
@@ -832,7 +832,7 @@
 
   function renderReaction(phase) {
     mode = 'react'; cur = { _after: phase.after };
-    el.panel.innerHTML = speakerHTML(phase.speaker) + '<span class="km-evidence-label">ゲーム上の創作</span><div class="km-text">' + esc(phase.text) + '</div>' +
+    el.panel.innerHTML = speakerHTML(phase.speaker) + '<span class="km-evidence-label">ゲームの創作（史記には書かれていない）</span><div class="km-text">' + esc(phase.text) + '</div>' +
       '<div class="km-nav"><span></span><button class="km-btn gold km-next" data-km="next">次へ →</button></div>';
     el.panel.querySelector('.km-next').focus({ preventScroll: true });
   }
@@ -897,7 +897,7 @@
     fb.className = 'km-fb ' + (ok ? 'ok' : 'ng');
     fb.innerHTML = '<div class="km-fb-h">' + (ok ? (retried ? '◯ 読み直して、読み解いた' : '◯ 読み解いた') : '✕ 読み違えた') + '</div>' +
       (ok ? '' : '<div class="km-fb-right">正しくは：' + esc(right ? right.x : '') + '</div>') +
-      '<span class="km-evidence-label">読解の解説 · 本文の理解と解釈</span><p>' + esc(n.exp || '') + '</p>' +
+      '<span class="km-evidence-label">解説</span><p>' + esc(n.exp || '') + '</p>' +
       (kuho ? '<div class="km-kuho"><span class="km-kuho-tag">句法</span><b>' + esc(kuho.form) + '</b>　' + esc(kuho.read || '') + '<br><small>' + esc(kuho.mean || '') + '</small></div>' : '') +
       lifeNote +
       '<div class="km-nav km-nav-sticky"><span></span><button class="km-btn gold km-next" data-km="fbnext">次へ ▶</button></div>';
@@ -926,8 +926,8 @@
     }
     el.status.innerHTML =
       (safe ? '' : '<div class="km-life" aria-label="命 ' + st.life + '">' + '<span>命</span>' + hearts + '</div>') +
-      (meters ? meter('項王の怒気', st.ikari, 'ikari') + meter('范増の殺気', st.satsu, 'satsu') : '') +
-      (meta.classroom ? '<div class="km-study-badge">授業モード</div>' : '<div class="km-saku" title="策（ヒント）"><span>策</span>' + st.saku + '</div>') +
+      (meters ? meter('項王の怒り', st.ikari, 'ikari') + meter('范増の殺意', st.satsu, 'satsu') : '') +
+      (meta.classroom ? '<div class="km-study-badge">授業モード</div>' : '<div class="km-saku" title="策（ヒント）の残り"><span>ヒント</span>' + st.saku + '</div>') +
       (st.items.length ? '<div class="km-items">' + st.items.map(function (it) { var x = K.items[it]; return '<span title="' + esc(x.name) + '">' + esc(x.glyph) + '</span>'; }).join('') + '</div>' : '');
   }
 
@@ -1139,11 +1139,11 @@
     else if (st.cp) { meta.save = clone(st.cp.snap); meta.save.cp = clone(st.cp); meta.save.node = st.cp.node; meta.save.log = clone(st.log); }
     saveMeta();
     modal('<div class="km-end ' + E.kind + '">' +
-      '<div class="km-end-kind">' + (E.kind === 'true' ? '正史' : '異聞') + '　結末' + (firstTime ? '<span class="km-new">初めて見た</span>' : '') + '</div>' +
+      '<div class="km-end-kind">' + (E.kind === 'true' ? '史記どおりの' : '史記と違う') + '結末' + (firstTime ? '<span class="km-new">初めて見た</span>' : '') + '</div>' +
       '<h3 class="km-end-t">' + esc(E.title) + '</h3><div class="km-end-sub">' + esc(E.sub) + '</div>' +
       '<p class="km-end-text">' + esc(E.text) + '</p>' +
-      '<div class="km-end-fact"><b>史記の記述と、このゲームの解釈</b>' + esc(E.fact) + '</div>' +
-      (E.kind === 'true' ? '<div class="km-end-stats"><div><b>' + st.ok + ' / ' + st.q + '</b><span>読み解いた句</span></div><div><b>' + rate + '%</b><span>読解率</span></div><div><b>' + esc(grade) + '</b><span>評</span></div><div><b>' + st.hints + '</b><span>策を用いた</span></div></div>' : '') +
+      '<div class="km-end-fact"><b>史記に書かれていること・このゲームの読み方</b>' + esc(E.fact) + '</div>' +
+      (E.kind === 'true' ? '<div class="km-end-stats"><div><b>' + st.ok + ' / ' + st.q + '</b><span>読み解いた問い</span></div><div><b>' + rate + '%</b><span>読解率</span></div><div><b>' + esc(grade) + '</b><span>評価</span></div><div><b>' + st.hints + '</b><span>ヒントを使った</span></div></div>' : '') +
       routeHTML(st.picks, E.kind === 'true') +
       '<div class="km-end-btns">' + btns.join('') + '</div></div>', 'km-m-end');
   }
@@ -1218,7 +1218,7 @@
   }
   function bookMenu(openId, back) {
     var ids = Object.keys(K.genbun);
-    var html = '<h3>原文帳</h3><p class="km-m-lead">物語の中で読んだ『史記』の原文が、ここに綴じられます（' + Object.keys(meta.gen).length + ' / ' + ids.length + ' 段）。「教科書」は古典探究の教材の範囲、「補」は物語のつながりのために補った段です。</p><div class="km-book">';
+    var html = '<h3>原文帳</h3><p class="km-m-lead">物語の中で読んだ『史記』の原文が、ここに集まります（' + Object.keys(meta.gen).length + ' / ' + ids.length + ' 段）。「教科書」は教科書にのっている部分、「補」は物語をつなぐために足した部分です。</p><div class="km-book">';
     ids.forEach(function (gid, i) {
       var g = K.genbun[gid], have = meta.classroom || !!meta.gen[gid] || !!back;
       html += '<details class="km-book-it"' + (openId === gid ? ' open' : '') + (have ? '' : ' aria-disabled="true"') + '>' +
@@ -1230,10 +1230,10 @@
     modal(html, 'km-m-book');
   }
   function endingsMenu() {
-    var html = '<h3>結末帳</h3><p class="km-m-lead">たどり着いた結末が記録されます。異聞の結末には、史記の本文との違いが添えられています。</p><div class="km-ends">';
+    var html = '<h3>結末帳</h3><p class="km-m-lead">たどり着いた結末が記録されます。史記と違う結末（異聞）には、史記の本文との違いが添えてあります。</p><div class="km-ends">';
     Object.keys(K.endings).forEach(function (id) {
       var E = K.endings[id], have = !!meta.endings[id];
-      html += '<div class="km-ends-it ' + E.kind + (have ? '' : ' locked') + '"><span class="km-ends-k">' + (E.kind === 'true' ? '正史' : '異聞') + '</span><b>' + (have ? esc(E.title) : '？？？') + '</b><small>' + (have ? esc(E.sub) : 'まだ見ていない') + '</small>' +
+      html += '<div class="km-ends-it ' + E.kind + (have ? '' : ' locked') + '"><span class="km-ends-k">' + (E.kind === 'true' ? '史記どおり' : '史記と違う') + '</span><b>' + (have ? esc(E.title) : '？？？') + '</b><small>' + (have ? esc(E.sub) : 'まだ見ていない') + '</small>' +
         (have ? '<p>' + esc(E.fact) + '</p>' : '') + '</div>';
     });
     html += '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
@@ -1251,25 +1251,25 @@
   function howto() {
     modal('<h3>遊び方</h3><div class="km-howto">' +
       '<p><b>進める</b>　画面か「次へ」をタップ。Enter・スペースキーでも進みます。</p>' +
-      '<p><b>読み解け</b>　台詞の漢文の意味を選びます。読み違えると<b>命</b>が一つ減り、三つ続けて正しく読むと一つ戻ります。命が尽きると結末を迎えます。</p>' +
-      '<p><b>決断</b>　沛公としての判断です。史記と違う道を選ぶと、<b>異聞の結末</b>にたどり着くことがあります。結末からは、原因になった選択へ戻って選び直せます。戻り先はボタンに表示されます。</p>' +
-      '<p><b>項王の怒気・范増の殺気</b>　言葉づかい一つで上下します。どちらも満ちれば命はありません。</p>' +
-      '<p><b>策</b>　「子房に問う」でヒントがもらえます。数には限りがあります。</p>' +
-      '<p><b>授業モード</b>　読み違えても命は減らず、一度目はヒントを添えて選び直せます。怒気・殺気は参考として表示されます（授業設定で切り替え）。</p>' +
+      '<p><b>読み解け</b>　台詞の漢文の意味を選びます。挑戦モードでは、読み違えると<b>命</b>が一つ減り、三つ続けて正しく読むと一つ戻ります。命がなくなると、そこで物語が終わります。</p>' +
+      '<p><b>決断</b>　沛公としてどうするかを選びます。史記と違う道を選ぶと、<b>史記と違う結末（異聞）</b>になることがあります。結末からは、原因になった選択へ戻って選び直せます。戻る場所はボタンに書いてあります。</p>' +
+      '<p><b>項王の怒り・范増の殺意</b>　あなたの言葉づかいで上がったり下がったりします。どちらかがいっぱいになると、命はありません。</p>' +
+      '<p><b>策（ヒント）</b>　「子房（張良）に問う」でヒントがもらえます。挑戦モードでは使える回数に限りがあります。</p>' +
+      '<p><b>授業モード</b>　読み違えても命は減らず、一度目はヒントを見て選び直せます。項王の怒り・范増の殺意も参考として表示します（授業設定で切り替え）。</p>' +
       '<p><b>読み直し帳</b>　読み違えた問いが集まり、表紙や結末からあとで解き直せます。読み解くと帳から外れます。</p>' +
       '<p><b>あなたの道と史記の道</b>　結末で、あなたの決断と史記の記述を並べて振り返れます。「学習記録」でテキストに書き出せます。</p>' +
-      '<p><b>原文帳</b>　物語で読んだ史記の原文（白文・書き下し・現代語訳・注）が綴じられます。読んだ字数は「学びの記録」にも加算されます。</p>' +
+      '<p><b>原文帳</b>　物語で読んだ史記の原文（白文・書き下し文・現代語訳・注）が集まります。読んだ字数は「学びの記録」にも足されます。</p>' +
       '<p><b>絵を見る</b>　本文を隠して場面の絵だけを眺められます（H キー）。</p>' +
       '</div><div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>', 'km-m-howto');
   }
   function aiScreen() {
     modal('<div class="km-eyebrow">READ → THINK → DIALOGUE</div><h3>范増として、言葉を届ける。</h3>' +
       '<p class="km-m-lead">玉玦の合図に、項王は応じない。その沈黙を、あなたはどう読む？</p>' +
-      '<div class="km-ai-brief"><b>創作上の目標</b><p>項王が范増の懸念を聞き、対応策を再検討する。対話は人物解釈を試す活動です。結果は史実でも成績でもありません。</p></div>' +
-      '<ol class="km-ai-steps"><li>根拠にする段を選ぶ。原文帳で前後の文脈も確かめる。</li><li>原文付きの指示文をコピーし、授業で使うAIへ貼り付ける。</li><li>范増として5回まで話し、AIの講評を本文と照合する。</li></ol>' +
+      '<div class="km-ai-brief"><b>この活動の目標（創作）</b><p>范増になって項王に話しかけ、項王に沛公への心配を聞いてもらい、どうするか考え直させる。人物の気持ちを考えてみる活動です。結果は史実ではなく、成績にもしません。</p></div>' +
+      '<ol class="km-ai-steps"><li>話すときの根拠にする原文を選ぶ。原文帳で前後の流れも確かめる。</li><li>原文つきの指示文をコピーし、授業で使うAIに貼り付ける。</li><li>范増として5回まで話し、AIの感想（講評）を本文と見比べる。</li></ol>' +
       '<fieldset class="km-evidence-picker"><legend>AIに渡す原文を選ぶ <small>この時点までの10段</small></legend>' +
       Object.keys(K.genbun).slice(0,10).map(function(id) { return '<label><input type="checkbox" data-km-source="' + id + '"' + (aiSources.indexOf(id)>=0?' checked':'') + '><span><small>' + id + '</small>' + esc(K.genbun[id].title) + '</span></label>'; }).join('') + '</fieldset>' +
-      '<p class="km-m-small">本文の発言と事実を区別します。曹無傷の報告内容を、そのまま真実と断定しません。</p>' +
+      '<p class="km-m-small">本文の中の「発言」と「事実」を分けて考えます。たとえば曹無傷の報告が、そのまま本当だったとは言い切れません。</p>' +
       '<details class="km-prompt-preview"><summary>原文付き指示文を確認する</summary><textarea class="km-ai-prompt" readonly rows="10" aria-label="AIへの指示文">' + esc(window.KoumonClassroom.buildPrompt(aiSources)) + '</textarea></details>' +
       '<div class="km-nav"><button class="km-btn" data-km="aibook">原文帳を開く</button><button class="km-btn gold" data-km="copyai"' + (aiSources.length?'':' disabled') + '>原文と指示文をコピー</button></div>' +
       '<p class="km-m-small" role="status" id="km-ai-copy-status">個人情報を含めず、学校で利用するAIを使ってください。</p>' +
@@ -1296,7 +1296,7 @@
   function settings() {
     modal('<h3>授業に合わせる</h3><p class="km-m-lead">設定はこのブラウザーに保存されます。</p><div class="km-settings">' +
       '<label><input type="checkbox" data-pref="classroom"' + (meta.classroom?' checked':'') + '><span><b>授業モード</b><small>命を減らさず、時間制限なし。全章・全原文へ移動できます。</small></span></label>' +
-      '<label><input type="checkbox" data-pref="meters"' + (meta.meters?' checked':'') + '><span><b>怒気・殺気を示す</b><small>授業モードでも、言葉づかいで項王の怒気・范増の殺気がどう動くかを表示します。</small></span></label>' +
+      '<label><input type="checkbox" data-pref="meters"' + (meta.meters?' checked':'') + '><span><b>怒り・殺意を示す</b><small>授業モードでも、言葉づかいで項王の怒り・范増の殺意がどう動くかを表示します。</small></span></label>' +
       '<label><input type="checkbox" data-pref="projection"' + (meta.projection?' checked':'') + '><span><b>投影して、みんなで読む</b><small>本文・選択肢を大きく表示。個人学習ではオフに。</small></span></label>' +
       '<label><input type="checkbox" data-pref="instant"' + (meta.instant?' checked':'') + '><span><b>文字を一度に表示</b><small>オフにすると、台詞を少しずつ表示します。</small></span></label></div>' +
       '<div class="km-viewsel"><span>舞台</span><button class="km-btn" data-km="view3d"' + (window.KoumonStage3D && window.KoumonStage3D.supported()?'':' disabled') + '>3D</button><button class="km-btn" data-km="view2d">影絵（軽量）</button></div>' +
@@ -1346,7 +1346,7 @@
     if (answered !== null) {
       var ok = !!n.o[answered].ok;
       html += '<div class="km-fb ' + (ok ? 'ok' : 'ng') + '"><div class="km-fb-h">' + (ok ? '◯ 読み解いた。読み直し帳から外します' : '✕ まだ読み違えている') + '</div>' +
-        '<span class="km-evidence-label">読解の解説 · 本文の理解と解釈</span><p>' + esc(n.exp || '') + '</p>' + kuhoHTML(n) + '</div>';
+        '<span class="km-evidence-label">解説</span><p>' + esc(n.exp || '') + '</p>' + kuhoHTML(n) + '</div>';
     } else if (n.hint) html += '<details class="km-review-hint"><summary>ヒントを見る</summary><p>' + esc(n.hint) + '</p></details>';
     html += '<div class="km-nav">' + close + (answered !== null ? '<button class="km-btn gold" data-km="revnext">' + (reviewS.i + 1 < ids.length ? '次の問いへ ▶' : '結果を見る ▶') + '</button>' : '<span></span>') + '</div>';
     modal(html, 'km-m-review');
@@ -1369,10 +1369,10 @@
     L.push('読み終えた章：' + (read.length ? read.map(function (c) { return c.no; }).join('・') : 'まだない') + '（' + read.length + ' / ' + K.chapters.length + '）');
     L.push('原文帳：' + Object.keys(meta.gen).filter(function (g) { return K.genbun[g]; }).length + ' / ' + Object.keys(K.genbun).length + ' 段', '');
     L.push('■ 結末（' + Object.keys(meta.endings).filter(function (e) { return K.endings[e]; }).length + ' / ' + Object.keys(K.endings).length + '）');
-    Object.keys(K.endings).forEach(function (e) { var E = K.endings[e]; L.push((meta.endings[e] ? '◯ ' : '－ ') + (E.kind === 'true' ? '正史' : '異聞') + '「' + (meta.endings[e] ? E.title : '？？？') + '」'); });
+    Object.keys(K.endings).forEach(function (e) { var E = K.endings[e]; L.push((meta.endings[e] ? '◯ ' : '－ ') + (E.kind === 'true' ? '史記どおり' : '史記と違う') + '「' + (meta.endings[e] ? E.title : '？？？') + '」'); });
     L.push('', '■ 読解');
     if (meta.best) L.push('結末までの最高の読解率：' + meta.best.rate + '%（' + meta.best.q + ' 問）');
-    if (st && st.q) L.push('今回の記録：' + st.ok + ' / ' + st.q + ' 問を一度で読み解いた（策を用いた回数 ' + st.hints + '）');
+    if (st && st.q) L.push('今回の記録：' + st.ok + ' / ' + st.q + ' 問を一度で読み解いた（ヒントを使った回数 ' + st.hints + '）');
     if (!meta.best && !(st && st.q)) L.push('まだ記録がない');
     var differ = st ? st.picks.filter(function (p) { return p.hist && !p.same; }) : [];
     if (differ.length) {
