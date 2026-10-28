@@ -89,6 +89,11 @@ async function stage3d(browser) {
   await p.click('[data-km="new"]');
   await until(p, () => window.Koumon._mode() === 'say', null, 20);
   await p.waitForTimeout(1500);
+  // 終章「雒陽南宮」：高祖は御座の段（高さ0.6）の上に座り、段にめり込まない
+  await p.evaluate(() => window.Koumon._go('c9'));
+  await p.waitForFunction(() => window.KoumonStage3D.S.stageId === 'nangong' && !window.KoumonStage3D.S.building && window.KoumonStage3D.S.cast.ko, null, { timeout: 120000 });
+  const ko = await p.evaluate(() => window.KoumonStage3D.S.cast.ko.position.y);
+  assert.ok(ko > 0.5, '3D: 高祖が御座の段の上にいる（y=' + ko + '）');
   assert.deepEqual(errors, [], '3D: ページのエラー');
   await p.close();
   console.log('ok 3D stage');

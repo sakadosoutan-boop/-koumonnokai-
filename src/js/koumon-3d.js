@@ -882,12 +882,13 @@
     sc.add(S.camera);
     var L = LIGHTS[S.lightId];
     applyLight(sc, L, !!st.indoor);
+    S.platform = 0; // 段の高さは舞台の build が決める（南宮の御座だけ）
     st.build(sc, S);
     // 人物を置く
     cast.forEach(function (id) {
       var f = FIGCACHE[id], p = st.pos[id];
       if (!f || !p) return;
-      f.position.set(p[0], (st.platform && id === 'ko') ? st.platform : 0, p[1]);
+      f.position.set(p[0], (S.platform && id === 'ko') ? S.platform : 0, p[1]); // 高祖は御座の段の上に座る
       f.rotation.set(0, p[2] || 0, 0);
       f.userData.setPose(poses[id] || (p[3] === 'ride' ? 'sit' : p[3]) || 'stand');
       f.userData.home = { x: p[0], z: p[1], yaw: p[2] || 0 };
