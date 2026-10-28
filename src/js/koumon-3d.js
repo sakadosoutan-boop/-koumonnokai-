@@ -648,7 +648,7 @@
         // 臣下の列の間の敷物（緋の毛氈）
         var run = mesh(new THREE.PlaneGeometry(2.2, 8), stdc(0x6a1410, .9)); run.rotation.x = -PI / 2; run.position.set(0, .006, 1.2); sc.add(run);
         [[-2.2, -2], [2.2, -2], [-2.2, 3], [2.2, 3]].forEach(function (p) { var l = lampStand(1.6); l.position.set(p[0], 0, p[1]); sc.add(l); S.anim.push(l); });
-        S.platform = .6;
+        S.platform = .78; // 高祖が座る高さ：段（0.6）の上の榻（天面0.76）と敷物の上
       }
     }
   };
