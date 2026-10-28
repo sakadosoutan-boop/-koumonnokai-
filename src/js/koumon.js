@@ -410,7 +410,7 @@
     cancelScene(); closeModal(false); mode = 'intro'; ST.stop();
     window.KoumonClassroom.open($root, meta.introStep, {
       step: function (i) { meta.introStep = i; saveMeta(); },
-      done: function () { window.KoumonClassroom.hide(); ST.start(); startNew('c0'); },
+      done: function () { window.KoumonClassroom.hide(); ST.start(); startNew(mainStart()); },
       exit: function () { ST.start(); titleScreen(); },
       stage: introCut
     });
@@ -444,7 +444,7 @@
     go(chap(st.ch).start);
   }
   function continueSave() {
-    if (!meta.save) return startNew('c0');
+    if (!meta.save) return startNew(mainStart());
     $root.classList.remove('km-at-title');
     st = clone(meta.save);
     ST.start();
@@ -1185,8 +1185,12 @@
   /* ============================ 目次・原文帳・結末帳・履歴 ============================ */
   function chapterMenu() {
     var html = '<h3>目次</h3><p class="km-m-lead">読み終えた章から、もう一度始められます。途中の章から始めるときは、それまでを史記どおりに選んだものとします。</p><div class="km-chaps">';
-    K.chapters.forEach(function (c, i) {
-      var open = chapterOpen(i);
+    // 本編を先に、教科書にない前段（補）をあとに並べる
+    var listed = K.chapters.map(function (c, i) { return i; }).filter(function (i) { return !K.chapters[i].supp; })
+      .concat(K.chapters.map(function (c, i) { return i; }).filter(function (i) { return K.chapters[i].supp; }));
+    listed.forEach(function (i) {
+      var c = K.chapters[i], open = chapterOpen(i);
+      if (c.supp && (i === 0 || !K.chapters[listed[listed.indexOf(i) - 1]].supp)) html += '<p class="km-chap-group">補：教科書にない前段（霸上の夕べと項伯の夜）。授業では導入「鴻門への道」でまとめて扱います。</p>';
       html += '<button class="km-chap" data-km="chap" data-c="' + c.id + '"' + (open ? '' : ' disabled') + '>' +
         '<span class="km-chap-no">' + esc(c.no) + '</span><b>' + (open ? esc(c.title) : '？？？') + '</b><small>' + (open ? esc(c.sub) : 'まだ開いていない') + '</small>' +
         (meta.cleared[c.id] ? '<span class="km-chap-done">読了</span>' : '') + '</button>';
@@ -1199,8 +1203,11 @@
     html += '<div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
     modal(html, 'km-m-menu');
   }
+  /** 本編の始まり（教科書の範囲）。前段は導入「鴻門への道」で扱う */
+  function mainStart() { return K.mainStart || K.chapters[0].id; }
   function chapterOpen(i) {
     var c = K.chapters[i];
+    if (c.supp || c.id === mainStart()) return true;
     if (c.part2 && !meta.classroom) return !!meta.endings.T1 && (c.id === 'c8' || !!meta.cleared.c8);
     return !!(meta.classroom || i === 0 || meta.cleared[K.chapters[i - 1].id] || meta.cleared[c.id]);
   }
@@ -1444,8 +1451,8 @@
       case 'fbnext': afterFeedback(); break;
       case 'new':
         if (meta.save) {
-          confirmBox('最初から始めますか？　いまの続き（' + chap(meta.save.ch).no + '）は上書きされます。', '最初から', function () { closeModal(); meta.save = null; startNew('c0'); });
-        } else startNew('c0');
+          confirmBox('最初から始めますか？　いまの続き（' + chap(meta.save.ch).no + '）は上書きされます。', '最初から', function () { closeModal(); meta.save = null; startNew(mainStart()); });
+        } else startNew(mainStart());
         break;
       case 'continue': continueSave(); break;
       case 'menu': chapterMenu(); break;

@@ -215,13 +215,14 @@
 
   /* ============================ 章 ============================ */
   var CHAPTERS = [
-    { id: 'c0', no: '序幕', title: '霸上の夕べ', sub: '漢元年（前二〇六年）十二月', start: 'c0', next: 'c1' },
-    { id: 'c1', no: '第一幕', title: '項伯、夜馳す', sub: '同じ夜・霸上の陣', start: 'c1', next: 'c2' },
-    { id: 'c2', no: '第二幕', title: '鴻門に謝す', sub: '翌朝・新豊の鴻門', start: 'c2', next: 'c3' },
-    { id: 'c3', no: '第三幕', title: '座次', sub: '宴の帳の中', start: 'c3', next: 'c4' },
-    { id: 'c4', no: '第四幕', title: '項荘の剣舞', sub: '宴の帳の中', start: 'c4', next: 'c5' },
-    { id: 'c5', no: '第五幕', title: '樊噲、帷を披く', sub: '軍門から帳の中へ', start: 'c5', next: 'c6' },
-    { id: 'c6', no: '第六幕', title: '間道', sub: '驪山の下・芷陽の抜け道', start: 'c6', next: 'c7' },
+    // c0・c1 は教科書にない前段（補）。本編は c2 から始まり、前段の流れは導入「鴻門への道」で扱う
+    { id: 'c0', no: '補一', title: '霸上の夕べ', sub: '前日の夕方・霸上の陣（教科書にない前段）', start: 'c0', next: 'c1', supp: true },
+    { id: 'c1', no: '補二', title: '項伯、夜馳す', sub: '同じ夜・霸上の陣（教科書にない前段）', start: 'c1', next: 'c2', supp: true },
+    { id: 'c2', no: '第一幕', title: '鴻門に謝す', sub: '翌朝・新豊の鴻門', start: 'c2', next: 'c3' },
+    { id: 'c3', no: '第二幕', title: '座次', sub: '宴の帳の中', start: 'c3', next: 'c4' },
+    { id: 'c4', no: '第三幕', title: '項荘の剣舞', sub: '宴の帳の中', start: 'c4', next: 'c5' },
+    { id: 'c5', no: '第四幕', title: '樊噲、帷を披く', sub: '軍門から帳の中へ', start: 'c5', next: 'c6' },
+    { id: 'c6', no: '第五幕', title: '間道', sub: '驪山の下・芷陽の抜け道', start: 'c6', next: 'c7' },
     { id: 'c7', no: '終幕', title: '豎子与に謀るに足らず', sub: '鴻門と霸上', start: 'c7' },
     { id: 'c8', no: '第二部', title: '垓下・烏江', sub: '四年後（前二〇二年）十二月', start: 'c8', next: 'c9', part2: true, safe: true },
     { id: 'c9', no: '終章', title: '雒陽南宮', sub: '漢の天下', start: 'c9', part2: true, safe: true }
@@ -1018,7 +1019,7 @@
   window.KOUMON = {
     title: '楚漢の章', subtitle: '鴻門を生き延びよ', src: '史記・項羽本紀／高祖本紀',
     chars: CHARS, genbun: GENBUN, chapters: CHAPTERS, script: SCRIPT,
-    endings: ENDINGS, games: GAMES, aiPrompt: AI_PROMPT,
+    endings: ENDINGS, games: GAMES, aiPrompt: AI_PROMPT, mainStart: 'c2',
     items: { heki: { name: '白璧一双', glyph: '璧' }, to: { name: '玉斗一双', glyph: '斗' } }
   };
 })();
