@@ -67,7 +67,7 @@ test('intro has seven navigable scenes, stops for quiz and exits to game',async(
   await h.click('[data-intro="step"][data-step="5"]');await h.click('[data-intro="auto"]');assert.ok(![...h.timeouts.values()].some(x=>x.ms===45000));
   await h.click('[data-intro="quiz"][data-question="promise"][data-answer="hai"]');
   await h.click('[data-intro="quiz"][data-question="force"][data-answer="u"]');assert.match(h.doc.querySelector('.km-intro-quiz').textContent,/兵力は項羽/);assert.ok(h.doc.querySelector('.km-quiz-takeaway'));
-  await h.click('[data-intro="step"][data-step="6"]');await h.click('[data-intro="done"]');assert.equal(h.doc.querySelector('#km-intro').hidden,true);assert.equal(h.app._state().ch,'c0');h.close();
+  await h.click('[data-intro="step"][data-step="6"]');await h.click('[data-intro="done"]');assert.equal(h.doc.querySelector('#km-intro').hidden,true);assert.equal(h.app._state().ch,'c2');h.close();
 });
 test('reflection saves on input and is restored when reopened',async()=>{
   const h=await setup('c0-1',{start:false});await h.click('[data-km="reflection"]');const t=h.doc.querySelector('[data-reflection="quote"]');t.value='[g10] 項王黙然不応';t.dispatchEvent(new h.w.Event('input',{bubbles:true}));await h.click('[data-km="closemodal"]');await h.click('[data-km="reflection"]');assert.equal(h.doc.querySelector('[data-reflection="quote"]').value,'[g10] 項王黙然不応');h.close();
@@ -129,7 +129,7 @@ test('settings keep timed decisions paused and preserve the challenge clock',asy
 
 test('fresh and partial legacy saves hydrate defaults and reject invalid phases',async()=>{
   let h=await setup('c0-1',{fresh:true,start:false});assert.equal(h.app._meta().classroom,true);assert.equal(h.app._meta().save,null);
-  await h.click('[data-km="new"]');assert.equal(h.app._state().ch,'c0');h.close();
+  await h.click('[data-km="new"]');assert.equal(h.app._state().ch,'c2','the story starts at the textbook passage');h.close();
   h=await setup('c0-11',{saved:{v:1,save:{node:'c0-11',hinted:null,items:['missing'],flags:null,phase:{node:'c0-11',kind:'feedback',choice:99}},reflection:null}});
   assert.equal(h.app._mode(),'ask');assert.equal(h.app._state().life,3);assert.equal(h.app._state().items.length,0);
   await h.click('[data-km="hint"]');assert.ok(h.app._state().hinted['c0-11']);assert.deepEqual(h.errors,[]);h.close();

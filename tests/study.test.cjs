@@ -139,11 +139,11 @@ test('answer order varies across questions instead of always placing the correct
   assert.ok(judges.some(p=>p!==0),'historical choice is not always first');
   assert.equal(position('c0-11'),position('c0-11'),'order is stable for the same question');h.close();
 });
-test('intro "鴻門への道" covers the road before the prologue and hands off to 霸上の夕べ',async()=>{
+test('intro "鴻門への道" covers the road before the textbook passage and hands off to 鴻門に謝す',async()=>{
   const h=await setup('c0-1',{start:false,classroom:true});
   assert.match(h.doc.querySelector('[data-km="intro"]').textContent,/鴻門への道/);assert.doesNotMatch(h.doc.body.textContent,/鴻門前夜/);
   await h.click('[data-km="intro"]');const tags=[...h.doc.querySelectorAll('[data-intro="step"]')].map(b=>b.textContent);
-  assert.deepEqual(tags,['乱世','挙兵','約束','二つの道','先着','函谷関','霸上の夕べへ']);
+  assert.deepEqual(tags,['乱世','挙兵','約束','二つの道','先着','函谷関','霸上の夜']);
   for(let i=0;i<7;i++){
     await h.click('[data-intro="step"][data-step="'+i+'"]');
     assert.ok(h.doc.querySelector('.km-timeline [aria-current="true"]'),'timeline marks scene '+i);
@@ -155,8 +155,8 @@ test('intro "鴻門への道" covers the road before the prologue and hands off 
   await h.click('[data-intro="quiz"][data-question="take"][data-answer="seal"]');assert.match(h.doc.querySelector('.km-quiz-answer').textContent,/財物取る所無く/);
   await h.click('[data-intro="step"][data-step="1"]');assert.equal(h.doc.querySelectorAll('.km-pair-card').length,2);
   await h.click('.km-pair-card [data-person="u"]');assert.match(h.doc.querySelector('#km-intro-person').textContent,/項羽/);
-  await h.click('[data-intro="step"][data-step="6"]');assert.match(h.doc.querySelector('[data-intro="done"]').textContent,/霸上の夕べ/);
-  await h.click('[data-intro="done"]');assert.equal(h.app._state().ch,'c0');assert.deepEqual(h.errors,[]);h.close();
+  await h.click('[data-intro="step"][data-step="6"]');assert.match(h.doc.querySelector('[data-intro="done"]').textContent,/鴻門に謝す/);
+  await h.click('[data-intro="done"]');assert.equal(h.app._state().ch,'c2');assert.deepEqual(h.errors,[]);h.close();
 });
 test('intro scenes open as a picture story on the main stage, then switch to the unchanged notes',async()=>{
   const h=await setup('c0-1',{start:false,classroom:true}),calls=[];
@@ -167,15 +167,15 @@ test('intro scenes open as a picture story on the main stage, then switch to the
   const scenes=h.w.KoumonClassroom.scenes;
   for(let i=0;i<scenes.length;i++){
     await h.click('[data-intro="step"][data-step="'+i+'"]');
-    const n=scenes[i].drama.length;assert.ok(n>=3,'scene '+i+' has several cuts');
+    const n=scenes[i].drama.length;assert.ok(n>=2&&n<=6,'scene '+i+' has a short picture story');
     for(let c=1;c<n;c++){assert.match(h.doc.querySelector('.km-drama-count').textContent,new RegExp('^'+c+' / '+n));await h.click('[data-intro="cutnext"]');}
-    assert.match(h.doc.querySelector('[data-intro="cutnext"]').textContent,/解説を読む/);
-    await h.click('[data-intro="cutnext"]');
+    assert.match(h.doc.querySelector('[data-intro="cutnext"]').textContent,i<scenes.length-1?/次の場面へ/:/鴻門に謝す/);
+    await h.click('.km-drama-notes');
     assert.equal(h.doc.querySelector('.km-drama'),null);assert.equal(h.doc.querySelector('.km-intro-layout').hidden,false);
     assert.equal(h.doc.querySelector('.km-intro-copy h2').textContent,scenes[i].title,'notes stay as written');
   }
   for(const s of scenes)for(const c of s.drama){assert.ok(c.stage&&c.light&&Array.isArray(c.cast),'cut inherits its stage');assert.ok(['shiki','retold','fiction'].includes(c.kind));if(c.w)assert.ok(c.cast.includes(c.w),c.w+' is on stage');}
-  assert.ok(calls.some(c=>c[0]==='nangong'),'the main story stages are reused');
+  assert.ok(['koumon','bashang','tent','gate'].every(id=>calls.some(c=>c[0]===id)),'the main story stages are reused');
   await h.click('[data-intro="view"][data-view="drama"]');assert.ok(h.doc.querySelector('.km-drama'));
   await h.click('.km-drama');assert.match(h.doc.querySelector('.km-drama-count').textContent,/^2 \//);
   h.doc.querySelector('.km-drama-card').dispatchEvent(new h.w.KeyboardEvent('keydown',{key:'Enter',bubbles:true}));await h.flush();
@@ -192,7 +192,7 @@ test('intro stage arrangements reuse the main stage builders and only add positi
   const used=new Set();
   const d=new JSDOM('',{runScripts:'outside-only'}).window;d.eval(fs.readFileSync(path.join(root,'src/js/koumon-classroom.js'),'utf8'));
   for(const s of d.KoumonClassroom.scenes)for(const c of s.drama){used.add(c.stage);const st=w.KoumonStage3D.STAGES[c.stage]||{pos:null};if(c.stage.startsWith('intro-'))for(const id of c.cast)assert.ok(st.pos[id],c.stage+' places '+id);}
-  for(const id of used)assert.ok(id.startsWith('intro-')||['nangong','bashang','koumon','gate','road'].includes(id),id);
+  for(const id of used)assert.ok(id.startsWith('intro-')||['nangong','bashang','koumon','gate','road','tent'].includes(id),id);
   d.close();
 });
 test('figures from the earlier intro (alliance map, relation diagram, next-morning map) remain available',async()=>{
@@ -209,10 +209,30 @@ test('figures from the earlier intro (alliance map, relation diagram, next-morni
 });
 test('plain-language labels: picture-story Shiji lines show the reading and a separate modern translation',async()=>{
   const h=await setup('c0-1',{start:false,classroom:true});await h.click('[data-km="intro"]');
-  await h.click('[data-intro="cutnext"]');
   assert.match(h.doc.querySelector('.km-drama-card .km-evidence-label').textContent,/史記の言葉/);
   assert.match(h.doc.querySelector('.km-drama-text').textContent,/^嗟乎、大丈夫当に此くのごとくなるべきなり。$/);
   assert.match(h.doc.querySelector('.km-drama-gloss').textContent,/現代語訳ああ、男と生まれたからには/);
   await h.click('[data-intro="exit"]');await h.click('[data-km="endings"]');
   assert.match(h.doc.querySelector('.km-m-ends').textContent,/史記と違う結末（異聞）/);h.close();
+});
+
+test('the shortened intro moves straight to the next scene and ends at the textbook start (鴻門に謝す)',async()=>{
+  const h=await setup('c0-1',{start:false,classroom:true});await h.click('[data-km="intro"]');
+  const scenes=h.w.KoumonClassroom.scenes;assert.ok(scenes.reduce((a,s)=>a+s.drama.length,0)<=20,'about 18 cuts in total');
+  assert.match(scenes.at(-1).title+scenes.at(-1).body.join(''),/曹無傷[\s\S]*項伯/,'the 霸上 prelude (密告・項伯の夜) is covered by the intro');
+  for(let i=0;i<scenes.length;i++){
+    assert.equal(h.doc.querySelector('[data-intro="step"][aria-current="step"]').dataset.step,String(i));
+    for(let c=0;c<scenes[i].drama.length-1;c++)await h.click('[data-intro="cutnext"]');
+    if(i<scenes.length-1){await h.click('[data-intro="cutnext"]');assert.ok(h.doc.querySelector('.km-drama'),'next scene opens as a picture story');}
+  }
+  await h.click('[data-intro="cutnext"]');assert.equal(h.doc.querySelector('#km-intro').hidden,true);assert.equal(h.app._state().ch,'c2');
+  await h.click('[data-km="quit"]');await h.click('[data-km="menu"]');
+  const order=[...h.doc.querySelectorAll('.km-chap')].map(b=>b.dataset.c);assert.deepEqual(order.slice(0,2),['c2','c3']);assert.deepEqual(order.slice(-2),['c0','c1']);
+  assert.ok(h.doc.querySelector('.km-chap-group'));assert.deepEqual(h.errors,[]);h.close();
+});
+test('challenge mode opens the textbook start and the supplementary prelude without clearing them first',async()=>{
+  const h=await setup('c0-1',{start:false,saved:{v:2,save:null,endings:{},gen:{},cleared:{},classroom:false,view:'2d'}});
+  await h.click('[data-km="menu"]');
+  for(const id of ['c0','c1','c2'])assert.equal(h.doc.querySelector('.km-chap[data-c="'+id+'"]').disabled,false,id);
+  assert.equal(h.doc.querySelector('.km-chap[data-c="c3"]').disabled,true);h.close();
 });

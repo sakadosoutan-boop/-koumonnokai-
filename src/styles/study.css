@@ -151,3 +151,5 @@
   .km-pair-card .km-portrait { width: 64px; height: 64px; }
   .km-pair-card h3 { margin: 6px 0 4px; }
 }
+.km-drama-nav .km-drama-notes { margin-left: auto; padding: 10px 14px; font-size: 13px; }
+@media (max-width:580px) { .km-drama-nav { flex-wrap: wrap; } .km-drama-nav .km-drama-notes { margin-left: 0; } }

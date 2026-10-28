@@ -12,7 +12,7 @@
     sou: ['項荘', 'こうそう', '項羽の一族', '剣舞をする人', '范増の指示を受け、剣舞にかこつけて劉邦を狙う。', 'so'],
     chin: ['陳平', 'ちんぺい', '楚の都尉', '項羽の命令を伝える人', '席を立った劉邦を、項羽の命令で呼びに行く。', 'so']
   };
-  // 鴻門への道：本編（序幕「霸上の夕べ」）より前の流れ。本編で演じる密告・項伯の夜・翌朝の謝罪はここでは扱わない。
+  // 鴻門への道：本編（第一幕「鴻門に謝す」）より前の流れ。教科書にない前段（曹無傷の密告・項伯の夜）もここでまとめて扱う。
   // year は年表（timeline）の位置。quote は『史記』からの短い引用で、書き下し・現代語訳は学習用。
   var timeline = [['前221', '秦の統一'], ['前209', '反乱と挙兵'], ['前208', '懐王の約'], ['前207', '鉅鹿の戦い'], ['前206', '秦の滅亡・鴻門の会']];
   var scenes = [
@@ -45,11 +45,11 @@
       body:['秦王の子嬰は、白い馬に引かせた白い車に乗り、首にひもをかけて（降伏のしるし）劉邦に降伏した。秦は滅びた。','咸陽の宮殿に入った劉邦は、そこにとどまりたいと思ったが、樊噲や張良に「宮殿を出るべきです」と注意される。宝物の倉を封じて軍を霸上に戻し、関中の人々と「法は三章だけ」と約束した。人々は大いに喜んだ。'],
       terms:[['子嬰','秦の最後の王。'],['霸上','咸陽の東にある高台。劉邦が軍を置いた場所。'],['約法三章','人を殺せば死刑、人を傷つけたり盗んだりすれば罰する、という三つだけの法。秦の厳しい法を改めた。']],
       quote:{src:'史記・高祖本紀', haku:'与父老約、法三章耳。殺人者死、傷人及盗抵罪。', yomi:'父老と約す、法は三章のみ。人を殺す者は死し、人を傷つけ及び盗むは罪に抵る。', yaku:'土地の長老たちと約束した。法は三か条だけだ。人を殺した者は死刑。人を傷つけた者と盗んだ者は、それに見合う罰を受ける。'},
-      point:'劉邦は宝も宮殿も「取らなかった」。序幕で、范増はまさにこの点を恐れる。',
-      quiz:[{id:'take', q:'咸陽に入った劉邦が、したことは？', choices:[['burn','咸陽の宮殿を焼きはらった'],['stay','宮殿に住み、宝物を兵に分けた'],['seal','宝物の倉を封じて、霸上へ軍を戻した']], answer:'seal', why:'劉邦は財物に手をつけずに霸上へ戻った。序幕で范増は「財物取る所無く、婦女幸する所無し」と言い、そこに大きな志を見る。宮殿を焼くのは、のちに咸陽へ入る項羽である。'}],
+      point:'劉邦は宝も宮殿も「取らなかった」。このあと、范増はまさにこの点を恐れる。',
+      quiz:[{id:'take', q:'咸陽に入った劉邦が、したことは？', choices:[['burn','咸陽の宮殿を焼きはらった'],['stay','宮殿に住み、宝物を兵に分けた'],['seal','宝物の倉を封じて、霸上へ軍を戻した']], answer:'seal', why:'劉邦は財物に手をつけずに霸上へ戻った。のちに范増は「財物取る所無く、婦女幸する所無し」と言い、そこに大きな志を見る。宮殿を焼くのは、のちに咸陽へ入る項羽である。'}],
       alt:'咸陽で秦が降伏し、劉邦が霸上へ軍を戻す模式図。'},
     {tag:'函谷関', era:'前206年（漢元年）', year:4, map:'tension', title:'約束は劉邦。兵力は項羽。',
-      body:['劉邦は「関を閉ざして諸侯を入れなければ、秦の地すべての王になれる」というアドバイス（進言）を受け入れ、函谷関に兵を置いた。この進言の主を、第一幕で張良が問いただす。','遅れて着いた項羽は、関が閉ざされ、しかも劉邦がすでに咸陽を落としたと聞いて、ひどく怒る。関を破って進み、鴻門に陣を構えた。'],
+      body:['劉邦は「関を閉ざして諸侯を入れなければ、秦の地すべての王になれる」というアドバイス（進言）を受け入れ、函谷関に兵を置いた。（この進言をしたのが誰かを、のちに張良が問いただす。）','遅れて着いた項羽は、関が閉ざされ、しかも劉邦がすでに咸陽を落としたと聞いて、ひどく怒る。関を破って進み、鴻門に陣を構えた。'],
       terms:[['鴻門','新豊の近く。項羽が陣を置いた場所。'],['諸侯','各地で秦と戦った将軍や王たち。項羽はその中心にいた。']],
       quote:{src:'史記・項羽本紀', haku:'函谷関有兵守関、不得入。又聞沛公已破咸陽、項羽大怒、使当陽君等撃関。', yomi:'函谷関に兵有りて関を守り、入るを得ず。又沛公已に咸陽を破ると聞き、項羽大いに怒り、当陽君等をして関を撃たしむ。', yaku:'函谷関には兵がいて関を守り、入れなかった。さらに沛公がすでに咸陽を破ったと聞いて、項羽はひどく怒り、当陽君（黥布）らに関を攻めさせた。'},
       point:'約束の上では劉邦、兵力では項羽。二つの基準がぶつかる。',
@@ -57,12 +57,15 @@
         {id:'force', q:'この時点で、兵力が大きいのは？', choices:[['hai','劉邦'],['u','項羽']], answer:'u', why:'本文では劉邦十万、項羽四十万。兵力は項羽が上回る。'}],
       takeaway:'「約束」と「兵力」。この二つの食い違いが、鴻門の会の背景にある。',
       alt:'閉ざされた函谷関を項羽の軍が破り、鴻門に陣を置く模式図。'},
-    {tag:'霸上の夕べへ', era:'前206年（漢元年）十二月', year:4, map:'eve',
-      figs:[['eve','霸上と鴻門'],['people','人のつながり','項伯は親しい張良を助けようと、夜、劉邦の陣を訪れる。項伯 → 張良 → 劉邦。敵味方の線を越える関係が、第一幕で動き出す。'],['hongmen','翌朝の道','劉邦は翌朝、百騎あまりを従えて鴻門の項羽に会い、謝罪する（第二幕）。かつての共闘相手に、どんな言葉をかけるのか。']], title:'四十里をへだてて、十万と四十万。',
-      body:['鴻門の項羽は兵四十万で「百万」と言いふらし、霸上の劉邦は兵十万で「二十万」と言いふらした（号した）。二つの陣のあいだは四十里（約17キロ）。','この夕べから、物語が始まる。あなたは沛公・劉邦。言葉を一つ読み違えれば、命はない。'],
-      watch:[['曹無傷','劉邦の部下。項羽に何を伝えるのか。','序幕'],['范増','項羽の相談役（参謀）。劉邦の何を恐れたのか。','序幕'],['項伯と張良','敵と味方に分かれた旧友。その夜、何が起こるのか。','第一幕']],
-      quote:{src:'史記・高祖本紀', haku:'項羽兵四十万号百万、沛公兵十万号二十万、力不敵。', yomi:'項羽の兵は四十万、百万と号し、沛公の兵は十万、二十万と号す。力敵せず。', yaku:'項羽の兵は四十万で百万と称し、沛公の兵は十万で二十万と称していた。力ではかなわなかった。'},
-      point:'強い相手に、どう向き合うか。言葉と決断で、宴を生き延びよう。',
+    {tag:'霸上の夜', era:'前206年（漢元年）十二月', year:4, map:'eve',
+      figs:[['eve','霸上と鴻門'],['people','人のつながり','項伯は親しい張良を助けようと、夜、劉邦の陣を訪れた。項伯 → 張良 → 劉邦。敵と味方の線を越えた関係が、劉邦の命をつなぐ。'],['hongmen','翌朝の道','劉邦は翌朝、百騎あまりを連れて鴻門の項羽に会い、謝罪する。ここから本編「鴻門に謝す」が始まる。']],
+      title:'密告と、夜の使者。',
+      body:['劉邦の部下の曹無傷が、ひそかに項羽へ使いを送り、「沛公は関中の王になろうとしています」と告げた。項羽はひどく怒り、范増も「急いで撃ちなさい」とすすめる。鴻門の項羽は兵四十万、霸上の劉邦は十万。あいだは四十里（約17キロ）。','その夜、項羽の叔父の項伯が、親友の張良を助けようと霸上へ馬を走らせた。話を聞いた劉邦は、項伯を兄としてもてなし、項王に背くつもりはないと伝えてもらう。項伯は「明日の朝、自分で謝りに来なさい」と言った。'],
+      terms:[['曹無傷','劉邦の部下（左司馬）。項羽にこっそり告げ口をした。'],['項伯','項羽の叔父。張良の古い友人で、昔、張良に命を救われた。']],
+      watch:[['謝罪の言葉','劉邦は、項王に何と言って謝るのか。','第一幕'],['范増の合図','玉玦を三度挙げたのは、何のためか。','第二幕'],['樊噲','なぜ宴に乗り込んだのか。','第四幕']],
+      quote:{src:'史記・項羽本紀', haku:'旦日不可不蚤自来謝項王。', yomi:'旦日蚤く自ら来たりて項王に謝せざるべからず。', yaku:'明日の朝、早く自分で来て、項王に謝らなければならない。'},
+      point:'一人の告げ口と、一人の友情。この二つが、翌朝の鴻門の会を動かす。',
+      quiz:[{id:'night', q:'項伯が夜、霸上へ来たのはなぜ？', choices:[['spy','劉邦の陣のようすを探るため'],['save','親友の張良を助けるため'],['attack','劉邦を討つため']], answer:'save', why:'項伯は張良と親しく、昔、命を救われたこともあった。張良だけでも逃がそうとして、夜の陣へ来たのである。'}],
       alt:'霸上の劉邦と鴻門の項羽が四十里をへだてて向かい合う模式図。'}
   ];
   var pair = {
@@ -72,37 +75,24 @@
   // 紙芝居：本編と同じ舞台と人物で、各場面を数コマで演じる。stage・light・cast を省いたコマは前のコマを引き継ぐ。
   // kind は本文との関係：shiki＝史記の記述（書き下し）、retold＝本文をもとにした再構成、fiction＝ゲーム上の創作。
   var dramas = [
-    [ {stage:'nangong', light:'palace', cast:[], at:'wide', kind:'retold', x:'秦の都・咸陽。天下を一つにした始皇帝の宮殿。だれも逆らえないほどの力が、ここに集まっていた。'},
-      {stage:'intro-palace', light:'palace', cast:['hai'], at:'hai', w:'hai', kind:'shiki', src:'高祖本紀：若いころ、咸陽で始皇帝の行列を見て', x:'嗟乎、大丈夫当に此くのごとくなるべきなり。（ああ、男と生まれたからには、あのようになりたいものだ。）'},
-      {stage:'koumon', light:'night', cast:['u'], at:'u', w:'u', kind:'shiki', src:'項羽本紀：会稽で、始皇帝の巡行を見て', x:'彼取りて代はるべきなり。（あいつに取って代わってやる。）'},
-      {stage:'gate', light:'dawn', cast:[], at:'wide', kind:'retold', fx:'pulse', sfx:'drum', x:'前209年。始皇帝が亡くなった翌年、陳勝・呉広が大沢郷で立つと、反乱の火は各地へ広がった。'} ],
+    [ {stage:'intro-palace', light:'palace', cast:['hai'], at:'hai', w:'hai', kind:'shiki', src:'高祖本紀：若いころ、咸陽で始皇帝の行列を見て', x:'嗟乎、大丈夫当に此くのごとくなるべきなり。（ああ、男と生まれたからには、あのようになりたいものだ。）'},
+      {stage:'koumon', light:'night', cast:['u'], at:'u', w:'u', kind:'shiki', src:'項羽本紀：会稽で、始皇帝の巡行を見て', x:'彼取りて代はるべきなり。（あいつに取って代わってやる。）'} ],
     [ {stage:'bashang', light:'dusk', cast:['hai','kai'], at:'wide', kind:'retold', src:'高祖本紀', x:'沛の町。人々は秦の役人を倒し、村の役人だった劉邦（劉季）を長に迎えた。'},
-      {at:'kai', w:'kai', kind:'fiction', x:'季どの。沛の若者は、みなあなたについて行くと申しております。'},
-      {at:'hai', w:'hai', kind:'fiction', x:'よし、旗を立てよう。今日から、わしは沛公だ。'},
-      {stage:'intro-field', light:'day', cast:['u'], at:'wide', kind:'retold', src:'項羽本紀', x:'同じころ、会稽。叔父の項梁とともに兵を挙げた項羽は、二十四歳だった。'},
-      {at:'u', w:'u', kind:'shiki', src:'項羽本紀：少年のころ、叔父の項梁に', x:'書は以て名姓を記するに足るのみ。剣は一人の敵、学ぶに足らず。万人の敵を学ばん。（字は名前が書ければ十分。剣は一人を相手にするだけ。一万人を相手にできる兵法を学びたい。）'} ],
-    [ {stage:'koumon', light:'night', cast:['u','zo'], at:'zo', kind:'retold', src:'項羽本紀', x:'居鄛出身の范増、七十歳。人の思いつかない作戦を考えるのが得意な老人が、項梁のもとを訪ねた。'},
-      {at:'zo', w:'zo', kind:'retold', src:'項羽本紀：范増の進言の要約', x:'楚の王の子孫を立てて王とすれば、楚の人々はこぞって従いましょう。'},
-      {stage:'intro-court', light:'palace', cast:['hai','u'], at:'wide', kind:'retold', src:'高祖本紀', x:'楚の懐王は、将軍たちと約束した。「先に入りて関中を定むる者は、之を王とせん。」'},
+      {stage:'intro-field', light:'day', cast:['u'], at:'u', w:'u', kind:'shiki', src:'項羽本紀：少年のころ、叔父の項梁に', x:'書は以て名姓を記するに足るのみ。剣は一人の敵、学ぶに足らず。万人の敵を学ばん。（字は名前が書ければ十分。剣は一人を相手にするだけ。一万人を相手にできる兵法を学びたい。）'} ],
+    [ {stage:'intro-court', light:'palace', cast:['hai','u'], at:'wide', kind:'retold', src:'高祖本紀', x:'楚の懐王は、将軍たちと約束した。「先に入りて関中を定むる者は、之を王とせん。」'},
       {at:'u', kind:'retold', src:'高祖本紀', x:'項羽も西へ行くことを望んだ。だが懐王に仕えるベテランの将軍たちは「項羽は荒々しい。心が広く人がらのよい人を西へ送るべきだ」と言い、劉邦を選んだ。'} ],
     [ {stage:'intro-field', light:'dawn', cast:['u'], at:'u', kind:'retold', src:'項羽本紀', x:'鉅鹿。項羽は河を渡ると、船を沈め、釜を壊し、陣小屋を焼いた。持たせたのは三日分の糧だけ。'},
-      {at:'u', w:'u', kind:'fiction', x:'引き返す道はない。勝つか、死ぬかだ。'},
-      {at:'wide', kind:'retold', src:'項羽本紀', fx:'shake', sfx:'clang', x:'楚の兵は一人で十人を相手にし、秦の大軍を打ち破った。各地の将軍たちはひざをついて進み出て、項羽の顔を見上げることもできなかった。'},
-      {stage:'road', light:'moon', cast:['hai','kai'], at:'wide', kind:'retold', src:'高祖本紀', sfx:'hoof', x:'そのころ劉邦は、西へ急いでいた。城を力で落とすより、降伏を受け入れて道を開いた。'},
-      {at:'kai', w:'kai', kind:'fiction', x:'沛公、武関を抜ければ、関中はすぐそこです！'} ],
-    [ {stage:'intro-palace', light:'palace', cast:['hai','kai','ryo'], at:'wide', kind:'retold', src:'留侯世家', x:'咸陽の宮殿。宝物も美女も、数えきれないほどあった。劉邦は、ここにとどまりたいと思った。'},
-      {at:'kai', w:'kai', kind:'retold', src:'留侯世家', x:'沛公、宮殿を出て、外に陣を置かれませ。'},
-      {at:'ryo', w:'ryo', kind:'shiki', src:'留侯世家', x:'忠言は耳に逆らへども行ひに利あり、毒薬は口に苦けれども病に利あり。願はくは沛公、樊噲の言を聴かれよ。（忠告は耳に痛くても行いのためになり、よく効く薬は苦くても病気に効く。どうか樊噲の言葉を聞いてください。）'},
-      {stage:'bashang', light:'dusk', cast:['hai','ryo','kai'], at:'hai', w:'hai', kind:'shiki', src:'高祖本紀：霸上に戻り、関中の長老たちに', x:'父老と約す、法は三章のみ。人を殺す者は死し、人を傷つけ及び盗むは罪に抵る。（長老たちと約束する。法は三つだけ。人を殺せば死刑、人を傷つけたり盗んだりすれば、それに見合う罰を受ける。）'},
-      {at:'wide', kind:'retold', src:'高祖本紀', x:'秦の人々は大いに喜び、牛や羊、酒や食べ物を持ってきて兵をもてなそうとした。劉邦は受け取らなかった。'} ],
-    [ {stage:'gate', light:'dawn', cast:[], at:'wide', kind:'retold', x:'函谷関。劉邦の兵が門を固め、諸侯の軍を通さない。'},
-      {stage:'intro-field', light:'dusk', cast:['u','zo'], at:'u', kind:'retold', src:'項羽本紀', x:'遅れて着いた項羽の前で、関は閉ざされていた。しかも劉邦は、すでに咸陽を落としたという。'},
-      {at:'u', w:'u', kind:'retold', src:'項羽本紀「項羽大いに怒り、当陽君等をして関を撃たしむ」', fx:'shake', sfx:'drum', x:'関を撃て！'},
-      {stage:'koumon', light:'night', cast:['u','zo'], at:'wide', kind:'retold', src:'項羽本紀', x:'項羽は関を破って進み、新豊の鴻門に陣を構えた。'} ],
-    [ {stage:'koumon', light:'night', cast:['u','zo'], at:'wide', kind:'retold', src:'高祖本紀', x:'鴻門。見渡すかぎりのかがり火。四十万の兵が「百万」と言いふらしている。'},
-      {stage:'bashang', light:'dusk', cast:['hai','ryo'], at:'wide', kind:'retold', src:'高祖本紀', x:'霸上。十万の陣。四十里の向こうに、楚の火が見える。'},
-      {at:'hai', w:'hai', kind:'fiction', x:'……あの男と、どう向き合えばよい。'},
-      {at:'wide', kind:'fiction', x:'――この夕べから、物語が始まる。'} ]
+      {stage:'road', light:'moon', cast:['hai','kai'], at:'wide', kind:'retold', src:'高祖本紀', sfx:'hoof', x:'そのころ劉邦は、西へ急いでいた。城を力で落とすより、降伏を受け入れて道を開いた。'} ],
+    [ {stage:'intro-palace', light:'palace', cast:['hai','kai','ryo'], at:'wide', kind:'retold', src:'留侯世家', x:'咸陽の宮殿。宝物も美女も、数えきれないほどあった。劉邦はとどまりたいと思ったが、樊噲と張良にいさめられた。'},
+      {stage:'bashang', light:'dusk', cast:['hai','ryo','kai'], at:'hai', w:'hai', kind:'shiki', src:'高祖本紀：霸上に戻り、関中の長老たちに', x:'父老と約す、法は三章のみ。人を殺す者は死し、人を傷つけ及び盗むは罪に抵る。（長老たちと約束する。法は三つだけ。人を殺せば死刑、人を傷つけたり盗んだりすれば、それに見合う罰を受ける。）'} ],
+    [ {stage:'intro-field', light:'dusk', cast:['u','zo'], at:'u', kind:'retold', src:'項羽本紀', x:'遅れて着いた項羽の前で、関は閉ざされていた。しかも劉邦は、すでに咸陽を落としたという。'},
+      {at:'u', w:'u', kind:'retold', src:'項羽本紀「項羽大いに怒り、当陽君等をして関を撃たしむ」', fx:'shake', sfx:'drum', x:'関を撃て！'} ],
+    [ {stage:'koumon', light:'night', cast:['u','zo','msg'], at:'msg', w:'msg', kind:'retold', src:'項羽本紀：曹無傷の使いの報告', x:'沛公は関中の王になろうとしています。秦の宝は、すべて沛公のものに。'},
+      {at:'u', w:'u', kind:'shiki', src:'項羽本紀', fx:'shake', sfx:'drum', x:'旦日士卒を饗し、為に沛公の軍を撃破せん。（明日の朝、兵士にごちそうして、沛公の軍を打ち破ってやる。）'},
+      {at:'zo', w:'zo', kind:'shiki', src:'項羽本紀：范増の進言', x:'急ぎ撃ちて失ふこと勿かれ。（急いで撃ち、この機会を逃してはなりません。）'},
+      {stage:'tent', light:'lamp', cast:['ryo','haku'], at:'wide', w:'haku', kind:'shiki', src:'項羽本紀：夜、霸上に来た項伯が張良に', x:'従ひて倶に死すること毋かれ。（沛公に従って、いっしょに死んではならない。）'},
+      {stage:'tent', light:'lamp', cast:['hai','ryo','haku'], at:'wide', w:'haku', kind:'shiki', src:'項羽本紀：劉邦にもてなされた項伯が', x:'旦日蚤く自ら来たりて項王に謝せざるべからず。（明日の朝、早く自分で来て、項王に謝らなければならない。）'},
+      {stage:'gate', light:'dawn', cast:['hai','ryo','kai'], at:'wide', kind:'retold', src:'項羽本紀「沛公旦日百余騎を従へて来たりて項王に見ゆ」', x:'翌朝。劉邦は百騎あまりを連れて、鴻門へ向かった。――ここから、鴻門の会が始まる。'} ]
   ];
   // 省いた舞台・光・配役を前のコマから引き継いで、各場面に結びつける
   dramas.forEach(function (cuts, i) {
@@ -212,10 +202,11 @@
   }
   function stopAuto(){clearTimeout(timer);timer=null;}
   function schedule(){stopAuto();if(!auto||document.hidden)return;
-    if(view==='drama'){timer=setTimeout(function(){nextCut();},7000);return;}
+    if(view==='drama'){if(!(index===scenes.length-1&&cut===scenes[index].drama.length-1))timer=setTimeout(function(){nextCut();},7000);return;}
     if(!scenes[index].quiz&&index<scenes.length-1)timer=setTimeout(function(){goScene(index+1);},45000);}
   function goScene(i){index=Math.max(0,Math.min(scenes.length-1,i));view='drama';cut=0;fig=0;render();}
-  function nextCut(){var d=scenes[index].drama;if(cut<d.length-1){cut++;render();}else{view='notes';render();}}
+  /** コマを送る。場面の最後のコマのあとは解説に寄らず次の場面へ（解説は「解説を読む」で開く）。最後の場面のあとは本編へ */
+  function nextCut(){var d=scenes[index].drama;if(cut<d.length-1){cut++;render();}else if(index<scenes.length-1)goScene(index+1);else{hide();callbacks.done();}}
   /** 史記の言葉は、書き下し文と（現代語訳）を分けて見せる */
   function dramaTextHTML(c,p){
     var m=c.kind==='shiki'&&/^(.*?)（([^（]*)）$/.exec(c.x);
@@ -229,7 +220,8 @@
       '<span class="km-evidence-label">'+KIND[c.kind]+(c.src?' · '+c.src:'')+'</span>'+
       dramaTextHTML(c,p)+
       '<div class="km-drama-nav"><button data-intro="cutprev"'+(cut===0?' disabled':'')+'>◀ 前のコマ</button><span class="km-drama-count">'+(cut+1)+' / '+s.drama.length+'</span>'+
-      '<button class="km-btn gold" data-intro="cutnext">'+(last?'解説を読む →':'次へ ▶')+'</button></div></div></div>';
+      (last?'<button class="km-btn km-drama-notes" data-intro="view" data-view="notes">解説を読む</button>':'')+
+      '<button class="km-btn gold" data-intro="cutnext">'+(!last?'次へ ▶':index<scenes.length-1?'次の場面へ →':'本編「鴻門に謝す」へ →')+'</button></div></div></div>';
   }
   function quizHTML(s){
     var all=s.quiz.every(function(q){return answers[q.id]===q.answer;});
@@ -245,7 +237,7 @@
       (drama?dramaHTML(s):'')+'<div class="km-intro-layout"'+(drama?' hidden':'')+'><div class="km-intro-visual"><span class="km-visual-no" aria-hidden="true">0'+(index+1)+'</span>'+timelineHTML(s)+figureHTML(s)+'<div class="km-map-legend"><span>● 劉邦側</span><span>● 項羽側</span><small>人物名を押すと紹介</small></div><div id="km-intro-person" aria-live="polite"></div></div>'+
       '<article class="km-intro-copy" aria-live="polite">'+copyHTML(s)+
       '<details class="km-intro-source"><summary>出典と表現について</summary><p>原文は『史記』から短く引きました。書き下し文・現代語訳・説明は学習用です。地図と人物画は模式的な表現です。</p><a href="https://zh.wikisource.org/wiki/史記/卷007" target="_blank" rel="noopener">項羽本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷008" target="_blank" rel="noopener">高祖本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷048" target="_blank" rel="noopener">陳渉世家</a></details></article></div>'+
-      '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前へ</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===scenes.length-1?'done':'next')+'">'+(index===scenes.length-1?'序幕「霸上の夕べ」へ →':'次へ →')+'</button><small class="km-intro-playback">'+(auto?'場面は7秒、解説は45秒ごとに進む · 問いで一時停止':'手動で進む · ← → で場面、Enter でコマ送り')+'</small></footer>';
+      '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前へ</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===scenes.length-1?'done':'next')+'">'+(index===scenes.length-1?'本編「鴻門に謝す」へ →':'次へ →')+'</button><small class="km-intro-playback">'+(auto?'紙芝居は7秒ごとに進む · 解説は「解説を読む」で開く':'手動で進む · ← → で場面、Enter でコマ送り')+'</small></footer>';
     if(callbacks.stage)callbacks.stage(drama?s.drama[cut]:null);
     schedule();
   }

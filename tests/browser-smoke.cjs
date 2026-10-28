@@ -42,6 +42,9 @@ async function story(browser, name, viewport) {
   await until(p, () => window.Koumon._mode() === 'gen');
   assert.ok(await inView(p, '[data-km="gennext"]'), name + ': 原文の段の「次へ」が画面内にある');
   await p.click('.km-yaku');
+  assert.notEqual(await p.evaluate(() => window.Koumon._mode()), 'gen', name + ': 本文の余白を押すと進む');
+  // 本編（第一幕「鴻門に謝す」）の漢文つきの読解へ
+  await p.evaluate(() => window.Koumon._go('c2-14'));
   await p.waitForFunction(() => window.Koumon._mode() === 'ask');
   const stem = await p.$eval('.km-stem', (e) => e.getBoundingClientRect().height);
   assert.ok(stem > 60, name + ': 設問の漢文が縦に並ぶ（高さ ' + Math.round(stem) + 'px）');
@@ -56,8 +59,9 @@ async function story(browser, name, viewport) {
   await p.click('[data-km="intro"]');
   assert.ok(await p.isVisible('.km-drama-card'), name + ': 導入の紙芝居');
   assert.ok(await inView(p, '[data-intro="cutnext"]'), name + ': 紙芝居の「次へ」が画面内にある');
-  for (let i = 0; i < 4; i++) await p.click('[data-intro="cutnext"]');
-  assert.ok(await p.isVisible('.km-intro-copy h2'), name + ': 紙芝居のあとに解説');
+  await p.click('[data-intro="cutnext"]');
+  await p.click('.km-drama-notes');
+  assert.ok(await p.isVisible('.km-intro-copy h2'), name + ': 「解説を読む」で解説');
   // 解説の図の欄：上（年表）が切れず、下（凡例）までスクロールで届く
   for (let i = 0; i < 7; i++) {
     await p.evaluate((i) => { document.querySelector(`[data-intro="step"][data-step="${i}"]`).click(); document.querySelector('[data-intro="view"][data-view="notes"]').click(); }, i);
