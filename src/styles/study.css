@@ -153,3 +153,12 @@
 }
 .km-drama-nav .km-drama-notes { margin-left: auto; padding: 10px 14px; font-size: 13px; }
 @media (max-width:580px) { .km-drama-nav { flex-wrap: wrap; } .km-drama-nav .km-drama-notes { margin-left: 0; } }
+
+/* チュートリアル：各操作の初回だけ出す説明 */
+.km-tip { margin: 0 0 12px; padding: 12px 14px; border: 1px solid #d9b46a; border-left: 4px solid #e2c58b; border-radius: 6px; background: #2c2a1cee; color: #f3e6c4; font: 14px/1.75 var(--gothic); display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; cursor: auto; }
+.km-tip b { grid-column: 1 / -1; font-size: 11px; letter-spacing: .15em; color: #e2c58b; }
+.km-tip p { margin: 0; }
+.km-tip .km-btn { padding: 8px 14px; font-size: 13px; }
+.km-projection .km-tip { font-size: 18px; }
+@media (max-width:580px) { .km-tip { grid-template-columns: 1fr; } .km-tip .km-btn { justify-self: end; } }
+.km-home-actions .km-home-tutorial { opacity: .92; }

@@ -108,7 +108,7 @@ test('URL hash opens a chapter in classroom mode and leaves locked chapters clos
   assert.equal(h.app._mode(),'title');h.close();
   h=await setup('c0-1',{start:false,classroom:true,url:'http://localhost/#review'});assert.ok(h.doc.querySelector('.km-m-review'));h.close();
   h=await setup('c0-1',{classroom:true});await h.click('.km-top [data-km="menu"]');
-  const select=h.doc.querySelector('[data-chaplink]');assert.ok(select);assert.equal(select.querySelectorAll('option').length,13);h.close();
+  const select=h.doc.querySelector('[data-chaplink]');assert.ok(select);assert.equal(select.querySelectorAll('option').length,14);h.close();
 });
 test('learning record gathers progress, routes, review items and reflection',async()=>{
   const h=await setup('c0-11',{meta:{reflection:{quote:'[g10] 項王黙然不応'}}});
@@ -235,4 +235,38 @@ test('challenge mode opens the textbook start and the supplementary prelude with
   await h.click('[data-km="menu"]');
   for(const id of ['c0','c1','c2'])assert.equal(h.doc.querySelector('.km-chap[data-c="'+id+'"]').disabled,false,id);
   assert.equal(h.doc.querySelector('.km-chap[data-c="c3"]').disabled,true);h.close();
+});
+test('tutorial plays the 霸上 prelude with one-time tips, then hands off to 鴻門に謝す',async()=>{
+  const h=await setup('c0-1',{start:false,classroom:true});
+  assert.match(h.doc.querySelector('[data-km="tutorial"]').textContent,/チュートリアル/);
+  await h.click('[data-km="tutorial"]');
+  assert.equal(h.app._state().ch,'c0');assert.equal(h.app._state().tutorial,true);
+  // 台詞・原文の段・読み解け・解説・決断の初回に一度ずつ説明が出る
+  const seen=new Set();
+  for(let guard=0;guard<200&&h.app._state().tutorial;guard++){
+    const tip=h.doc.querySelector('.km-tip');if(tip){const kinds=Object.keys(h.app._state().tips);seen.add(kinds.at(-1));await h.click('[data-km="tipclose"]');assert.equal(h.doc.querySelector('.km-tip'),null);}
+    const mode=h.app._mode(),n=h.app._nodes()[h.app._state().node].n;
+    if(mode==='scene'){for(const [id,j] of [...h.timeouts])if(j.ms===10){h.timeouts.delete(id);j.fn();}await h.flush();}
+    else if(mode==='card')await h.click('#km-card');
+    else if(mode==='say'||mode==='react')await h.click('[data-km="next"]');
+    else if(mode==='gen')await h.click('[data-km="gennext"]');
+    else if(mode==='ask')await h.click('[data-km="pick"][data-i="'+n.o.findIndex(o=>o.ok)+'"]');
+    else if(mode==='feedback')await h.click('[data-km="fbnext"]');
+    else if(mode==='end')break;
+    else throw new Error(mode);
+  }
+  for(const k of ['say','gen','read','feedback','judge','react'])assert.ok(seen.has(k),'tip '+k);
+  assert.ok(h.doc.querySelector('[data-km="tutnext"]'),'tutorial end screen');assert.match(h.doc.querySelector('.km-m-end').textContent,/霸上の夜、終わり/);
+  assert.equal(h.saved().save.ch,'c2','progress is saved at the textbook start');
+  await h.click('[data-km="tutnext"]');assert.equal(h.app._state().ch,'c2');assert.equal(h.app._state().tutorial,false);
+  assert.deepEqual(h.errors,[]);h.close();
+});
+test('tutorial can be left at its end and resumed from the textbook start; it is also reachable from the intro',async()=>{
+  let h=await setup('c1-45',{state:{tutorial:true,tips:{say:true}},classroom:true});
+  for(let i=0;i<5&&h.app._mode()!=='end';i++)await h.click('[data-km="next"]');
+  await h.click('[data-km="totitle"]');assert.equal(h.app._mode(),'title');
+  await h.click('[data-km="continue"]');assert.equal(h.app._state().ch,'c2');assert.equal(h.app._state().tutorial,false);h.close();
+  h=await setup('c0-1',{start:false,classroom:true});await h.click('[data-km="intro"]');await h.click('[data-intro="step"][data-step="6"]');
+  const n=h.w.KoumonClassroom.scenes[6].drama.length;for(let c=1;c<n;c++)await h.click('[data-intro="cutnext"]');
+  await h.click('[data-intro="tutorial"]');assert.equal(h.app._state().ch,'c0');assert.equal(h.app._state().tutorial,true);h.close();
 });
