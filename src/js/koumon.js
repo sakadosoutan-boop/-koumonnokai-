@@ -52,7 +52,7 @@
 
   function freshState(chapterId) {
     var s = { node: '', ch: chapterId || 'c0', life: 3, maxLife: 3, ikari: 40, satsu: 40, saku: 3, flags: {}, items: [],
-      streak: 0, q: 0, ok: 0, hints: 0, picks: [], log: [], cp: null, rewinds: [], hinted: {}, phase: null, tutorial: false, tips: {} };
+      streak: 0, q: 0, ok: 0, hints: 0, picks: [], log: [], cp: null, rewinds: [], hinted: {}, phase: null, tutorial: false, tips: {}, met: {} };
     var idx = chapIndex(s.ch);
     // 途中の章から始めるときは、それまでの場面を史記どおりに選んだものとする
     if (idx >= 2) { s.flags.kyodai = true; s.flags.honest = true; }
@@ -70,6 +70,8 @@
     });
     state.node = saved.node; state.ch = at.ch;
     ['flags', 'hinted', 'tips'].forEach(function (key) { if (!state[key] || Array.isArray(state[key])) state[key] = {}; });
+    // 旧版の記録：今の場面より前に出た人物は、もう紹介したことにする
+    if (!saved.met || typeof saved.met !== 'object' || Array.isArray(saved.met)) state.met = metBefore(state.node);
     ['items', 'picks', 'log'].forEach(function (key) { if (!Array.isArray(state[key])) state[key] = []; });
     state.items = state.items.filter(function (id) { return !!K.items[id]; });
     state.log = state.log.filter(function (line) { return Array.isArray(line); });
@@ -263,6 +265,7 @@
       '<div class="km-bar km-bar-t"></div><div class="km-bar km-bar-b"></div>' +
       '<div class="km-fade"></div>' +
       '<div class="km-caption" aria-live="polite"></div>' +
+      '<div class="km-cutin" aria-live="polite"></div>' +
       '<div class="km-top">' +
         '<div class="km-chip"><span class="km-k">作</span>史記</div>' +
         '<div class="km-chip km-title-chip" id="km-title">楚漢の章</div>' +
@@ -284,6 +287,7 @@
     el.ov = $root.querySelector('.km-ov');
     el.fade = $root.querySelector('.km-fade');
     el.caption = $root.querySelector('.km-caption');
+    el.cutin = $root.querySelector('.km-cutin');
     el.panel = $root.querySelector('#km-panel');
     el.status = $root.querySelector('#km-status');
     el.card = $root.querySelector('#km-card');
@@ -368,6 +372,7 @@
     $root.classList.remove('km-view');
     el.status.innerHTML = '';
     el.caption.textContent = '';
+    hideCutIn(true);
     el.title.textContent = K.title;
     var endN = Object.keys(meta.endings).length, endAll = Object.keys(K.endings).length;
     var genN = Object.keys(meta.gen).length, genAll = Object.keys(K.genbun).length;
@@ -647,11 +652,53 @@
     else if (n.b === 'think' && n.at && n.at !== 'wide') ST.showBubble(n.at, '（……）', 'think');
     else ST.hideBubble();
     logLine(n.w, n.x);
+    meet(n);
     el.panel.innerHTML = speakerHTML(n.w) + '<span class="km-evidence-label">史記をもとにした場面（ゲームで作った台詞もふくむ）</span>' +
       '<div class="km-text' + (n.w ? '' : ' narr') + (n.w === 'you' ? ' inner' : '') + '" id="km-text"></div>' +
       '<div class="km-nav"><span class="km-hint-key">タップ／Enter で次へ</span><button class="km-btn gold km-next" data-km="next">次へ ▶</button></div>';
     typeText(document.getElementById('km-text'), n.x);
     tip('say');
+  }
+  /* ---------- 人物の初登場（カットイン） ---------- */
+  // 台詞の主、または視点が向いた人物が、この通しで初めて出たときに名前と人となりを短く見せる。
+  function meetId(n, ch) {
+    var id = n.w === 'you' ? (ch === 'c8' ? 'u' : ch === 'c9' ? 'ko' : 'hai') : n.w;
+    if (!id && n.at && n.at !== 'wide') id = n.at;
+    return id && K.chars[id] && K.chars[id].cut ? id : null;
+  }
+  function metBefore(node) {
+    var met = {}, stop = ORDER.indexOf(node);
+    for (var i = 0; i < stop; i++) {
+      var at = NODES[ORDER[i]], id = (at.n.t === 'say' || at.n.t === 'ask') && meetId(at.n, at.ch);
+      if (id) met[id] = true;
+    }
+    return met;
+  }
+  function meet(n) {
+    var id = st && meetId(n, st.ch);
+    if (!id || st.met[id]) return;
+    st.met[id] = true;
+    persist();
+    var c = K.chars[id], p = c.cut, classroom = window.KoumonClassroom;
+    var portrait = classroom && classroom.portraitHTML ? classroom.portraitHTML(id === 'ko' ? 'hai' : id) : '';
+    el.cutin.className = 'km-cutin km-cutin-' + c.side;
+    el.cutin.innerHTML = '<div class="km-cutin-band">' +
+      (portrait || '<span class="km-cutin-seal km-seal km-' + c.side + '" aria-hidden="true">' + esc(c.seal) + '</span>') +
+      '<div class="km-cutin-text"><span class="km-cutin-label">初登場</span>' +
+      '<b class="km-cutin-name"><ruby>' + esc(p[0]) + '<rt>' + esc(p[1]) + '</rt></ruby></b>' +
+      '<span class="km-cutin-alias">' + esc(p[2]) + '</span>' +
+      '<p class="km-cutin-about">' + esc(p[3]) + '</p></div></div>';
+    void el.cutin.offsetWidth;
+    el.cutin.classList.add('on');
+    clearTimeout(meet.t);
+    meet.t = setTimeout(function () { hideCutIn(); }, reduced() ? 2400 : 3200);
+  }
+  function hideCutIn(now) {
+    clearTimeout(meet.t);
+    if (!el.cutin) return;
+    if (now) { el.cutin.className = 'km-cutin'; el.cutin.innerHTML = ''; return; }
+    el.cutin.classList.add('out');
+    meet.t = setTimeout(function () { hideCutIn(true); }, 500);
   }
   function typeText(node, text) {
     if (typing) { clearInterval(typing.id); typing = null; }
@@ -728,6 +775,7 @@
     mode = 'ask';
     ST.hideBubble();
     if (n.at) ST.focus(n.at); else if (n.w && n.w !== 'you') ST.focus(n.w);
+    if (!restoring) meet(n);
     var opts = n.o.map(function (o, i) { return { o: o, i: i }; });
     opts = shuffle(opts, n.id);
     n._order = opts.map(function (x) { return x.i; });

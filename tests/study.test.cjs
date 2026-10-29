@@ -303,3 +303,19 @@ test('返り点：合符を読み取り、各設問の返り点が正しく対�
   }
   h.close();
 });
+
+test('人物の初登場でカットインが一度だけ出て、名前と人となりを示す',async()=>{
+  const h=await setup('c0-3',{classroom:true,state:{met:{}}});
+  const cut=()=>h.doc.querySelector('.km-cutin');
+  assert.ok(cut().classList.contains('on'));assert.match(cut().textContent,/張良/);assert.match(cut().textContent,/ちょうりょう/);assert.match(cut().textContent,/子房/);
+  assert.ok(cut().querySelector('.km-portrait'),'main characters reuse their portrait');
+  assert.equal(h.app._state().met.ryo,true);assert.equal(h.saved().save.met.ryo,true,'met is saved');
+  await h.click('[data-km="next"]');assert.match(cut().textContent,/劉邦/,'沛公 is introduced at his first line');
+  for(const id of Object.keys(h.w.KOUMON.chars).filter(k=>h.w.KOUMON.chars[k].cut)){const c=h.w.KOUMON.chars[id].cut;assert.equal(c.length,4,id);assert.ok(c[3].length<=30,id+' stays short');}
+  assert.equal(h.w.KOUMON.chars.ei.cut,undefined);
+  h.close();
+  // 旧版の記録（met なし）で途中から再開しても、すでに出た人物は紹介し直さない
+  const g=await setup('c1-2',{classroom:true});
+  assert.equal(g.app._state().met.ryo,true);assert.equal(g.app._state().met.u,true);
+  assert.match(g.doc.querySelector('.km-cutin').textContent,/項伯/,'項伯 is new here');g.close();
+});
