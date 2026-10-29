@@ -995,6 +995,58 @@ button:disabled { opacity:.4; cursor:not-allowed; }
   .km-cutin.on .km-cutin-band::after { animation: none; }
 }
 
+/* 本文の窓：背景を透かして舞台が見えるようにし、文字は影で読みやすく */
+.km-panel { background: linear-gradient(120deg, rgba(10,29,34,.78), rgba(17,29,31,.68)); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.km-panel .km-text, .km-panel .km-ask-q, .km-panel .km-speaker { text-shadow: 0 1px 3px rgba(0,0,0,.85), 0 0 10px rgba(0,0,0,.5); }
+.km-panel .km-nav-sticky { background: rgba(12,30,34,.9); }
+/* 文字を隠す／表示する */
+.km-hide-text, .km-show-text {
+  pointer-events: auto; font: 12px var(--gothic); letter-spacing: .12em; color: #f3e7c6; cursor: pointer;
+  background: rgba(10,29,34,.82); border: 1px solid rgba(189,161,105,.75); border-radius: 6px 6px 0 0; padding: 4px 12px 5px;
+}
+.km-hide-text { position: absolute; right: 14px; bottom: 100%; margin-bottom: -1px; border-bottom: 0; }
+.km-hide-text:hover, .km-hide-text:focus-visible, .km-show-text:hover, .km-show-text:focus-visible { background: rgba(30,52,56,.95); outline: none; border-color: #e6cc8b; }
+.km-cap-empty .km-hide-text, .km-at-title .km-hide-text, .km-at-intro .km-hide-text { display: none; }
+.km-show-text { position: absolute; z-index: 7; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 16px); transform: translateX(-50%); border-radius: 99px; padding: 9px 20px; font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.45); display: none; }
+.km-view .km-show-text { display: block; }
+.km-at-title .km-show-text { display: none; }
+/* 続きがあるときの印 */
+.km-more { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); z-index: 3; pointer-events: none; font: 11px var(--gothic); letter-spacing: .15em; color: #e6cc8b; background: rgba(10,29,34,.9); border: 1px solid rgba(189,161,105,.6); border-radius: 99px; padding: 2px 10px; opacity: 0; transition: opacity .2s; }
+.km-has-more .km-more { opacity: 1; }
+.km-at-title .km-more { display: none; }
+
+@media (max-width:580px) {
+  /* 窓の高さをそろえ、中をスクロールする */
+  .km-panel.km-panel-fixed { display: flex; flex-direction: column; height: 36dvh; max-height: 36dvh; padding: 12px 14px 14px; overscroll-behavior: contain; }
+  .km-panel-fixed > * { flex-shrink: 0; }
+  .km-panel-fixed > .km-evidence-label { align-self: flex-start; }
+  /* 問いでは選択肢を隠さないよう、下の札は固定しない */
+  .km-panel-fixed > .km-opts ~ .km-nav { position: static; margin: 10px 0 0; padding: 0; background: none; border-top: 0; }
+  .km-panel-fixed .km-speaker-portrait { gap: 10px; padding-bottom: 6px; margin-bottom: 4px; }
+  .km-panel-fixed .km-speaker-portrait .km-portrait { width: 42px; height: 42px; }
+  .km-panel-fixed .km-speaker-name b { font-size: 17px; }
+  .km-panel-fixed .km-evidence-label { margin: 2px 0 4px; }
+  .km-panel-fixed .km-text, .km-panel-fixed .km-ask-q { font-size: 16px; line-height: 1.75; }
+  .km-panel-fixed > .km-nav { position: sticky; bottom: -14px; z-index: 2; margin: auto -14px -14px; padding: 8px 14px 12px; background: rgba(12,30,34,.9); border-top: 1px solid rgba(189,161,105,.25); }
+  .km-panel-fixed .km-nav-sticky { bottom: -14px; margin: auto -14px -14px; padding: 8px 14px 12px; }
+  .km-panel-fixed .km-stem { font-size: 19px; max-height: 128px; }
+  .km-panel-fixed .km-stem-wrap { margin: 0 0 8px; padding: 2px 0; }
+}
+@media (max-height:520px) and (orientation:landscape) {
+  .km-panel.km-panel-fixed { display: flex; flex-direction: column; height: 46dvh; max-height: 46dvh; padding: 10px 14px 12px; }
+  .km-panel-fixed > * { flex-shrink: 0; }
+  .km-panel-fixed > .km-evidence-label { align-self: flex-start; }
+  .km-panel-fixed > .km-opts ~ .km-nav { position: static; margin: 8px 0 0; padding: 0; background: none; }
+  .km-panel-fixed .km-speaker-portrait { gap: 8px; padding-bottom: 4px; margin-bottom: 2px; }
+  .km-panel-fixed .km-speaker-portrait .km-portrait { width: 30px; height: 30px; }
+  .km-panel-fixed .km-speaker-identity small { display: none; }
+  .km-panel-fixed .km-speaker-name b { font-size: 16px; }
+  .km-panel-fixed .km-evidence-label { margin: 2px 0 2px; }
+  .km-panel-fixed .km-text, .km-panel-fixed .km-ask-q { font-size: 15.5px; line-height: 1.65; }
+  .km-panel-fixed > .km-nav .km-btn { padding-top: 6px; padding-bottom: 6px; }
+  .km-panel-fixed > .km-nav { position: sticky; bottom: -12px; z-index: 2; margin: auto -14px -12px; padding: 6px 14px 10px; background: rgba(12,30,34,.9); }
+}
+
 </style>
 </head>
 <body class="soukan">
@@ -9621,6 +9673,19 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       '<span class="km-speaker-identity"><span class="km-speaker-name"><span class="km-seal km-' + c.side + '">' + esc(c.seal) + '</span><b>' + esc(c.name) + '</b></span>' +
       (p ? '<small>' + esc(p[0] + ' · ' + p[3]) + '</small>' : '') + '</span></div>';
   }
+  /** スマホでは、台詞・問い・原文の段・反応を同じ高さの窓に出し、中をスクロールする（遊びの盤面は除く） */
+  function fixedPanel(on) {
+    if (!el.panel) return;
+    el.panel.classList.toggle('km-panel-fixed', !!on);
+    if (on) el.panel.scrollTop = 0;
+    checkMore();
+  }
+  function checkMore() {
+    if (!el.panel || !el.cap) return;
+    var p = el.panel, more = p.scrollHeight - p.clientHeight - p.scrollTop > 8;
+    el.cap.classList.toggle('km-has-more', more);
+    el.cap.classList.toggle('km-cap-empty', !p.firstChild);
+  }
   function reduced() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
 
   /* ============================ 音（合成） ============================ */
@@ -9743,7 +9808,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       '</div>' +
       '<button class="km-quit" data-km="quit" title="楚漢の章を閉じる" aria-label="閉じる">✕</button>' +
       '<div class="km-status" id="km-status"></div>' +
-      '<div class="km-cap"><div class="km-panel" id="km-panel"></div></div>' +
+      '<div class="km-cap"><button class="km-hide-text" data-km="view" title="文字を隠して場面を見る（H キー）">文字を隠す</button><div class="km-panel" id="km-panel"></div><span class="km-more" aria-hidden="true">▼ 続き</span></div>' +
+      '<button class="km-show-text" data-km="view">文字を表示</button>' +
       '<div class="km-card" id="km-card"></div>' +
       '<div class="km-modal" id="km-modal" hidden></div>';
     document.body.appendChild($root);
@@ -9753,6 +9819,10 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     el.caption = $root.querySelector('.km-caption');
     el.cutin = $root.querySelector('.km-cutin');
     el.panel = $root.querySelector('#km-panel');
+    el.cap = $root.querySelector('.km-cap');
+    // 本文が窓に収まらないとき、下に「続き」があることを示す
+    el.panel.addEventListener('scroll', checkMore, { passive: true });
+    if (window.MutationObserver) new MutationObserver(checkMore).observe(el.panel, { childList: true, subtree: true, characterData: true });
     el.status = $root.querySelector('#km-status');
     el.card = $root.querySelector('#km-card');
     el.modal = $root.querySelector('#km-modal');
@@ -9956,6 +10026,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       }
     }
     cur = n;
+    fixedPanel(false);
     if (n.t !== 'end') persist();
     var prog = chapProgress(st.ch);
     el.title.innerHTML = esc(chap(st.ch).no + '　' + chap(st.ch).title) + (prog ? '<small class="km-title-prog">' + prog + '</small>' : '');
@@ -10104,6 +10175,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   /* ---------- 台詞 ---------- */
   function doSay(n) {
     mode = 'say';
+    fixedPanel(true);
     if (n.pose) Object.keys(n.pose).forEach(function (k) { ST.setPose(k, n.pose[k]); });
     if (n.at) ST.focus(n.at);
     if (ST.speaker) ST.speaker(n.w && n.w !== 'you' ? n.w : null);
@@ -10191,6 +10263,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   /* ---------- 原文の段 ---------- */
   function doGen(n) {
     mode = 'gen';
+    fixedPanel(true);
     ST.hideBubble();
     if (ST.speaker) ST.speaker(null);
     var g = K.genbun[n.g];
@@ -10237,6 +10310,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   /* ---------- 選択 ---------- */
   function doAsk(n, restoring) {
     mode = 'ask';
+    fixedPanel(true);
     ST.hideBubble();
     if (n.at) ST.focus(n.at); else if (n.w && n.w !== 'you') ST.focus(n.w);
     if (!restoring) meet(n);
@@ -10352,6 +10426,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
 
   function renderReaction(phase) {
     mode = 'react'; cur = { _after: phase.after };
+    fixedPanel(true);
     el.panel.innerHTML = speakerHTML(phase.speaker) + '<span class="km-evidence-label">ゲームの創作（史記には書かれていない）</span><div class="km-text">' + esc(phase.text) + '</div>' +
       '<div class="km-nav"><span></span><button class="km-btn gold km-next" data-km="next">次へ →</button></div>';
     el.panel.querySelector('.km-next').focus({ preventScroll: true });

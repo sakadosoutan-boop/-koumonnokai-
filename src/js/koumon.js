@@ -157,6 +157,19 @@
       '<span class="km-speaker-identity"><span class="km-speaker-name"><span class="km-seal km-' + c.side + '">' + esc(c.seal) + '</span><b>' + esc(c.name) + '</b></span>' +
       (p ? '<small>' + esc(p[0] + ' · ' + p[3]) + '</small>' : '') + '</span></div>';
   }
+  /** スマホでは、台詞・問い・原文の段・反応を同じ高さの窓に出し、中をスクロールする（遊びの盤面は除く） */
+  function fixedPanel(on) {
+    if (!el.panel) return;
+    el.panel.classList.toggle('km-panel-fixed', !!on);
+    if (on) el.panel.scrollTop = 0;
+    checkMore();
+  }
+  function checkMore() {
+    if (!el.panel || !el.cap) return;
+    var p = el.panel, more = p.scrollHeight - p.clientHeight - p.scrollTop > 8;
+    el.cap.classList.toggle('km-has-more', more);
+    el.cap.classList.toggle('km-cap-empty', !p.firstChild);
+  }
   function reduced() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
 
   /* ============================ 音（合成） ============================ */
@@ -279,7 +292,8 @@
       '</div>' +
       '<button class="km-quit" data-km="quit" title="楚漢の章を閉じる" aria-label="閉じる">✕</button>' +
       '<div class="km-status" id="km-status"></div>' +
-      '<div class="km-cap"><div class="km-panel" id="km-panel"></div></div>' +
+      '<div class="km-cap"><button class="km-hide-text" data-km="view" title="文字を隠して場面を見る（H キー）">文字を隠す</button><div class="km-panel" id="km-panel"></div><span class="km-more" aria-hidden="true">▼ 続き</span></div>' +
+      '<button class="km-show-text" data-km="view">文字を表示</button>' +
       '<div class="km-card" id="km-card"></div>' +
       '<div class="km-modal" id="km-modal" hidden></div>';
     document.body.appendChild($root);
@@ -289,6 +303,10 @@
     el.caption = $root.querySelector('.km-caption');
     el.cutin = $root.querySelector('.km-cutin');
     el.panel = $root.querySelector('#km-panel');
+    el.cap = $root.querySelector('.km-cap');
+    // 本文が窓に収まらないとき、下に「続き」があることを示す
+    el.panel.addEventListener('scroll', checkMore, { passive: true });
+    if (window.MutationObserver) new MutationObserver(checkMore).observe(el.panel, { childList: true, subtree: true, characterData: true });
     el.status = $root.querySelector('#km-status');
     el.card = $root.querySelector('#km-card');
     el.modal = $root.querySelector('#km-modal');
@@ -492,6 +510,7 @@
       }
     }
     cur = n;
+    fixedPanel(false);
     if (n.t !== 'end') persist();
     var prog = chapProgress(st.ch);
     el.title.innerHTML = esc(chap(st.ch).no + '　' + chap(st.ch).title) + (prog ? '<small class="km-title-prog">' + prog + '</small>' : '');
@@ -640,6 +659,7 @@
   /* ---------- 台詞 ---------- */
   function doSay(n) {
     mode = 'say';
+    fixedPanel(true);
     if (n.pose) Object.keys(n.pose).forEach(function (k) { ST.setPose(k, n.pose[k]); });
     if (n.at) ST.focus(n.at);
     if (ST.speaker) ST.speaker(n.w && n.w !== 'you' ? n.w : null);
@@ -727,6 +747,7 @@
   /* ---------- 原文の段 ---------- */
   function doGen(n) {
     mode = 'gen';
+    fixedPanel(true);
     ST.hideBubble();
     if (ST.speaker) ST.speaker(null);
     var g = K.genbun[n.g];
@@ -773,6 +794,7 @@
   /* ---------- 選択 ---------- */
   function doAsk(n, restoring) {
     mode = 'ask';
+    fixedPanel(true);
     ST.hideBubble();
     if (n.at) ST.focus(n.at); else if (n.w && n.w !== 'you') ST.focus(n.w);
     if (!restoring) meet(n);
@@ -888,6 +910,7 @@
 
   function renderReaction(phase) {
     mode = 'react'; cur = { _after: phase.after };
+    fixedPanel(true);
     el.panel.innerHTML = speakerHTML(phase.speaker) + '<span class="km-evidence-label">ゲームの創作（史記には書かれていない）</span><div class="km-text">' + esc(phase.text) + '</div>' +
       '<div class="km-nav"><span></span><button class="km-btn gold km-next" data-km="next">次へ →</button></div>';
     el.panel.querySelector('.km-next').focus({ preventScroll: true });

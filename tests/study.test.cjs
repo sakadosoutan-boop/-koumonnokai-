@@ -319,3 +319,17 @@ test('人物の初登場でカットインが一度だけ出て、名前と人�
   assert.equal(g.app._state().met.ryo,true);assert.equal(g.app._state().met.u,true);
   assert.match(g.doc.querySelector('.km-cutin').textContent,/項伯/,'項伯 is new here');g.close();
 });
+
+test('本文の窓：台詞・問いは同じ高さの窓に出し、文字を隠す／表示するボタンがある',async()=>{
+  const h=await setup('c0-3',{classroom:true});
+  const panel=h.doc.querySelector('#km-panel'),root=h.doc.querySelector('#km');
+  assert.ok(panel.classList.contains('km-panel-fixed'),'say uses the fixed window');
+  await h.click('.km-hide-text');assert.ok(root.classList.contains('km-view'),'text hidden');
+  assert.ok(h.doc.querySelector('.km-show-text'));await h.click('.km-show-text');assert.equal(root.classList.contains('km-view'),false,'text shown again');
+  h.close();
+  const g=await setup('c5-5',{classroom:true});
+  assert.ok(g.doc.querySelector('#km-panel').classList.contains('km-panel-fixed'),'ask uses the fixed window');g.close();
+  const seatId=Object.values(h.w.KOUMON.script).flat().find(n=>n.t==='game'&&n.g==='seat').id;
+  const s=await setup(seatId,{classroom:true});
+  assert.equal(s.doc.querySelector('#km-panel').classList.contains('km-panel-fixed'),false,'game boards keep their own height');s.close();
+});
