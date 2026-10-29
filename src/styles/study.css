@@ -174,3 +174,52 @@
 .km-title-prog { margin-left: 10px; padding: 1px 8px; border: 1px solid var(--line); border-radius: 99px; font: 11px var(--gothic); color: #bdd3cc; letter-spacing: .05em; vertical-align: middle; }
 /* スマホでは上部のボタンが2段になるので、状態の札をその下へ */
 @media (max-width:580px) { .km-status { top: calc(env(safe-area-inset-top) + 108px); } }
+
+/* 人物の初登場：舞台の上を帯が横切り、名前と人となりを短く見せる（操作はさえぎらない） */
+.km-cutin { position: absolute; z-index: 8; left: 0; right: 0; top: calc(env(safe-area-inset-top) + 15vh); pointer-events: none; visibility: hidden; }
+.km-cutin.on { visibility: visible; }
+.km-cutin-band {
+  --side: var(--km-han);
+  position: relative; display: flex; align-items: center; gap: 14px; width: min(560px, 92vw); padding: 12px 46px 12px max(18px, 4vw);
+  background: linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.38)), var(--side);
+  border-top: 1px solid rgba(230,204,139,.85); border-bottom: 1px solid rgba(230,204,139,.85);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 34px) 100%, 0 100%);
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  transform: translateX(-105%); opacity: 0; transition: transform .5s cubic-bezier(.2,.85,.25,1), opacity .35s;
+}
+.km-cutin-so .km-cutin-band { --side: var(--km-so); }
+.km-cutin.on .km-cutin-band { transform: none; opacity: 1; }
+.km-cutin.on.out .km-cutin-band { transform: translateX(40px); opacity: 0; transition: transform .45s ease-in, opacity .45s ease-in; }
+.km-cutin-band::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 100%; background: linear-gradient(100deg, transparent 30%, rgba(255,240,200,.28) 45%, transparent 60%); transform: translateX(-100%); }
+.km-cutin.on .km-cutin-band::after { animation: kmCutinShine .9s .25s ease-out both; }
+@keyframes kmCutinShine { to { transform: translateX(100%); } }
+.km-cutin .km-portrait { width: 84px; height: 84px; }
+.km-cutin-seal.km-seal { width: 64px; height: 64px; font-size: 34px; border-radius: 6px; font-family: var(--mincho); }
+.km-cutin-text { display: grid; grid-template-columns: auto 1fr; align-items: end; column-gap: 12px; min-width: 0; color: #fff6e2; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+.km-cutin-label { grid-column: 1 / -1; font: 11px var(--gothic); letter-spacing: .3em; color: #e6cc8b; }
+.km-cutin-name { font: 700 32px/1.25 var(--mincho); letter-spacing: .12em; }
+.km-cutin-name rt { font: 11px var(--gothic); letter-spacing: .12em; color: #f0e3c2; }
+.km-cutin-alias { padding-bottom: 6px; font: 13px var(--gothic); letter-spacing: .1em; color: #f0e3c2; white-space: nowrap; }
+.km-cutin-about { grid-column: 1 / -1; margin: 4px 0 0; font: 14.5px/1.55 var(--gothic); letter-spacing: .04em; }
+.km-projection .km-cutin-name { font-size: 40px; }
+.km-projection .km-cutin-about { font-size: 18px; }
+@media (max-width:580px) {
+  .km-cutin { top: calc(env(safe-area-inset-top) + 128px); }
+  .km-cutin-band { gap: 10px; padding: 9px 34px 9px 12px; }
+  .km-cutin .km-portrait { width: 60px; height: 60px; }
+  .km-cutin-seal.km-seal { width: 50px; height: 50px; font-size: 26px; }
+  .km-cutin-name { font-size: 25px; }
+  .km-cutin-about { font-size: 13px; }
+}
+@media (max-height:500px) {
+  .km-cutin { top: calc(env(safe-area-inset-top) + 56px); }
+  .km-cutin-band { padding-top: 7px; padding-bottom: 7px; }
+  .km-cutin .km-portrait { width: 54px; height: 54px; }
+  .km-cutin-seal.km-seal { width: 46px; height: 46px; font-size: 24px; }
+  .km-cutin-name { font-size: 24px; }
+  .km-cutin-about { font-size: 13px; margin-top: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .km-cutin-band, .km-cutin.on.out .km-cutin-band { transform: none; transition: opacity .3s; }
+  .km-cutin.on .km-cutin-band::after { animation: none; }
+}

@@ -946,6 +946,55 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 /* スマホでは上部のボタンが2段になるので、状態の札をその下へ */
 @media (max-width:580px) { .km-status { top: calc(env(safe-area-inset-top) + 108px); } }
 
+/* 人物の初登場：舞台の上を帯が横切り、名前と人となりを短く見せる（操作はさえぎらない） */
+.km-cutin { position: absolute; z-index: 8; left: 0; right: 0; top: calc(env(safe-area-inset-top) + 15vh); pointer-events: none; visibility: hidden; }
+.km-cutin.on { visibility: visible; }
+.km-cutin-band {
+  --side: var(--km-han);
+  position: relative; display: flex; align-items: center; gap: 14px; width: min(560px, 92vw); padding: 12px 46px 12px max(18px, 4vw);
+  background: linear-gradient(90deg, rgba(0,0,0,.08), rgba(0,0,0,.38)), var(--side);
+  border-top: 1px solid rgba(230,204,139,.85); border-bottom: 1px solid rgba(230,204,139,.85);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 34px) 100%, 0 100%);
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  transform: translateX(-105%); opacity: 0; transition: transform .5s cubic-bezier(.2,.85,.25,1), opacity .35s;
+}
+.km-cutin-so .km-cutin-band { --side: var(--km-so); }
+.km-cutin.on .km-cutin-band { transform: none; opacity: 1; }
+.km-cutin.on.out .km-cutin-band { transform: translateX(40px); opacity: 0; transition: transform .45s ease-in, opacity .45s ease-in; }
+.km-cutin-band::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 100%; background: linear-gradient(100deg, transparent 30%, rgba(255,240,200,.28) 45%, transparent 60%); transform: translateX(-100%); }
+.km-cutin.on .km-cutin-band::after { animation: kmCutinShine .9s .25s ease-out both; }
+@keyframes kmCutinShine { to { transform: translateX(100%); } }
+.km-cutin .km-portrait { width: 84px; height: 84px; }
+.km-cutin-seal.km-seal { width: 64px; height: 64px; font-size: 34px; border-radius: 6px; font-family: var(--mincho); }
+.km-cutin-text { display: grid; grid-template-columns: auto 1fr; align-items: end; column-gap: 12px; min-width: 0; color: #fff6e2; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+.km-cutin-label { grid-column: 1 / -1; font: 11px var(--gothic); letter-spacing: .3em; color: #e6cc8b; }
+.km-cutin-name { font: 700 32px/1.25 var(--mincho); letter-spacing: .12em; }
+.km-cutin-name rt { font: 11px var(--gothic); letter-spacing: .12em; color: #f0e3c2; }
+.km-cutin-alias { padding-bottom: 6px; font: 13px var(--gothic); letter-spacing: .1em; color: #f0e3c2; white-space: nowrap; }
+.km-cutin-about { grid-column: 1 / -1; margin: 4px 0 0; font: 14.5px/1.55 var(--gothic); letter-spacing: .04em; }
+.km-projection .km-cutin-name { font-size: 40px; }
+.km-projection .km-cutin-about { font-size: 18px; }
+@media (max-width:580px) {
+  .km-cutin { top: calc(env(safe-area-inset-top) + 128px); }
+  .km-cutin-band { gap: 10px; padding: 9px 34px 9px 12px; }
+  .km-cutin .km-portrait { width: 60px; height: 60px; }
+  .km-cutin-seal.km-seal { width: 50px; height: 50px; font-size: 26px; }
+  .km-cutin-name { font-size: 25px; }
+  .km-cutin-about { font-size: 13px; }
+}
+@media (max-height:500px) {
+  .km-cutin { top: calc(env(safe-area-inset-top) + 56px); }
+  .km-cutin-band { padding-top: 7px; padding-bottom: 7px; }
+  .km-cutin .km-portrait { width: 54px; height: 54px; }
+  .km-cutin-seal.km-seal { width: 46px; height: 46px; font-size: 24px; }
+  .km-cutin-name { font-size: 24px; }
+  .km-cutin-about { font-size: 13px; margin-top: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .km-cutin-band, .km-cutin.on.out .km-cutin-band { transform: none; transition: opacity .3s; }
+  .km-cutin.on .km-cutin-band::after { animation: none; }
+}
+
 </style>
 </head>
 <body class="soukan">
@@ -1912,6 +1961,24 @@ window.KUHO = [
     rba:  { name: '呂馬童', full: '呂馬童（漢の騎司馬）', seal: '童', side: 'han' },
     you:  { name: 'あなた', full: 'あなた（沛公）', seal: '邦', side: 'han' }
   };
+  // 初登場のカットイン：[名前, 読み, 別の呼び名, どんな人か（一行）]。衛士は場面の一瞬なので出さない。
+  var CUTIN = {
+    hai:  ['劉邦', 'りゅうほう', '沛公', '先に関中へ入った将軍。この物語で、あなたが演じる人。'],
+    ryo:  ['張良', 'ちょうりょう', '字は子房', '沛公の知恵袋。策で主君を守る。'],
+    msg:  ['使者', 'ししゃ', '曹無傷の使い', '沛公の部下・曹無傷が、ひそかに項羽へ送った使い。'],
+    u:    ['項羽', 'こうう', '項王・名は籍', '四十万の兵を率いる楚の大将軍。'],
+    zo:   ['范増', 'はんぞう', '亜父', '項羽の軍師。沛公を危ない相手と見ている。'],
+    haku: ['項伯', 'こうはく', '項羽の叔父', '張良の古い友人。敵と味方の間をつなぐ。'],
+    kai:  ['樊噲', 'はんかい', '沛公の参乗', '沛公の護衛。恐れを知らない武人。'],
+    sou:  ['項荘', 'こうそう', '項羽の従弟', '范増に命じられ、剣舞で沛公をねらう。'],
+    chin: ['陳平', 'ちんぺい', '楚の都尉', '項王の命令で、席を立った沛公を呼びに来る。'],
+    gu:   ['虞', 'ぐ', '虞美人', '項王のそばに、いつも従う女性。'],
+    tei:  ['烏江の亭長', 'うこうのていちょう', '宿場の長', '舟を用意して、項王に江東へ逃げるよう勧める。'],
+    rba:  ['呂馬童', 'りょばどう', '漢の騎司馬', '漢の騎兵の隊長。項王の昔なじみ。'],
+    ko:   ['高祖', 'こうそ', '皇帝となった劉邦', '項羽をたおし、漢の皇帝になった劉邦。'],
+    ou:   ['高起・王陵', 'こうき・おうりょう', '高祖の家臣', '高祖の問いに、遠慮なく答える。']
+  };
+  Object.keys(CUTIN).forEach(function (id) { CHARS[id].cut = CUTIN[id]; });
 
   /* ============================ 原文帳 ============================ */
   var GENBUN = {
@@ -9449,7 +9516,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
 
   function freshState(chapterId) {
     var s = { node: '', ch: chapterId || 'c0', life: 3, maxLife: 3, ikari: 40, satsu: 40, saku: 3, flags: {}, items: [],
-      streak: 0, q: 0, ok: 0, hints: 0, picks: [], log: [], cp: null, rewinds: [], hinted: {}, phase: null, tutorial: false, tips: {} };
+      streak: 0, q: 0, ok: 0, hints: 0, picks: [], log: [], cp: null, rewinds: [], hinted: {}, phase: null, tutorial: false, tips: {}, met: {} };
     var idx = chapIndex(s.ch);
     // 途中の章から始めるときは、それまでの場面を史記どおりに選んだものとする
     if (idx >= 2) { s.flags.kyodai = true; s.flags.honest = true; }
@@ -9467,6 +9534,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     });
     state.node = saved.node; state.ch = at.ch;
     ['flags', 'hinted', 'tips'].forEach(function (key) { if (!state[key] || Array.isArray(state[key])) state[key] = {}; });
+    // 旧版の記録：今の場面より前に出た人物は、もう紹介したことにする
+    if (!saved.met || typeof saved.met !== 'object' || Array.isArray(saved.met)) state.met = metBefore(state.node);
     ['items', 'picks', 'log'].forEach(function (key) { if (!Array.isArray(state[key])) state[key] = []; });
     state.items = state.items.filter(function (id) { return !!K.items[id]; });
     state.log = state.log.filter(function (line) { return Array.isArray(line); });
@@ -9660,6 +9729,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       '<div class="km-bar km-bar-t"></div><div class="km-bar km-bar-b"></div>' +
       '<div class="km-fade"></div>' +
       '<div class="km-caption" aria-live="polite"></div>' +
+      '<div class="km-cutin" aria-live="polite"></div>' +
       '<div class="km-top">' +
         '<div class="km-chip"><span class="km-k">作</span>史記</div>' +
         '<div class="km-chip km-title-chip" id="km-title">楚漢の章</div>' +
@@ -9681,6 +9751,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     el.ov = $root.querySelector('.km-ov');
     el.fade = $root.querySelector('.km-fade');
     el.caption = $root.querySelector('.km-caption');
+    el.cutin = $root.querySelector('.km-cutin');
     el.panel = $root.querySelector('#km-panel');
     el.status = $root.querySelector('#km-status');
     el.card = $root.querySelector('#km-card');
@@ -9765,6 +9836,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     $root.classList.remove('km-view');
     el.status.innerHTML = '';
     el.caption.textContent = '';
+    hideCutIn(true);
     el.title.textContent = K.title;
     var endN = Object.keys(meta.endings).length, endAll = Object.keys(K.endings).length;
     var genN = Object.keys(meta.gen).length, genAll = Object.keys(K.genbun).length;
@@ -10044,11 +10116,53 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     else if (n.b === 'think' && n.at && n.at !== 'wide') ST.showBubble(n.at, '（……）', 'think');
     else ST.hideBubble();
     logLine(n.w, n.x);
+    meet(n);
     el.panel.innerHTML = speakerHTML(n.w) + '<span class="km-evidence-label">史記をもとにした場面（ゲームで作った台詞もふくむ）</span>' +
       '<div class="km-text' + (n.w ? '' : ' narr') + (n.w === 'you' ? ' inner' : '') + '" id="km-text"></div>' +
       '<div class="km-nav"><span class="km-hint-key">タップ／Enter で次へ</span><button class="km-btn gold km-next" data-km="next">次へ ▶</button></div>';
     typeText(document.getElementById('km-text'), n.x);
     tip('say');
+  }
+  /* ---------- 人物の初登場（カットイン） ---------- */
+  // 台詞の主、または視点が向いた人物が、この通しで初めて出たときに名前と人となりを短く見せる。
+  function meetId(n, ch) {
+    var id = n.w === 'you' ? (ch === 'c8' ? 'u' : ch === 'c9' ? 'ko' : 'hai') : n.w;
+    if (!id && n.at && n.at !== 'wide') id = n.at;
+    return id && K.chars[id] && K.chars[id].cut ? id : null;
+  }
+  function metBefore(node) {
+    var met = {}, stop = ORDER.indexOf(node);
+    for (var i = 0; i < stop; i++) {
+      var at = NODES[ORDER[i]], id = (at.n.t === 'say' || at.n.t === 'ask') && meetId(at.n, at.ch);
+      if (id) met[id] = true;
+    }
+    return met;
+  }
+  function meet(n) {
+    var id = st && meetId(n, st.ch);
+    if (!id || st.met[id]) return;
+    st.met[id] = true;
+    persist();
+    var c = K.chars[id], p = c.cut, classroom = window.KoumonClassroom;
+    var portrait = classroom && classroom.portraitHTML ? classroom.portraitHTML(id === 'ko' ? 'hai' : id) : '';
+    el.cutin.className = 'km-cutin km-cutin-' + c.side;
+    el.cutin.innerHTML = '<div class="km-cutin-band">' +
+      (portrait || '<span class="km-cutin-seal km-seal km-' + c.side + '" aria-hidden="true">' + esc(c.seal) + '</span>') +
+      '<div class="km-cutin-text"><span class="km-cutin-label">初登場</span>' +
+      '<b class="km-cutin-name"><ruby>' + esc(p[0]) + '<rt>' + esc(p[1]) + '</rt></ruby></b>' +
+      '<span class="km-cutin-alias">' + esc(p[2]) + '</span>' +
+      '<p class="km-cutin-about">' + esc(p[3]) + '</p></div></div>';
+    void el.cutin.offsetWidth;
+    el.cutin.classList.add('on');
+    clearTimeout(meet.t);
+    meet.t = setTimeout(function () { hideCutIn(); }, reduced() ? 2400 : 3200);
+  }
+  function hideCutIn(now) {
+    clearTimeout(meet.t);
+    if (!el.cutin) return;
+    if (now) { el.cutin.className = 'km-cutin'; el.cutin.innerHTML = ''; return; }
+    el.cutin.classList.add('out');
+    meet.t = setTimeout(function () { hideCutIn(true); }, 500);
   }
   function typeText(node, text) {
     if (typing) { clearInterval(typing.id); typing = null; }
@@ -10125,6 +10239,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     mode = 'ask';
     ST.hideBubble();
     if (n.at) ST.focus(n.at); else if (n.w && n.w !== 'you') ST.focus(n.w);
+    if (!restoring) meet(n);
     var opts = n.o.map(function (o, i) { return { o: o, i: i }; });
     opts = shuffle(opts, n.id);
     n._order = opts.map(function (x) { return x.i; });
