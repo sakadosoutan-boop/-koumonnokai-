@@ -31,6 +31,7 @@
   }
 
   // 一字ごとに漢字・送り仮名・返り点を保持。旧 ^ 記法も最寄りの漢字に結び付ける。
+  // ‐（合符）は直前の字と次の字を続けて読む印（例：孰‐与^二君^一）。
   var MARK = /^(一レ|上レ|甲レ|レ|一|二|三|四|上|中|下|甲|乙|丙)/;
   function tokens(text) {
     var out = [], anchor = null;
@@ -40,6 +41,7 @@
         var m = MARK.exec(text.slice(i + 1));
         if (m && anchor) { anchor.mark = m[1]; i += m[1].length; continue; }
       }
+      if (c === '\u2010' && anchor) { anchor.join = true; continue; }
       if (/[\u3400-\u9fff]/.test(c)) { anchor = { c: c, okuri: '', mark: '' }; out.push(anchor); }
       else if (/[ぁ-ヿー]/.test(c) && anchor) anchor.okuri += c;
       else { out.push({ c: c, okuri: '', mark: '' }); anchor = null; }

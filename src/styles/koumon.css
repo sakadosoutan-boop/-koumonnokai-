@@ -204,6 +204,10 @@ html.km-open, html.km-open body { overflow: hidden; }
   position: absolute; left: -.42em; bottom: -.04em; right: auto;
   font-family: var(--gothic); font-style: normal; font-size: .44em; line-height: 1; color: var(--km-shu);
 }
+/* 合符：二字を続けて読む印。字と字の間、行の中央に短い縦線 */
+.km-stem .join {
+  position: absolute; left: 50%; bottom: -.05em; width: 1.5px; height: .3em; margin-left: -.75px; background: var(--km-shu);
+}
 .km-timer { height: 4px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
 .km-timer i { display: block; height: 100%; background: linear-gradient(90deg, var(--km-shu), #ff8a5a); transform-origin: left; transition: transform .1s linear; }
 .km-opts { display: grid; gap: 7px; }
