@@ -67,7 +67,7 @@ test('intro has seven navigable scenes, stops for quiz and exits to game',async(
   await h.click('[data-intro="step"][data-step="5"]');await h.click('[data-intro="auto"]');assert.ok(![...h.timeouts.values()].some(x=>x.ms===45000));
   await h.click('[data-intro="quiz"][data-question="promise"][data-answer="hai"]');
   await h.click('[data-intro="quiz"][data-question="force"][data-answer="u"]');assert.match(h.doc.querySelector('.km-intro-quiz').textContent,/兵力は項羽/);assert.ok(h.doc.querySelector('.km-quiz-takeaway'));
-  await h.click('[data-intro="step"][data-step="6"]');await h.click('[data-intro="done"]');assert.equal(h.doc.querySelector('#km-intro').hidden,true);assert.equal(h.app._state().ch,'c2');h.close();
+  await h.click('[data-intro="step"][data-step="6"]');await h.click('[data-intro="done"]');assert.equal(h.doc.querySelector('#km-intro').hidden,true);assert.equal(h.app._state().ch,'c0');assert.equal(h.app._state().tutorial,true,'the prelude hands off to the 霸上の夜 tutorial');h.close();
 });
 test('reflection saves on input and is restored when reopened',async()=>{
   const h=await setup('c0-1',{start:false});await h.click('[data-km="reflection"]');const t=h.doc.querySelector('[data-reflection="quote"]');t.value='[g10] 項王黙然不応';t.dispatchEvent(new h.w.Event('input',{bubbles:true}));await h.click('[data-km="closemodal"]');await h.click('[data-km="reflection"]');assert.equal(h.doc.querySelector('[data-reflection="quote"]').value,'[g10] 項王黙然不応');h.close();

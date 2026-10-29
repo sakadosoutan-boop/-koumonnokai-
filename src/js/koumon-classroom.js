@@ -12,7 +12,7 @@
     sou: ['項荘', 'こうそう', '項羽の一族', '剣舞をする人', '范増の指示を受け、剣舞にかこつけて劉邦を狙う。', 'so'],
     chin: ['陳平', 'ちんぺい', '楚の都尉', '項羽の命令を伝える人', '席を立った劉邦を、項羽の命令で呼びに行く。', 'so']
   };
-  // 鴻門への道：本編（第一幕「鴻門に謝す」）より前の流れ。教科書にない前段（曹無傷の密告・項伯の夜）もここでまとめて扱う。
+  // 鴻門への道：物語の前段。霸上の夕べまでをたどり、その夜の出来事はチュートリアル「霸上の夜」で体験する。
   // year は年表（timeline）の位置。quote は『史記』からの短い引用で、書き下し・現代語訳は学習用。
   var timeline = [['前221', '秦の統一'], ['前209', '反乱と挙兵'], ['前208', '懐王の約'], ['前207', '鉅鹿の戦い'], ['前206', '秦の滅亡・鴻門の会']];
   var scenes = [
@@ -57,15 +57,13 @@
         {id:'force', q:'この時点で、兵力が大きいのは？', choices:[['hai','劉邦'],['u','項羽']], answer:'u', why:'本文では劉邦十万、項羽四十万。兵力は項羽が上回る。'}],
       takeaway:'「約束」と「兵力」。この二つの食い違いが、鴻門の会の背景にある。',
       alt:'閉ざされた函谷関を項羽の軍が破り、鴻門に陣を置く模式図。'},
-    {tag:'霸上の夜', era:'前206年（漢元年）十二月', year:4, map:'eve',
-      figs:[['eve','霸上と鴻門'],['people','人のつながり','項伯は親しい張良を助けようと、夜、劉邦の陣を訪れた。項伯 → 張良 → 劉邦。敵と味方の線を越えた関係が、劉邦の命をつなぐ。'],['hongmen','翌朝の道','劉邦は翌朝、百騎あまりを連れて鴻門の項羽に会い、謝罪する。ここから本編「鴻門に謝す」が始まる。']],
-      title:'密告と、夜の使者。',
-      body:['劉邦の部下の曹無傷が、ひそかに項羽へ使いを送り、「沛公は関中の王になろうとしています」と告げた。項羽はひどく怒り、范増も「急いで撃ちなさい」とすすめる。鴻門の項羽は兵四十万、霸上の劉邦は十万。あいだは四十里（約17キロ）。','その夜、項羽の叔父の項伯が、親友の張良を助けようと霸上へ馬を走らせた。話を聞いた劉邦は、項伯を兄としてもてなし、項王に背くつもりはないと伝えてもらう。項伯は「明日の朝、自分で謝りに来なさい」と言った。'],
-      terms:[['曹無傷','劉邦の部下（左司馬）。項羽にこっそり告げ口をした。'],['項伯','項羽の叔父。張良の古い友人で、昔、張良に命を救われた。']],
-      watch:[['謝罪の言葉','劉邦は、項王に何と言って謝るのか。','第一幕'],['范増の合図','玉玦を三度挙げたのは、何のためか。','第二幕'],['樊噲','なぜ宴に乗り込んだのか。','第四幕']],
-      quote:{src:'史記・項羽本紀', haku:'旦日不可不蚤自来謝項王。', yomi:'旦日蚤く自ら来たりて項王に謝せざるべからず。', yaku:'明日の朝、早く自分で来て、項王に謝らなければならない。'},
-      point:'一人の告げ口と、一人の友情。この二つが、翌朝の鴻門の会を動かす。',
-      quiz:[{id:'night', q:'項伯が夜、霸上へ来たのはなぜ？', choices:[['spy','劉邦の陣のようすを探るため'],['save','親友の張良を助けるため'],['attack','劉邦を討つため']], answer:'save', why:'項伯は張良と親しく、昔、命を救われたこともあった。張良だけでも逃がそうとして、夜の陣へ来たのである。'}],
+    {tag:'霸上の夕べへ', era:'前206年（漢元年）十二月', year:4, map:'eve',
+      figs:[['eve','霸上と鴻門'],['people','人のつながり','項伯は親しい張良を助けようと、夜、劉邦の陣を訪れる。項伯 → 張良 → 劉邦。敵と味方の線を越えた関係が、霸上の夜に動き出す。'],['hongmen','翌朝の道','劉邦は翌朝、百騎あまりを連れて鴻門の項羽に会い、謝罪する。ここからが教科書の「鴻門の会」。']],
+      title:'四十里をへだてて、十万と四十万。',
+      body:['鴻門の項羽は兵四十万で「百万」と言いふらし、霸上の劉邦は兵十万で「二十万」と言いふらした（号した）。二つの陣のあいだは四十里（約17キロ）。','この夕べから、物語が始まる。あなたは沛公・劉邦。まずはチュートリアル「霸上の夜」で、その夜の出来事を体験しよう。'],
+      watch:[['曹無傷','劉邦の部下。項羽に何を伝えるのか。','霸上の夜'],['范増','項羽の相談役（参謀）。劉邦の何を恐れたのか。','霸上の夜'],['項伯と張良','敵と味方に分かれた旧友。その夜、何が起こるのか。','霸上の夜']],
+      quote:{src:'史記・高祖本紀', haku:'項羽兵四十万号百万、沛公兵十万号二十万、力不敵。', yomi:'項羽の兵は四十万、百万と号し、沛公の兵は十万、二十万と号す。力敵せず。', yaku:'項羽の兵は四十万で百万と称し、沛公の兵は十万で二十万と称していた。力ではかなわなかった。'},
+      point:'強い相手に、どう向き合うか。言葉と決断で、宴を生き延びよう。',
       alt:'霸上の劉邦と鴻門の項羽が四十里をへだてて向かい合う模式図。'}
   ];
   var pair = {
@@ -87,12 +85,9 @@
       {stage:'bashang', light:'dusk', cast:['hai','ryo','kai'], at:'hai', w:'hai', kind:'shiki', src:'高祖本紀：霸上に戻り、関中の長老たちに', x:'父老と約す、法は三章のみ。人を殺す者は死し、人を傷つけ及び盗むは罪に抵る。（長老たちと約束する。法は三つだけ。人を殺せば死刑、人を傷つけたり盗んだりすれば、それに見合う罰を受ける。）'} ],
     [ {stage:'intro-field', light:'dusk', cast:['u','zo'], at:'u', kind:'retold', src:'項羽本紀', x:'遅れて着いた項羽の前で、関は閉ざされていた。しかも劉邦は、すでに咸陽を落としたという。'},
       {at:'u', w:'u', kind:'retold', src:'項羽本紀「項羽大いに怒り、当陽君等をして関を撃たしむ」', fx:'shake', sfx:'drum', x:'関を撃て！'} ],
-    [ {stage:'koumon', light:'night', cast:['u','zo','msg'], at:'msg', w:'msg', kind:'retold', src:'項羽本紀：曹無傷の使いの報告', x:'沛公は関中の王になろうとしています。秦の宝は、すべて沛公のものに。'},
-      {at:'u', w:'u', kind:'shiki', src:'項羽本紀', fx:'shake', sfx:'drum', x:'旦日士卒を饗し、為に沛公の軍を撃破せん。（明日の朝、兵士にごちそうして、沛公の軍を打ち破ってやる。）'},
-      {at:'zo', w:'zo', kind:'shiki', src:'項羽本紀：范増の進言', x:'急ぎ撃ちて失ふこと勿かれ。（急いで撃ち、この機会を逃してはなりません。）'},
-      {stage:'tent', light:'lamp', cast:['ryo','haku'], at:'wide', w:'haku', kind:'shiki', src:'項羽本紀：夜、霸上に来た項伯が張良に', x:'従ひて倶に死すること毋かれ。（沛公に従って、いっしょに死んではならない。）'},
-      {stage:'tent', light:'lamp', cast:['hai','ryo','haku'], at:'wide', w:'haku', kind:'shiki', src:'項羽本紀：劉邦にもてなされた項伯が', x:'旦日蚤く自ら来たりて項王に謝せざるべからず。（明日の朝、早く自分で来て、項王に謝らなければならない。）'},
-      {stage:'gate', light:'dawn', cast:['hai','ryo','kai'], at:'wide', kind:'retold', src:'項羽本紀「沛公旦日百余騎を従へて来たりて項王に見ゆ」', x:'翌朝。劉邦は百騎あまりを連れて、鴻門へ向かった。――ここから、鴻門の会が始まる。'} ]
+    [ {stage:'koumon', light:'night', cast:['u','zo'], at:'wide', kind:'retold', src:'高祖本紀', x:'鴻門。見渡すかぎりのかがり火。四十万の兵が「百万」と言いふらしている。'},
+      {stage:'bashang', light:'dusk', cast:['hai','ryo'], at:'wide', kind:'retold', src:'高祖本紀', x:'霸上。十万の陣。四十里の向こうに、楚の火が見える。'},
+      {at:'hai', w:'hai', kind:'fiction', x:'……あの男と、どう向き合えばよい。――この夕べから、物語が始まる。'} ]
   ];
   // 省いた舞台・光・配役を前のコマから引き継いで、各場面に結びつける
   dramas.forEach(function (cuts, i) {
@@ -107,12 +102,15 @@
   var panel, index=0, auto=false, timer=null, callbacks, view='drama', cut=0, fig=0;
   var answers={};
   function homeHTML(meta, is3D) {
+    // 続きの記録がチュートリアル（霸上の夜＝前段の章）か本編かで、続きのボタンを出し分ける
+    var K=window.KOUMON, ch=meta.save&&K&&K.chapters.filter(function(c){return c.id===meta.save.ch;})[0];
+    var save={tutorial:!!(ch&&ch.supp), main:!!(ch&&!ch.supp)};
     return '<div class="km-home"><div class="km-home-art" aria-hidden="true"></div><div class="km-home-shade"></div><div class="km-home-content">' +
       '<div class="km-eyebrow"><span class="km-stamp">史記</span> INTERACTIVE CLASSICS</div><p class="km-home-kicker">一席の宴が、天下を分ける。</p><h1>鴻門の会</h1><p class="km-home-description">その言葉を、どう読むか。<br>その場にいたら、どう動くか。</p>' +
-      '<div class="km-home-actions"><button class="km-btn km-home-tutorial" data-km="tutorial"><span>00</span> チュートリアル：霸上の夜 <small>操作と読み方を体験（教科書の前段・約15分）</small><b>→</b></button>' +
-      '<button class="km-btn gold" data-km="intro"><span>01</span> 鴻門への道 <small>宴の前の流れを七つの場面で</small><b>→</b></button>' +
-      '<button class="km-btn" data-km="' + (meta.save?'continue':'new') + '"><span>02</span> ' + (meta.save?'物語の続きから':'物語をはじめる') + '<small>原文と決断で宴を体験</small><b>→</b></button>' +
-      '<button class="km-btn" data-km="ai"><span>03</span> 范増として考える <small>原文をもとにAIと話す</small><b>→</b></button></div>' +
+      '<div class="km-home-actions"><button class="km-btn gold" data-km="intro"><span>01</span> 鴻門への道 <small>物語の前段：宴の前の流れを七つの場面で</small><b>→</b></button>' +
+      '<button class="km-btn km-home-tutorial" data-km="' + (save.tutorial?'continue':'tutorial') + '"><span>02</span> ' + (save.tutorial?'チュートリアルの続きから':'チュートリアル：霸上の夜') + ' <small>その夜を体験しながら、操作と読み方を覚える（約15分）</small><b>→</b></button>' +
+      '<button class="km-btn" data-km="' + (save.main?'continue':'new') + '"><span>03</span> ' + (save.main?'本編の続きから':'本編で復習する') + ' <small>授業のあとに：鴻門に謝す から 垓下・烏江 まで</small><b>→</b></button>' +
+      '<button class="km-btn" data-km="ai"><span>04</span> 范増として考える <small>原文をもとにAIと話す</small><b>→</b></button></div>' +
       '<div class="km-home-links"><button data-km="menu">章を選ぶ</button><button data-km="book">原文帳</button><button data-km="characters">人物相関</button><button data-km="reflection">振り返り</button><button data-km="endings">結末帳</button>' +
       '<button data-km="review">読み直し帳' + (meta.missed && Object.keys(meta.missed).length ? '<small>' + Object.keys(meta.missed).length + '</small>' : '') + '</button><button data-km="record">学習記録</button></div>' +
       '<div class="km-home-footer"><span>' + (meta.classroom?'授業モード · 時間制限なし':'挑戦モード · 命と決断') + '</span><button data-km="settings">表示・授業設定</button><span>' + (is3D?'3Dの舞台':'影絵の舞台') + '</span></div>' +
@@ -207,7 +205,7 @@
     if(!scenes[index].quiz&&index<scenes.length-1)timer=setTimeout(function(){goScene(index+1);},45000);}
   function goScene(i){index=Math.max(0,Math.min(scenes.length-1,i));view='drama';cut=0;fig=0;render();}
   /** コマを送る。場面の最後のコマのあとは解説に寄らず次の場面へ（解説は「解説を読む」で開く）。最後の場面のあとは本編へ */
-  function nextCut(){var d=scenes[index].drama;if(cut<d.length-1){cut++;render();}else if(index<scenes.length-1)goScene(index+1);else{hide();callbacks.done();}}
+  function nextCut(){var d=scenes[index].drama;if(cut<d.length-1){cut++;render();}else if(index<scenes.length-1)goScene(index+1);else{hide();(callbacks.tutorial||callbacks.done)();}}
   /** 史記の言葉は、書き下し文と（現代語訳）を分けて見せる */
   function dramaTextHTML(c,p){
     var m=c.kind==='shiki'&&/^(.*?)（([^（]*)）$/.exec(c.x);
@@ -222,8 +220,7 @@
       dramaTextHTML(c,p)+
       '<div class="km-drama-nav"><button data-intro="cutprev"'+(cut===0?' disabled':'')+'>◀ 前のコマ</button><span class="km-drama-count">'+(cut+1)+' / '+s.drama.length+'</span>'+
       (last?'<button class="km-btn km-drama-notes" data-intro="view" data-view="notes">解説を読む</button>':'')+
-      (last&&index===scenes.length-1&&callbacks.tutorial?'<button class="km-btn km-drama-notes" data-intro="tutorial">前段を遊んでみる</button>':'')+
-      '<button class="km-btn gold" data-intro="cutnext">'+(!last?'次へ ▶':index<scenes.length-1?'次の場面へ →':'本編「鴻門に謝す」へ →')+'</button></div></div></div>';
+      '<button class="km-btn gold" data-intro="cutnext">'+(!last?'次へ ▶':index<scenes.length-1?'次の場面へ →':'チュートリアル「霸上の夜」へ →')+'</button></div></div></div>';
   }
   function quizHTML(s){
     var all=s.quiz.every(function(q){return answers[q.id]===q.answer;});
@@ -239,7 +236,7 @@
       (drama?dramaHTML(s):'')+'<div class="km-intro-layout"'+(drama?' hidden':'')+'><div class="km-intro-visual"><span class="km-visual-no" aria-hidden="true">0'+(index+1)+'</span>'+timelineHTML(s)+figureHTML(s)+'<div class="km-map-legend"><span>● 劉邦側</span><span>● 項羽側</span><small>人物名を押すと紹介</small></div><div id="km-intro-person" aria-live="polite"></div></div>'+
       '<article class="km-intro-copy" aria-live="polite">'+copyHTML(s)+
       '<details class="km-intro-source"><summary>出典と表現について</summary><p>原文は『史記』から短く引きました。書き下し文・現代語訳・説明は学習用です。地図と人物画は模式的な表現です。</p><a href="https://zh.wikisource.org/wiki/史記/卷007" target="_blank" rel="noopener">項羽本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷008" target="_blank" rel="noopener">高祖本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷048" target="_blank" rel="noopener">陳渉世家</a></details></article></div>'+
-      '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前へ</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===scenes.length-1?'done':'next')+'">'+(index===scenes.length-1?'本編「鴻門に謝す」へ →':'次へ →')+'</button><small class="km-intro-playback">'+(auto?'紙芝居は7秒ごとに進む · 解説は「解説を読む」で開く':'手動で進む · ← → で場面、Enter でコマ送り')+'</small></footer>';
+      '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前へ</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===scenes.length-1?'done':'next')+'">'+(index===scenes.length-1?'チュートリアル「霸上の夜」へ →':'次へ →')+'</button><small class="km-intro-playback">'+(auto?'紙芝居は7秒ごとに進む · 解説は「解説を読む」で開く':'手動で進む · ← → で場面、Enter でコマ送り')+'</small></footer>';
     if(callbacks.stage)callbacks.stage(drama?s.drama[cut]:null);
     schedule();
   }
@@ -250,7 +247,7 @@
         var b=e.target.closest('[data-intro]');if(!b)return;e.stopPropagation();
         var a=b.dataset.intro;
         if(a==='close-person'){document.getElementById('km-intro-person').innerHTML='';panel.querySelector('[data-person]').focus();return;}
-        if(a==='exit'){hide();callbacks.exit();return;}if(a==='done'){hide();callbacks.done();return;}
+        if(a==='exit'){hide();callbacks.exit();return;}if(a==='done'){hide();(callbacks.tutorial||callbacks.done)();return;}
         if(a==='tutorial'&&callbacks.tutorial){hide();callbacks.tutorial();return;}
         if(a==='auto')auto=!auto;
         else auto=false;

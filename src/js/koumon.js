@@ -411,7 +411,7 @@
     cancelScene(); closeModal(false); mode = 'intro'; ST.stop();
     window.KoumonClassroom.open($root, meta.introStep, {
       step: function (i) { meta.introStep = i; saveMeta(); },
-      done: function () { window.KoumonClassroom.hide(); ST.start(); startNew(mainStart()); },
+      done: function () { window.KoumonClassroom.hide(); ST.start(); startTutorial(); },
       exit: function () { ST.start(); titleScreen(); },
       tutorial: function () { ST.start(); startTutorial(); },
       stage: introCut
@@ -1200,7 +1200,7 @@
       .concat(K.chapters.map(function (c, i) { return i; }).filter(function (i) { return K.chapters[i].supp; }));
     listed.forEach(function (i) {
       var c = K.chapters[i], open = chapterOpen(i);
-      if (c.supp && (i === 0 || !K.chapters[listed[listed.indexOf(i) - 1]].supp)) html += '<p class="km-chap-group">補：教科書にない前段（霸上の夕べと項伯の夜）。授業では導入「鴻門への道」でまとめて扱います。操作の説明つきで遊ぶときは、表紙の「チュートリアル」から。</p>';
+      if (c.supp && (i === 0 || !K.chapters[listed[listed.indexOf(i) - 1]].supp)) html += '<p class="km-chap-group">チュートリアル「霸上の夜」：教科書にない前段（霸上の夕べと項伯の夜）。表紙の「02 チュートリアル」から始めると操作の説明つき、ここから選ぶと説明なしで遊べます。</p>';
       html += '<button class="km-chap" data-km="chap" data-c="' + c.id + '"' + (open ? '' : ' disabled') + '>' +
         '<span class="km-chap-no">' + esc(c.no) + '</span><b>' + (open ? esc(c.title) : '？？？') + '</b><small>' + (open ? esc(c.sub) : 'まだ開いていない') + '</small>' +
         (meta.cleared[c.id] ? '<span class="km-chap-done">読了</span>' : '') + '</button>';
@@ -1246,9 +1246,9 @@
     persist();
     mode = 'end';
     modal('<div class="km-end true"><div class="km-end-kind">チュートリアル</div><h3 class="km-end-t">霸上の夜、終わり</h3>' +
-      '<p class="km-end-text">これで操作はひととおり体験しました。翌朝、劉邦は百騎あまりを連れて鴻門へ向かいます。ここからが教科書の「鴻門の会」です。</p>' +
-      '<div class="km-end-btns"><button class="km-btn gold" data-km="tutnext">本編「' + esc(chap(st.ch).title) + '」へ進む</button>' +
-      '<button class="km-btn" data-km="totitle">表紙へ（あとで「続きから」で本編へ）</button></div></div>', 'km-m-end');
+      '<p class="km-end-text">これで操作はひととおり体験しました。翌朝、劉邦は百騎あまりを連れて鴻門へ向かいます。ここからが教科書の「鴻門の会」です。授業で本文を読んだあと、表紙の「本編の続きから」で、鴻門の宴を演じながら復習しましょう。</p>' +
+      '<div class="km-end-btns"><button class="km-btn gold" data-km="totitle">表紙へ戻る</button>' +
+      '<button class="km-btn" data-km="tutnext">このまま本編「' + esc(chap(st.ch).title) + '」へ進む</button></div></div>', 'km-m-end');
   }
 
   /** 章の進み具合（本編・第二部・補それぞれの中で何番目か） */
