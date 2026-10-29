@@ -280,3 +280,26 @@ test('home lays out prelude → tutorial → review, and each continue button re
   h=await setup('c3-1',{start:false,classroom:true});
   assert.match(labels()[1],/チュートリアル：霸上の夜/);assert.match(labels()[2],/本編の続きから/);h.close();
 });
+
+test('返り点：合符を読み取り、各設問の返り点が正しく対応している',async()=>{
+  const h=await setup('c1-sonchou',{classroom:true});
+  const t=h.w.Learning.tokens('孰‐与^二君^一少長');
+  assert.equal(t[0].c,'孰');assert.equal(t[0].join,true);assert.equal(t[1].c,'与');assert.equal(t[1].mark,'二');assert.equal(t[2].mark,'一');
+  assert.ok(h.doc.querySelector('.km-stem .kc .join'),'合符 is drawn');
+  const stems=[];Object.values(h.w.KOUMON.script).forEach(a=>a.forEach(n=>{if(n.stem)stems.push([n.id,n.stem]);}));
+  const byId=Object.fromEntries(stems);
+  assert.equal(byId['c1-33'],'豈敢反乎','豈敢反乎 needs no 返り点 (乎 is read last)');
+  assert.match(byId['c9-3'],/所‐以\^三有\^二天下\^一/);
+  for(const [id,s] of stems){
+    const marks=h.w.Learning.tokens(s).map(x=>x.mark).filter(Boolean);
+    assert.equal(/\^/.test(h.w.Learning.tokens(s).map(x=>x.c).join('')),false,id+': every ^ attaches to a character');
+    // 二 needs an earlier-closing 一 after it, 三 needs 二 after it; 下 needs 上 after it.
+    marks.forEach((m,i)=>{const rest=marks.slice(i+1);
+      if(m==='二')assert.ok(rest.includes('一'),id+': 二 without 一');
+      if(m==='三')assert.ok(rest.includes('二'),id+': 三 without 二');
+      if(m==='下')assert.ok(rest.includes('上'),id+': 下 without 上');});
+    const toks=h.w.Learning.tokens(s).filter(x=>/[㐀-鿿]/.test(x.c));
+    assert.ok(!toks.at(-1).mark||toks.at(-1).mark==='一',id+': the last character cannot carry レ/二');
+  }
+  h.close();
+});

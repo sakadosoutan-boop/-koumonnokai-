@@ -238,6 +238,10 @@ html.km-open, html.km-open body { overflow: hidden; }
   position: absolute; left: -.42em; bottom: -.04em; right: auto;
   font-family: var(--gothic); font-style: normal; font-size: .44em; line-height: 1; color: var(--km-shu);
 }
+/* 合符：二字を続けて読む印。字と字の間、行の中央に短い縦線 */
+.km-stem .join {
+  position: absolute; left: 50%; bottom: -.05em; width: 1.5px; height: .3em; margin-left: -.75px; background: var(--km-shu);
+}
 .km-timer { height: 4px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
 .km-timer i { display: block; height: 100%; background: linear-gradient(90deg, var(--km-shu), #ff8a5a); transform-origin: left; transition: transform .1s linear; }
 .km-opts { display: grid; gap: 7px; }
@@ -1841,6 +1845,7 @@ window.KUHO = [
   }
 
   // 一字ごとに漢字・送り仮名・返り点を保持。旧 ^ 記法も最寄りの漢字に結び付ける。
+  // ‐（合符）は直前の字と次の字を続けて読む印（例：孰‐与^二君^一）。
   var MARK = /^(一レ|上レ|甲レ|レ|一|二|三|四|上|中|下|甲|乙|丙)/;
   function tokens(text) {
     var out = [], anchor = null;
@@ -1850,6 +1855,7 @@ window.KUHO = [
         var m = MARK.exec(text.slice(i + 1));
         if (m && anchor) { anchor.mark = m[1]; i += m[1].length; continue; }
       }
+      if (c === '\u2010' && anchor) { anchor.join = true; continue; }
       if (/[\u3400-\u9fff]/.test(c)) { anchor = { c: c, okuri: '', mark: '' }; out.push(anchor); }
       else if (/[ぁ-ヿー]/.test(c) && anchor) anchor.okuri += c;
       else { out.push({ c: c, okuri: '', mark: '' }); anchor = null; }
@@ -1875,7 +1881,7 @@ window.KUHO = [
  *           pose={人物:姿勢}, fx=画面効果, sfx=効果音
  *   gen   : 原文の段（白文・書き下し・現代語訳・注）。初めて読むと原文帳に綴じられる
  *   ask   : 選択。k='read'（読解。ok の付いた選択肢が正解）／'judge'（判断）
- *           stem=設問の漢文（^ で返り点）, o=選択肢 [{x, ok, go, fx, set, r, rw}], hint=策, exp=解説, kuho=句法図鑑のid
+ *           stem=設問の漢文（^ で返り点。返り点は字の直後に書く。‐ は二字を続けて読む合符）, o=選択肢 [{x, ok, go, fx, set, r, rw}], hint=策, exp=解説, kuho=句法図鑑のid
  *   if    : 条件分岐。f=フラグ名／ikari・satsu=しきい値以上 → go、そうでなければ el
  *   set   : 状態の変更。fx（ikari/satsu/saku/life）, set（フラグ）, give/take（持ち物）
  *   game  : 小さな遊び（seat=座次図, gift=献上品, route=逃げ道）。結果で go / el
@@ -2217,7 +2223,7 @@ window.KUHO = [
       { go: 'c1-sonchou' },
       { id: 'c1-age', t: 'say', w: 'hai', x: '……いや、聞き方を誤った。君と孰与れか少長なる。', at: 'hai' },
       { w: 'ryo', x: '臣より長ぜり。', at: 'ryo' },
-      { id: 'c1-sonchou', t: 'ask', k: 'read', w: 'hai', q: '沛公の問い「孰与君少長」の意味は。', stem: '孰^二与君^一少長',
+      { id: 'c1-sonchou', t: 'ask', k: 'read', w: 'hai', q: '沛公の問い「孰与君少長」の意味は。', stem: '孰‐与^二君^一少長',
         o: [
           { x: '（項伯は）君と比べて、どちらが年上か', ok: true },
           { x: '君と項伯は、若いころから親しかったのか' },
@@ -2237,7 +2243,7 @@ window.KUHO = [
           { x: '咸陽で手に入れた金銀を贈って、項王へのとりなしを頼む', fx: { satsu: 10 }, r: '「わしを金で動かすつもりか。」項伯は箱に目もくれなかった。関中の財物に手をつけていないはずの男が、なぜ金銀を持っている――その疑いだけが残った。', rw: 'haku' }
         ] },
       { w: 'hai', x: '吾関に入りて、秋豪も敢へて近づくる所有らず。吏民を籍し、府庫を封じて、将軍を待てり。日夜将軍の至るを望めり。', at: 'hai' },
-      { t: 'ask', k: 'read', w: 'hai', q: '沛公が項伯に訴えた一句。意味として正しいものは。', stem: '豈敢反^レ乎',
+      { t: 'ask', k: 'read', w: 'hai', q: '沛公が項伯に訴えた一句。意味として正しいものは。', stem: '豈敢反乎',
         o: [
           { x: 'どうして（項王に）背いたりしようか。決して背かない', ok: true },
           { x: 'どうして背かずにいられようか。背くほかない' },
@@ -2703,7 +2709,7 @@ window.KUHO = [
       { id: 'c9', t: 'scene', stage: 'nangong', light: 'palace', cast: ['ko', 'ou'], fade: 'white', card: true, cp: true, sfx: 'drum' },
       { x: '天下は定まった。あなたは再び、劉邦である。いまは皇帝――高祖と呼ばれる。', at: 'ko' },
       { t: 'gen', g: 'g20' },
-      { t: 'ask', k: 'read', w: 'ko', q: '高祖の問い「吾所以有天下者何」の意味は。', stem: '吾所以有天下者何',
+      { t: 'ask', k: 'read', w: 'ko', q: '高祖の問い「吾所以有天下者何」の意味は。', stem: '吾所‐以^三有^二天下^一者何',
         o: [
           { x: '私が天下を手に入れたわけは何か', ok: true },
           { x: '私は天下を何に用いればよいか' },
@@ -9519,7 +9525,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   function kanbunHTML(s) {
     var toks = window.Learning ? window.Learning.tokens(String(s || '')) : String(s || '').split('').map(function (c) { return { c: c }; });
     return toks.map(function (t) {
-      return t.mark ? '<span class="kc">' + esc(t.c) + '<i class="mark">' + esc(t.mark) + '</i></span>' + esc(t.okuri || '') : esc(t.c) + esc(t.okuri || '');
+      if (!t.mark && !t.join) return esc(t.c) + esc(t.okuri || '');
+      return '<span class="kc">' + esc(t.c) + (t.mark ? '<i class="mark">' + esc(t.mark) + '</i>' : '') + (t.join ? '<i class="join" aria-hidden="true"></i>' : '') + '</span>' + esc(t.okuri || '');
     }).join('');
   }
   function kanjiCount(s) {

@@ -128,7 +128,8 @@
   function kanbunHTML(s) {
     var toks = window.Learning ? window.Learning.tokens(String(s || '')) : String(s || '').split('').map(function (c) { return { c: c }; });
     return toks.map(function (t) {
-      return t.mark ? '<span class="kc">' + esc(t.c) + '<i class="mark">' + esc(t.mark) + '</i></span>' + esc(t.okuri || '') : esc(t.c) + esc(t.okuri || '');
+      if (!t.mark && !t.join) return esc(t.c) + esc(t.okuri || '');
+      return '<span class="kc">' + esc(t.c) + (t.mark ? '<i class="mark">' + esc(t.mark) + '</i>' : '') + (t.join ? '<i class="join" aria-hidden="true"></i>' : '') + '</span>' + esc(t.okuri || '');
     }).join('');
   }
   function kanjiCount(s) {
