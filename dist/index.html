@@ -998,7 +998,7 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 /* 本文の窓：背景を透かして舞台が見えるようにし、文字は影で読みやすく */
 .km-panel { background: linear-gradient(120deg, rgba(10,29,34,.78), rgba(17,29,31,.68)); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
 .km-panel .km-text, .km-panel .km-ask-q, .km-panel .km-speaker { text-shadow: 0 1px 3px rgba(0,0,0,.85), 0 0 10px rgba(0,0,0,.5); }
-.km-panel .km-nav-sticky { background: rgba(12,30,34,.9); }
+.km-panel .km-nav-sticky { background: rgba(12,30,34,.97); }
 /* 文字を隠す／表示する */
 .km-hide-text, .km-show-text {
   pointer-events: auto; font: 12px var(--gothic); letter-spacing: .12em; color: #f3e7c6; cursor: pointer;
@@ -1027,7 +1027,7 @@ button:disabled { opacity:.4; cursor:not-allowed; }
   .km-panel-fixed .km-speaker-name b { font-size: 17px; }
   .km-panel-fixed .km-evidence-label { margin: 2px 0 4px; }
   .km-panel-fixed .km-text, .km-panel-fixed .km-ask-q { font-size: 16px; line-height: 1.75; }
-  .km-panel-fixed > .km-nav { position: sticky; bottom: -14px; z-index: 2; margin: auto -14px -14px; padding: 8px 14px 12px; background: rgba(12,30,34,.9); border-top: 1px solid rgba(189,161,105,.25); }
+  .km-panel-fixed > .km-nav { position: sticky; bottom: -14px; z-index: 2; margin: auto -14px -14px; padding: 8px 14px 12px; background: rgba(12,30,34,.97); border-top: 1px solid rgba(189,161,105,.25); }
   .km-panel-fixed .km-nav-sticky { bottom: -14px; margin: auto -14px -14px; padding: 8px 14px 12px; }
   .km-panel-fixed .km-stem { font-size: 19px; max-height: 128px; }
   .km-panel-fixed .km-stem-wrap { margin: 0 0 8px; padding: 2px 0; }
@@ -1044,7 +1044,30 @@ button:disabled { opacity:.4; cursor:not-allowed; }
   .km-panel-fixed .km-evidence-label { margin: 2px 0 2px; }
   .km-panel-fixed .km-text, .km-panel-fixed .km-ask-q { font-size: 15.5px; line-height: 1.65; }
   .km-panel-fixed > .km-nav .km-btn { padding-top: 6px; padding-bottom: 6px; }
-  .km-panel-fixed > .km-nav { position: sticky; bottom: -12px; z-index: 2; margin: auto -14px -12px; padding: 6px 14px 10px; background: rgba(12,30,34,.9); }
+  .km-panel-fixed > .km-nav { position: sticky; bottom: -12px; z-index: 2; margin: auto -14px -12px; padding: 6px 14px 10px; background: rgba(12,30,34,.97); }
+}
+
+/* ---- 画面まわりの整理（2026-10-31） ---- */
+/* 問いの札が一字ずつ折り返さないように */
+.km-ask-tag { white-space: nowrap; flex-shrink: 0; }
+.km-chip-short { display: none; }
+.km-items em { font-style: normal; font-size: 10px; letter-spacing: .12em; color: rgba(227,196,119,.95); margin-right: 2px; }
+@media (max-width:580px) {
+  /* 上端：題名の行と、ボタン一列だけにする */
+  .km-top { gap: 4px; right: 52px; }
+  .km-top .km-btn-chip { padding: 5px 8px; font-size: 11.5px; letter-spacing: .04em; }
+  .km-chip-long { display: none; }
+  .km-chip-short { display: inline; }
+  /* 状態：縦に積まず、横一列に */
+  .km-status { top: calc(env(safe-area-inset-top) + 74px); left: 12px; right: 12px; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 10px; }
+  .km-status > div { padding: 3px 7px; }
+  .km-meter span { letter-spacing: .02em; }
+  .km-meter b { width: 44px; }
+  .km-study-badge { font-size: 10px; }
+  .km-items span { width: 18px; height: 18px; font-size: 11px; }
+  /* 短い白文が二列に割れないように */
+  .km-panel-fixed .km-stem { max-height: 190px; font-size: 18px; }
+  .km-cutin { top: calc(env(safe-area-inset-top) + 104px); }
 }
 
 </style>
@@ -9801,9 +9824,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
         '<button class="km-chip km-btn-chip" data-km="menu">目次</button>' +
         '<button class="km-chip km-btn-chip" data-km="book">原文帳</button>' +
         '<button class="km-chip km-btn-chip" data-km="characters">人物</button>' +
-        '<button class="km-chip km-btn-chip" data-km="settings">授業設定</button>' +
+        '<button class="km-chip km-btn-chip" data-km="settings" aria-label="授業設定"><span class="km-chip-long">授業設定</span><span class="km-chip-short">設定</span></button>' +
         '<button class="km-chip km-btn-chip" data-km="log">履歴</button>' +
-        '<button class="km-chip km-btn-chip" data-km="view" title="本文を隠して場面の絵だけを見る（H キー）">絵を見る</button>' +
         '<button class="km-chip km-btn-chip" data-km="sound" id="km-sound" aria-pressed="false">音 切</button>' +
       '</div>' +
       '<button class="km-quit" data-km="quit" title="楚漢の章を閉じる" aria-label="閉じる">✕</button>' +
@@ -10525,7 +10547,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       (safe ? '' : '<div class="km-life" aria-label="命 ' + st.life + '">' + '<span>命</span>' + hearts + '</div>') +
       (meters ? meter('項王の怒り', st.ikari, 'ikari') + meter('范増の殺意', st.satsu, 'satsu') : '') +
       (meta.classroom ? '<div class="km-study-badge">授業モード</div>' : '<div class="km-saku" title="策（ヒント）の残り"><span>ヒント</span>' + st.saku + '</div>') +
-      (st.items.length ? '<div class="km-items">' + st.items.map(function (it) { var x = K.items[it]; return '<span title="' + esc(x.name) + '">' + esc(x.glyph) + '</span>'; }).join('') + '</div>' : '');
+      (st.items.length ? '<div class="km-items" aria-label="持ち物：' + esc(st.items.map(function (it) { return K.items[it].name; }).join('・')) + '"><em>持ち物</em>' + st.items.map(function (it) { var x = K.items[it]; return '<span title="' + esc(x.name) + '">' + esc(x.glyph) + '</span>'; }).join('') + '</div>' : '');
   }
 
   /* ============================ 小さな遊び ============================ */
