@@ -5,7 +5,7 @@
 (function () {
   'use strict';
   if (typeof THREE === 'undefined') return;
-  var T = THREE, CACHE = {}, TEXTURES = {}, PI = Math.PI;
+  var T = THREE, CACHE = {}, MOUTH_CACHE = {}, TEXTURES = {}, PI = Math.PI;
   function bytes(s) {
     if (typeof atob === 'function') {
       var raw = atob(s), out = new Uint8Array(raw.length);
@@ -139,38 +139,169 @@
     return group;
   }
   var ALIAS = {ko:'hai',ou:'hai',tei:'zo',rba:'u',msg:'sou',ei:'sou'};
-  function fittedHeadwear(id, asset) {
-    if (['hai','zo','haku','chin'].indexOf(id) >= 0) {
-      var cap=new T.Group();cap.name=id+'-fitted-folded-cloth-crown';cap.userData.part='headwear';
-      var h=id==='zo'?.058:.070,w=id==='haku'?.030:.027;
-      var profile=[[-.022,0],[-.018,h*.83],[-.010,h],[.011,h*.96],[.025,h*.72],[.024,0]];
-      var pos=[],ix=[];[-w,w].forEach(function(x){profile.forEach(function(p){pos.push(x,p[1],p[0]);});});
-      var n=profile.length;for(var j=0;j<n;j++){var k=(j+1)%n;ix.push(j,k,n+j,k,n+k,n+j);}
-      for(var j=1;j<n-1;j++){ix.push(0,j+1,j,n,n+j,n+j+1);}
-      var geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(pos,3));geometry.setIndex(ix);geometry.computeVertexNormals();
-      var cloth=new T.MeshStandardMaterial({color:new T.Color(0x211b19).convertSRGBToLinear(),roughness:.86});
-      var crown=new T.Mesh(geometry,cloth);cap.add(crown);cap.position.set(0,.132,-.027);
-      var seat=new T.Mesh(new T.CylinderGeometry(.025,.026,.012,32),cloth);seat.scale.z=.84;seat.position.y=.003;cap.add(seat);
-      var brass=new T.MeshStandardMaterial({color:new T.Color(0x9b7b48).convertSRGBToLinear(),roughness:.56,metalness:.55});
-      [-1,1].forEach(function(side){var points=profile.slice(0,5).map(function(p){return new T.Vector3(side*w*.78,p[1]+.0005,p[0]+.001);});var seam=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points),24,.00085,5,false),brass);cap.add(seam);});
-      var pin=new T.Mesh(new T.CylinderGeometry(.0015,.0015,.116,8),brass);pin.rotation.z=PI/2;pin.position.set(0,.018,-.004);cap.add(pin);
-      cap.traverse(function(o){if(o.isMesh){o.userData.part='headwear';o.castShadow=o.receiveShadow=true;}});return cap;
-    }
-    if (['ryo','u','kai','sou'].indexOf(id) < 0) return null;
-    var knot = {ryo:.025,u:.037,kai:.038,sou:.033}[id], crown = id === 'u';
-    var group = new T.Group(); group.name = id + '-fitted-headwear'; group.userData.part = 'headwear';
-    var color = crown ? 0x8a6c36 : id === 'sou' ? 0x71432d : id === 'kai' ? 0x243a3c : 0x1b1a18;
-    var mat = new T.MeshStandardMaterial({color:new T.Color(color).convertSRGBToLinear(),roughness:crown?.4:.86,metalness:crown?.62:0});
-    var band = new T.Mesh(new T.CylinderGeometry(knot*.91,knot*.98,knot*.30,36,2,true),mat);
-    band.position.set(0,.123+knot*.28,-.027);band.scale.z=.82;group.add(band);
-    if (crown) {
-      var bronze = new T.MeshStandardMaterial({color:new T.Color(0xb39750).convertSRGBToLinear(),roughness:.35,metalness:.75});
-      [-1,1].forEach(function (s) {var rim = new T.Mesh(new T.TorusGeometry(knot*.95,.0013,6,36),bronze);rim.rotation.x=PI/2;rim.scale.y=.82;rim.position.set(0,.123+knot*.28+s*knot*.15,-.027);group.add(rim);});
-      var pin = new T.Mesh(new T.CylinderGeometry(.0018,.0018,.11,8),bronze);pin.rotation.z=PI/2;pin.position.set(0,.123+knot*.42,-.027);group.add(pin);
-      var front = new T.Mesh(new T.BoxGeometry(.025,.020,.0022),bronze);front.position.set(0,.123+knot*.42,-.027+knot*.82);group.add(front);
-    }
-    group.traverse(function(o){if(o.isMesh){o.userData.part='headwear';o.castShadow=false;o.receiveShadow=true;}});
+  function headwearMat(hex,roughness,metalness) {
+    return new T.MeshStandardMaterial({color:new T.Color(hex).convertSRGBToLinear(),roughness:roughness,metalness:metalness || 0,side:T.DoubleSide});
+  }
+  function headwearMesh(vertices,faces,mat) {
+    var g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));g.setIndex(faces);g.computeVertexNormals();
+    return new T.Mesh(g,mat);
+  }
+  function finishHeadwear(group) {
+    group.userData.part='headwear';
+    group.traverse(function(o){if(o.isMesh){o.userData.part='headwear';o.castShadow=true;o.receiveShadow=true;}});
     return group;
+  }
+  function seam(points,mat,radius) {
+    return new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points),Math.max(12,points.length*5),radius || .0008,5,false),mat);
+  }
+  function foldedCap(id) {
+    // A closed, hollow cloth shell with an oval contact rim. Its curved crown,
+    // offset peak and surface folds give each courtier a distinct silhouette.
+    var fit={
+      hai:{h:.067,rx:.029,rz:.026,leanX:.004,leanZ:-.005,front:.006,phase:.4,top:.98,color:0x231d19,trim:0x84673f,pin:.117},
+      zo:{h:.051,rx:.033,rz:.028,leanX:-.004,leanZ:-.011,front:.004,phase:1.6,top:.87,color:0x25211f,trim:0x665946,pin:.106},
+      haku:{h:.056,rx:.037,rz:.030,leanX:.006,leanZ:-.004,front:.004,phase:2.4,top:.96,color:0x211c1d,trim:0x806744,pin:.118},
+      chin:{h:.065,rx:.027,rz:.025,leanX:-.006,leanZ:-.006,front:.006,phase:1.0,top:.86,color:0x1d1b1e,trim:0x69553d,pin:.113},
+      ryo:{h:.035,rx:.044,rz:.032,leanX:-.010,leanZ:-.012,front:.004,phase:2.1,top:.91,base:-.006,color:0x171619,trim:0x403c39,pin:.095}
+    }[id];
+    if(!fit)return null;
+    var group=new T.Group();group.name=id+'-curved-folded-cloth-crown';group.position.set(0,.137,-.027);
+    var cloth=headwearMat(fit.color,.88,0),trim=headwearMat(fit.trim,.66,.14);
+    var levels=[0,.15,.34,.56,.77,.93,1],radii=[1,1.015,1.035,1.045,1.04,1.01,fit.top],N=32,verts=[],faces=[],thick=.0026;
+    function point(a,k,inner) {
+      var t=levels[k],rad=radii[k],sin=Math.sin(a),cos=Math.cos(a);
+      var ripple=.0015*Math.sin(3*a+fit.phase)*Math.sin(Math.PI*t)+.0006*Math.sin(7*a-fit.phase)*t*(1-t);
+      var x=(fit.rx*rad+ripple-(inner?thick:0))*sin+fit.leanX*t*t;
+      var z=(fit.rz*rad+ripple-(inner?thick:0))*cos+fit.leanZ*t;
+      var y=fit.h*t+(fit.base||0)*(1-t)+fit.front*cos*t*t+.003*Math.sin(a+fit.phase)*t*t
+        +(id==='ryo'?-.006*Math.sin(a)*t*t:0)-(inner?thick:0);
+      return new T.Vector3(x,y,z);
+    }
+    for(var layer=0;layer<2;layer++)for(var k=0;k<levels.length;k++)for(var i=0;i<N;i++){
+      var v=point(2*PI*i/N,k,layer===1);verts.push(v.x,v.y,v.z);
+    }
+    var stride=N*levels.length;
+    for(var layer=0;layer<2;layer++)for(var k=0;k<levels.length-1;k++)for(var i=0;i<N;i++){
+      var ni=(i+1)%N,a=layer*stride+k*N+i,b=layer*stride+k*N+ni,c=a+N,d=b+N;
+      if(layer===0)faces.push(a,b,c,b,d,c);else faces.push(a,c,b,b,c,d);
+    }
+    for(var i=0;i<N;i++){
+      var ni=(i+1)%N,top=(levels.length-1)*N;
+      faces.push(top+i,top+ni,stride+top+i,top+ni,stride+top+ni,stride+top+i);
+      faces.push(i,stride+i,ni,ni,stride+i,stride+ni);
+    }
+    var topOuter=verts.length/3,topInner=topOuter+1;
+    verts.push(fit.leanX,fit.h*.87,fit.leanZ,fit.leanX,fit.h*.87-thick,fit.leanZ);
+    for(var i=0;i<N;i++){
+      var ni=(i+1)%N,top=(levels.length-1)*N;
+      faces.push(top+i,top+ni,topOuter,stride+top+i,topInner,stride+top+ni);
+    }
+    group.add(headwearMesh(verts,faces,cloth));
+    // The cloth edge rests inside the knot; the narrow welt reads as an actual
+    // sewn base rather than a flat board perched on the scalp.
+    var welt=new T.Mesh(new T.TorusGeometry(fit.rx-.0015,.0016,6,48),cloth);
+    welt.rotation.x=PI/2;welt.scale.y=(fit.rz-.0015)/(fit.rx-.0015);welt.position.y=(fit.base||0)+.0004;group.add(welt);
+    [-.90,.83].forEach(function(a){var curve=[];for(var j=0;j<=6;j++)curve.push(point(a+j*.025,j,false).multiplyScalar(1.007));group.add(seam(curve,trim,.00085));});
+    // A restrained embroidery line follows the curved front instead of using
+    // a rectangular gold plate. Zhang Liang's soft cap keeps it almost black.
+    var border=[];for(var j=0;j<=12;j++){
+      var a=-.95+j*1.9/12,v=point(a,1,false);v.x+=Math.sin(a)*.0007;v.z+=Math.cos(a)*.0007;border.push(v);
+    }group.add(seam(border,trim,id==='ryo'?.00065:.00085));
+    var crownFold=[point(0,levels.length-1,false),new T.Vector3(fit.leanX,fit.h*.87+.0008,fit.leanZ),point(PI,levels.length-1,false)];
+    group.add(seam(crownFold,headwearMat(id==='ryo'?0x322c2b:0x4c4033,.82,0),.00065));
+    if(id==='ryo'){
+      // One broad, slanted soft fold wraps the front of the scholar's cap.
+      // Its lower lip cuts into the knot, while the raised edge rolls back.
+      var flapV=[],flapF=[],cols=11,rows=[2,3,4,5];
+      for(var row=0;row<rows.length;row++)for(var col=0;col<cols;col++){
+        var a=-1.02+2.04*col/(cols-1),q=point(a,rows[row],false);
+        q.y+=.0035*(col/(cols-1)-.5)*(row+1)/rows.length;
+        q.z+=.0026*Math.cos(a);flapV.push(q.x,q.y,q.z);
+      }
+      for(var row=0;row<rows.length-1;row++)for(var col=0;col<cols-1;col++){
+        var a=row*cols+col,b=a+1,c=a+cols,d=c+1;flapF.push(a,b,c,b,d,c);
+      }
+      group.add(headwearMesh(flapV,flapF,headwearMat(0x242026,.91,0)));
+      var foldEdge=[];for(var col=0;col<cols;col++){
+        var a=-1.02+2.04*col/(cols-1),q=point(a,5,false);
+        q.y+=.0035*(col/(cols-1)-.5);q.z+=.0032*Math.cos(a);foldEdge.push(q);
+      }group.add(seam(foldEdge,headwearMat(0x514a4a,.83,0),.00075));
+    }
+    var pinMat=headwearMat(id==='ryo'?0x554a3d:0x967448,.52,.48);
+    var pin=new T.Mesh(new T.CylinderGeometry(.0013,.0013,fit.pin,10),pinMat);
+    pin.rotation.z=PI/2;pin.position.set(0,id==='ryo'?.012:.017,-.002);group.add(pin);
+    return finishHeadwear(group);
+  }
+  function roundedBand(id,knot) {
+    var group=new T.Group();group.name=id+'-fitted-knot-binding';group.position.set(0,.123,-.027);
+    var color=id==='kai'?0x283b3b:0x6b382e,mat=headwearMat(color,.84,0),edge=headwearMat(id==='kai'?0x475551:0x995844,.74,0);
+    for(var i=0;i<3;i++){
+      var b=new T.Mesh(new T.TorusGeometry(knot*(.92-i*.045),.0025,7,44),i===1?edge:mat);
+      b.rotation.x=PI/2;b.scale.y=.82;b.position.y=.007+i*.006;group.add(b);
+    }
+    // Two narrow cloth tails grow from the rear tie and settle against hair.
+    for(var side of [-1,1]){
+      var x=side*(id==='kai'?.010:.008),length=id==='kai'?.068:.045,w=id==='kai'?.008:.006;
+      var p=[x-w/2,.015,-knot*.72,x+w/2,.015,-knot*.72,
+             x-w*.56,-length*.42,-knot*.85-.009,x+w*.56,-length*.42,-knot*.85-.009,
+             x-w*.32,-length,-knot*.77-.012,x+w*.32,-length,-knot*.77-.012];
+      var ribbon=headwearMesh(p,[0,1,2,1,3,2,2,3,4,3,5,4],mat);group.add(ribbon);
+      group.add(seam([new T.Vector3(x,.015,-knot*.72),new T.Vector3(x,-length*.42,-knot*.85-.008),new T.Vector3(x,-length,-knot*.77-.011)],edge,.0007));
+    }
+    return finishHeadwear(group);
+  }
+  function compactWarCrown() {
+    var group=new T.Group();group.name='u-curved-engraved-war-crown';group.position.set(0,.137,-.027);
+    var base=headwearMat(0x6e572f,.46,.58),gold=headwearMat(0xb29353,.39,.70),shadow=headwearMat(0x3b2d1d,.57,.45);
+    var N=48,verts=[],faces=[],rx=.036,rz=.030;
+    for(var ring=0;ring<4;ring++)for(var i=0;i<N;i++){
+      var a=2*PI*i/N,cs=Math.cos(a),sn=Math.sin(a),inner=ring>=2,upper=ring===1||ring===2;
+      var r=inner?- .0024:0,y=upper?.010+.005*Math.max(0,cs):-.008;
+      verts.push((rx+r)*sn,y,(rz+r)*cs);
+    }
+    for(var ring=0;ring<4;ring++)for(var i=0;i<N;i++){
+      var ni=(i+1)%N,a=ring*N+i,b=ring*N+ni,c=((ring+1)%4)*N+i,d=((ring+1)%4)*N+ni;
+      if(ring===2)faces.push(a,c,b,b,c,d);else faces.push(a,b,c,b,d,c);
+    }
+    group.add(headwearMesh(verts,faces,base));
+    for(var j=0;j<2;j++){
+      var curve=[];for(var i=0;i<=32;i++){
+        var a=-PI+2*PI*i/32,cs=Math.cos(a),sn=Math.sin(a);
+        curve.push(new T.Vector3((rx+.0008)*sn,(j? .010+.005*Math.max(0,cs):-.007), (rz+.0008)*cs));
+      }group.add(seam(curve,gold,.0012));
+    }
+    // Front openwork: the gaps between three shallow arches stay genuinely
+    // empty, while curved engraved lines follow the compact band surface.
+    [-.43,0,.43].forEach(function(mid){var arch=[];for(var j=0;j<=8;j++){
+      var a=mid-.16+j*.04,cs=Math.cos(a),sn=Math.sin(a);
+      arch.push(new T.Vector3((rx+.0017)*sn,.001+.007*Math.sin(j/8*PI),(rz+.0017)*cs));
+    }group.add(seam(arch,gold,.0009));});
+    var crest=[];for(var j=0;j<=10;j++){
+      var a=-.68+j*.136,cs=Math.cos(a),sn=Math.sin(a);
+      crest.push(new T.Vector3((rx+.0018)*sn,.003+.002*Math.cos(a*3),(rz+.0018)*cs));
+    }group.add(seam(crest,shadow,.00075));
+    var pin=new T.Mesh(new T.CylinderGeometry(.0015,.0015,.108,8),gold);
+    pin.rotation.z=PI/2;pin.position.set(0,.012,-.002);group.add(pin);
+    return finishHeadwear(group);
+  }
+  function fittedHeadwear(id, asset) {
+    if(['hai','zo','haku','chin','ryo'].indexOf(id)>=0)return foldedCap(id);
+    if(id==='u')return compactWarCrown();
+    if(id==='kai'||id==='sou')return roundedBand(id,id==='kai'?.038:.033);
+    return null;
+  }
+  function outerLipAnchor(surface, cacheKey) {
+    if (!MOUTH_CACHE[cacheKey]) {
+      // Probe the indexed skin in head-local space once. This contact follows
+      // the actual outer lip rather than a point behind the imported face.
+      var probe = new T.Mesh(surface.geometry, surface.material);
+      probe.updateMatrixWorld(true);
+      var ray = new T.Raycaster(new T.Vector3(0,-.038,.3), new T.Vector3(0,0,-1));
+      var hit = ray.intersectObject(probe, false)[0];
+      if (!hit) throw new Error('No outer lip surface for ' + cacheKey);
+      MOUTH_CACHE[cacheKey] = hit.point.toArray();
+    }
+    return MOUTH_CACHE[cacheKey].slice();
   }
   function build(id, params, quality) {
     params = params || {}; var source = window.KM_HEAD_ASSETS; if (!source) return null;
@@ -188,13 +319,15 @@
     });
     var eyes = makeEyes(asset,params,q); group.add(eyes);
     var headwear = fittedHeadwear(id,asset); if(headwear)group.add(headwear);
+    var anchors = JSON.parse(JSON.stringify(asset.anchors));
+    anchors.mouth = outerLipAnchor(surface,id + '|' + q);
     if (id !== key) {
       // Secondary cast retains the continuous source topology while introducing
       // a small stable anatomical variation, away from the eye contact region.
       var seed = params.seed || 0, sx = 1 + ((seed % 5) - 2) * .015;
       group.scale.x = sx;
     }
-    return {group: group, surface: surface, eyes: eyes, anchors: JSON.parse(JSON.stringify(asset.anchors)), asset: true, source: key, headwear:!!headwear};
+    return {group: group, surface: surface, eyes: eyes, anchors: anchors, asset: true, source: key, headwear:!!headwear};
   }
   window.KM_HEADS = {build:build,decodePackedIndices:decodePackedIndices};
 })();

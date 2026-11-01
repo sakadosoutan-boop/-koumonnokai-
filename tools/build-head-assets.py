@@ -15,7 +15,7 @@ SOURCE = ROOT.parent / '3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv: SOURCE=Path(sys.argv[sys.argv.index('--source')+1]).expanduser().resolve()
 elif os.environ.get('KOMON_HUMAN_BASE'):SOURCE=Path(os.environ['KOMON_HUMAN_BASE']).expanduser().resolve()
 elif not SOURCE.exists():SOURCE=ROOT/'source-assets/heads.blend'
-OUT = ROOT / 'model-preview-output/asset-rebuild'
+OUT = Path(sys.argv[sys.argv.index('--out')+1]).resolve() if '--out' in sys.argv else ROOT / 'model-preview-output/asset-rebuild'
 OUT.mkdir(parents=True, exist_ok=True)
 if SOURCE.resolve()==(ROOT/'source-assets/heads.blend').resolve():
     # Blender protects an append-library file from being overwritten in the same
@@ -24,6 +24,12 @@ if SOURCE.resolve()==(ROOT/'source-assets/heads.blend').resolve():
     shutil.copyfile(SOURCE,rebuild_source)
     SOURCE=rebuild_source
 PROTO = '--prototype' in sys.argv
+SELECTED = sys.argv[sys.argv.index('--ids')+1].split(',') if '--ids' in sys.argv else (['ryo'] if PROTO else None)
+PREVIEW = PROTO or '--preview' in sys.argv or SELECTED is not None
+lod_arg=sys.argv[sys.argv.index('--lod')+1] if '--lod' in sys.argv else None
+QUALITIES = (['high','low'] if lod_arg=='both' else [lod_arg]) if lod_arg else (['high'] if PREVIEW else ['high','low'])
+if any(q not in ('high','low') for q in QUALITIES):raise ValueError('--lod must be high or low')
+if QUALITIES!=['high','low']:PREVIEW=True
 
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
@@ -45,6 +51,11 @@ for n in names[1:]:
 for ob in backup.objects:
     ob.hide_render = True; ob.hide_set(True)
 backup.hide_render = True
+reference=bpy.data.collections.new('REFERENCE_LOCKED');bpy.context.scene.collection.children.link(reference)
+atlas=bpy.data.images.load(str(ROOT/'src/assets/character-atlas.png'),check_existing=True);atlas.pack()
+ref=bpy.data.objects.new('Portrait atlas - locked reference',None);reference.objects.link(ref)
+ref.empty_display_type='IMAGE';ref.data=atlas;ref.empty_display_size=.60;ref.location=(0,0,-.30)
+ref.hide_render=True;ref.hide_select=True;ref.hide_set(True)
 
 def canon(v):
     return Vector((v.x * .64, (v.z-.261) * .76, -v.y * .64 - .014))
@@ -79,12 +90,12 @@ def mix(a,b,t): return a*(1-t)+b*t
 # Primary forms are authored independently. Values describe actual anatomy,
 # never an atlas face pasted over a common round head.
 CAST={
- 'ryo': dict(width=1.00,jaw=.96,cheek=1.03,length=1.02,nose=.000,bridge=-.001,eye=.67,tilt=.0026,space=1.06,age=.05,skin='d4b297',hair='13100e',grey=0,brow=.0018,slope=.001,beard=0,recede=.0,knot=.025),
+ 'ryo': dict(width=1.075,jaw=1.025,cheek=1.055,length=1.055,nose=.0015,bridge=.0010,eye=.67,tilt=.0026,space=1.04,age=.05,skin='d4b297',hair='13100e',grey=0,brow=.00215,slope=.001,beard=0,recede=.0,knot=.025),
  'hai': dict(width=1.11,jaw=1.10,cheek=1.03,length=1.04,nose=.009,bridge=.003,eye=.69,tilt=.000,space=1.02,age=.8,skin='b68c6b',hair='25201a',grey=.23,brow=.003,slope=-.001,beard=.105,recede=.010,knot=.024),
- 'u': dict(width=1.07,jaw=1.04,cheek=1.04,length=1.075,nose=.006,bridge=.004,eye=.60,tilt=.0040,space=1.03,age=.22,skin='bf9475',hair='17120f',grey=0,brow=.0039,slope=.004,beard=.014,recede=.001,knot=.037),
- 'zo': dict(width=.99,jaw=.93,cheek=1.06,length=1.09,nose=.008,bridge=.002,eye=.59,tilt=-.0015,space=1.00,age=1.45,skin='be9877',hair='b8b3a7',grey=.95,brow=.0030,slope=-.002,beard=.178,recede=.020,knot=.023),
+ 'u': dict(width=1.14,jaw=1.13,cheek=1.055,length=1.015,nose=.005,bridge=.004,eye=.60,tilt=.0040,space=1.025,age=.22,skin='bf9475',hair='17120f',grey=0,brow=.0039,slope=.004,beard=.014,recede=.001,knot=.037),
+ 'zo': dict(width=.99,jaw=.93,cheek=1.06,length=1.09,nose=.008,bridge=.002,eye=.59,tilt=-.0015,space=1.00,age=1.45,skin='be9877',hair='c9c5bb',grey=.95,brow=.0040,slope=-.002,beard=.178,recede=.020,knot=.023),
  'haku': dict(width=1.15,jaw=1.07,cheek=1.11,length=.95,nose=.003,bridge=.001,eye=.72,tilt=-.002,space=1.04,age=.85,skin='b88d6e',hair='302a24',grey=.40,brow=.0028,slope=-.002,beard=.061,recede=.011,knot=.025),
- 'kai': dict(width=1.28,jaw=1.34,cheek=1.20,length=.96,nose=.007,bridge=.002,eye=.58,tilt=.004,space=1.05,age=.55,skin='aa7c5e',hair='17130f',grey=.06,brow=.0053,slope=.004,beard=.032,recede=.001,knot=.038),
+ 'kai': dict(width=1.24,jaw=1.26,cheek=1.15,length=1.015,nose=.0055,bridge=.001,eye=.58,tilt=.004,space=1.04,age=.55,skin='aa7c5e',hair='17130f',grey=.06,brow=.0053,slope=.004,beard=.032,recede=.001,knot=.038),
  'sou': dict(width=1.05,jaw=1.01,cheek=1.06,length=1.01,nose=.001,bridge=.001,eye=.64,tilt=.0042,space=1.07,age=.04,skin='c59b7c',hair='18130f',grey=0,brow=.0028,slope=.004,beard=0,recede=.0,knot=.033),
  'chin': dict(width=1.01,jaw=.98,cheek=1.00,length=1.05,nose=.004,bridge=.001,eye=.72,tilt=.0018,space=1.05,age=.18,skin='caa587',hair='201913',grey=.03,brow=.0022,slope=.000,beard=.030,recede=.005,knot=.025)
 }
@@ -101,6 +112,56 @@ FACE_FORMS={
  'sou':dict(nasal=.94,chin=.0020,plane=.0018,corner=.0012,lip=.00045),
  'chin':dict(nasal=.97,chin=.0014,plane=.0011,corner=.0011,lip=.00055)
 }
+FACE_FORMS['zo']['corner']=-.0025
+
+# Portrait proportions are an anatomical height lattice, followed by paired
+# facial landmarks. This changes the connected source skull and mandibular
+# silhouette before any grooming or surface detail is applied.
+PORTRAIT_FORMS={
+ 'ryo':dict(widths=[1.02,1.015,1.020,.990,1.035,1.035],zygoma=.0030,hollow=.0032,angle=.0018,chin=.0038,ala=-.0013,radix=.0018,tip=.0003,orbit=.0013),
+ 'hai':dict(widths=[1.03,1.020,1.015,.980,1.025,1.030],zygoma=.0025,hollow=.0030,angle=.0018,chin=.0022,ala=.0005,radix=.0021,tip=.0030,orbit=.0021),
+ 'u':dict(widths=[1.04,1.035,1.025,.975,1.045,1.055],zygoma=.0033,hollow=.0035,angle=.0027,chin=.0042,ala=.0007,radix=.0020,tip=.0010,orbit=.0023),
+ 'zo':dict(widths=[1.045,1.010,1.035,.920,.950,.940],zygoma=.0040,hollow=.0050,angle=.0008,chin=.0021,ala=.0008,radix=.0020,tip=.0040,orbit=.0040),
+ 'haku':dict(widths=[1.025,1.025,1.030,1.035,1.025,1.035],zygoma=.0018,hollow=.0010,angle=.0013,chin=.0018,ala=.0013,radix=.0008,tip=.0005,orbit=.0016),
+ 'kai':dict(widths=[1.045,1.045,1.035,1.010,1.035,1.040],zygoma=.0024,hollow=.0018,angle=.0030,chin=.0036,ala=.0032,radix=.0006,tip=.0010,orbit=.0025),
+ 'sou':dict(widths=[1.030,1.020,1.025,.950,1.030,.970],zygoma=.0033,hollow=.0038,angle=.0025,chin=.0036,ala=-.0007,radix=.0014,tip=.0002,orbit=.0018),
+ 'chin':dict(widths=[.990,1.010,1.010,.975,.985,.980],zygoma=.0027,hollow=.0027,angle=.0010,chin=.0030,ala=-.0009,radix=.0017,tip=.0010,orbit=.0014)
+}
+
+def portrait_form(v,original,cid):
+    x,y,z=v;ox,oy,oz=original;ax=abs(x);side=1 if x>=0 else -1;f=PORTRAIT_FORMS[cid]
+    bands=[.085,.045,.005,-.025,-.047,-.067];width=f['widths'][-1]
+    if y>=bands[0]:width=f['widths'][0]
+    else:
+        for i in range(len(bands)-1):
+            if bands[i]>=y>=bands[i+1]:width=mix(f['widths'][i+1],f['widths'][i],smooth(bands[i+1],bands[i],y));break
+    front=smooth(.004,.041,z);face=smooth(-.092,-.065,y)
+    x*=1+(width-1)*face*(.35+.65*front)
+    # The malar apex, buccal hollow and mandibular angle are distinct planes.
+    z+=f['zygoma']*gauss(ax-.045,.014)*gauss(y-.003,.017)*front
+    z-=f['hollow']*gauss(ax-.040,.014)*gauss(y+.027,.016)*front
+    x+=side*f['angle']*gauss(ax-.040,.016)*gauss(y+.050,.012)*front
+    z+=f['chin']*gauss(x,.025)*gauss(y+.067,.012)*front
+    z-=.0013*gauss(x,.021)*gauss(y+.049,.0042)*front
+    # A narrower bony bridge and separate alar bases prevent a common button nose.
+    x+=side*f['ala']*gauss(ax-.012,.007)*gauss(y+.010,.011)*front
+    z+=f['radix']*gauss(x,.0068)*gauss(y-.025,.023)*front
+    z+=f['tip']*gauss(x,.011)*gauss(y+.006,.009)*front
+    ec=BASE_EYES[0] if x<0 else BASE_EYES[1]
+    z-=f['orbit']*gauss(ox-ec.x,.021)*gauss(oy-ec.y,.015)*front
+    z+=f['orbit']*.72*gauss(ox-ec.x,.023)*gauss(oy-(ec.y+.014),.006)*front
+    if cid=='zo':
+        y-=.0024*gauss(x,.012)*gauss(y+.006,.012)*front
+        z-=.0025*gauss(ax-.051,.012)*gauss(y-.038,.023)*front
+        z+=.0018*gauss(ax-.034,.018)*gauss(y-.008,.004)*front
+    if cid=='hai':
+        z+=side*.0010*gauss(ax-.030,.020)*gauss(y+.015,.040)*front
+        y+=side*.0006*gauss(ax-.025,.019)*gauss(y-.025,.018)*front
+    # Retain the established mouth contact used by drink/food actions while
+    # allowing the chin and jaw to develop an adult portrait silhouette.
+    pin=gauss(ox,.022)*gauss(oy+.038,.0065)*front
+    y=mix(y,oy,pin*.93)
+    return Vector((x,y,z))
 
 HAIR_FORMS={
  'ryo':dict(front=.080,temple=.028,sideburn=.046,top=.0060,side=.0045,rough=.10,part=.35),
@@ -112,6 +173,10 @@ HAIR_FORMS={
  'sou':dict(front=.079,temple=.027,sideburn=.048,top=.0070,side=.0052,rough=.18,part=.22),
  'chin':dict(front=.080,temple=.029,sideburn=.043,top=.0060,side=.0048,rough=.07,part=.06)
 }
+HAIR_FORMS['ryo'].update(front=.079,temple=.025,top=.0090,side=.0055,part=.52,rough=.08)
+HAIR_FORMS['u'].update(front=.074,top=.0100,side=.0070,part=-.08)
+HAIR_FORMS['zo'].update(front=.087,side=.0055,part=.16)
+if SELECTED and set(SELECTED)-set(CAST):raise ValueError('Unknown --ids: '+','.join(sorted(set(SELECTED)-set(CAST))))
 
 # A lid is not a vertically scaled copy of another actor's lid. These profiles
 # change the two arches, their apex, the canthi and the tissue above/below them.
@@ -126,6 +191,10 @@ EYE_FORMS={
  'sou': dict(width=1.26,upper=.38,lower=.46,tilt=.0045,apex=-.30,arch=-.0007,hood=.00035,bag=.00010,crease=.00025,brow_y=.0380,brow_arch=.0014,brow_angle=.0065,brow_peak=.66),
  'chin': dict(width=1.22,upper=.68,lower=.55,tilt=.0001,apex=-.12,arch=-.0005,hood=.00040,bag=.00020,crease=.00070,brow_y=.0398,brow_arch=.0014,brow_angle=.0002,brow_peak=.55)
 }
+for _cid,_upper,_lower,_width in [('ryo',.73,.60,1.27),('hai',.70,.73,1.11),('u',.66,.58,1.10),('zo',.46,.72,1.10),('haku',.94,.84,1.00),('kai',.62,.64,1.15),('sou',.58,.54,1.20),('chin',.74,.62,1.18)]:
+    EYE_FORMS[_cid].update(upper=_upper,lower=_lower,width=_width)
+EYE_FORMS['ryo'].update(brow_y=.0378,brow_angle=.0030,brow_arch=.0026,brow_peak=.53)
+EYE_FORMS['zo'].update(brow_y=.0378,brow_angle=.0050,brow_arch=.0021,brow_peak=.32)
 
 def ocular_form(p):
     return EYE_FORMS[next(k for k,v in CAST.items() if v is p)]
@@ -168,6 +237,9 @@ def sculpt(v,p):
     if identity in ('u','sou','ryo','chin'):
         zz+=.0013*gauss(x,.008)*gauss(y-.015,.025)*front
         zz-=.0008*gauss(x,.013)*gauss(y+.005,.010)*front
+    if identity=='ryo':
+        zz+=.0011*(gauss(x-.005,.0036)+gauss(x+.005,.0036))*gauss(y+.034,.0025)*front
+        zz+=.0008*gauss(x,.016)*gauss(y+.041,.0030)*front
     # Independent upper/lower lid maps retain the continuous source topology.
     # The upper arch apex can move medially; the lower arch can stay rounded or
     # taut. Canthal tilt is applied to the complete orbit, including tear duct.
@@ -224,7 +296,9 @@ def sculpt(v,p):
             zz-=.0032*gauss(ax-.050,.012)*gauss(y-.025,.025)*front
             yy-=.0030*gauss(ax-.043,.022)*gauss(y+.018,.028)*front
             zz-=.0014*(gauss(x-.005,.0018)+gauss(x+.005,.0018))*gauss(y-.047,.013)*front
-    return Vector((xx,yy,zz))
+            zz+=.0034*gauss(ax-.018,.021)*gauss(y-.044,.008)*front
+            zz-=.0018*gauss(ax-.031,.018)*gauss(y+.021,.015)*front
+    return portrait_form(Vector((xx,yy,zz)),v,identity)
 
 def trim_neck(ob):
     bm=bmesh.new(); bm.from_mesh(ob.data)
@@ -250,6 +324,7 @@ def sample(bvh,x,y,default=.045):
 
 def color_skin(ob,p):
     base=rgb(p['skin']); lip=rgb('a57165'); red=rgb('b67d69')
+    ciliary=rgb('806054');crease_color=rgb('795247');anchors=[eye_anchor(e,p)['center'] for e in BASE_EYES]
     a=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT')
     for i,v in enumerate(ob.data.vertices):
         x,y,z=v.co; front=smooth(.025,.050,z)
@@ -259,11 +334,25 @@ def color_skin(ob,p):
         eye=.055*sum(gauss(x-e.x*p['width'],.018)*gauss(y-e.y,.013) for e in BASE_EYES)*front
         if p is CAST['zo']:
             eye+=.15*sum(gauss(x-e.x,.019)*gauss(y-(e.y-.018),.006) for e in BASE_EYES)*front
-        c=[mix(mix(base[k],red[k],cheek),lip[k],lw*.60)*(1-eye) for k in range(3)]
+        if p is CAST['ryo']:
+            target_lip=rgb('986c60');weight=lw*.80
+        else:target_lip=lip;weight=lw*.67
+        c=[mix(mix(base[k],red[k],cheek),target_lip[k],weight)*(1-eye) for k in range(3)]
+        crease=gauss(x,.020)*gauss(y+.038,.0010)*front
+        c=[mix(c[k],crease_color[k],crease*.20) for k in range(3)]
+        # A subtle ciliary margin makes the upper lid legible at portrait scale;
+        # all of the opening and its fold remain actual connected geometry.
+        lid=0
+        for ec in anchors:
+            u=(x-ec[0])/(.013*p['width']);line=ec[1]+.0023+ocular_form(p)['tilt']*u*(1 if x>0 else -1)
+            lid=max(lid,gauss(x-ec[0],.013)*gauss(y-line,.00075)*front)
+        c=[mix(c[k],ciliary[k],lid*.23) for k in range(3)]
         a.data[i].color=(*c,1)
     n=ob.data.materials[0].node_tree.nodes; l=ob.data.materials[0].node_tree.links
     attr=n.new('ShaderNodeVertexColor'); attr.layer_name='Complexion'; l.new(attr.outputs['Color'],n.get('Principled BSDF').inputs['Base Color'])
     ps=n.get('Principled BSDF'); ps.inputs['Subsurface Weight'].default_value=.045
+    if 'Subsurface Scale' in ps.inputs:ps.inputs['Subsurface Scale'].default_value=.0017
+    if 'Subsurface Radius' in ps.inputs:ps.inputs['Subsurface Radius'].default_value=(1,.50,.25)
 
 def tube(name,points,radii,material,sides=7):
     # Interpolate the guide smoothly instead of exposing rigid polyline corners.
@@ -321,18 +410,32 @@ def add_brows(cid,p,bvh,material,quality='high'):
         if cid=='hai':y+=(-.0009 if s<0 else .0005)*(1-t)
         if cid=='zo':y-=.0017*smooth(.55,1,t)
         return x,y
+    masses=[]
     for s in (-1,1):
+        vv=[];ff=[];rows=41 if quality=='high' else 27
+        for j in range(rows):
+            t=j/(rows-1);x,y=brow_point(s,t)
+            fullness=(.10+.90*math.sin(math.pi*t)**.55)*(1-.40*t)
+            half=p['brow']*(1.08 if cid=='ryo' else .90)*fullness
+            for k in range(5):
+                u=k/4*2-1;yy=y+u*half
+                z=sample(bvh,x,yy)+.00016+.00064*(1-u*u)*fullness
+                vv.append((x,yy,z))
+                if j and k:
+                    q=j*5+k;face=(q-6,q-5,q,q-1);ff.append(tuple(reversed(face)) if s>0 else face)
+        masses.append(mesh_object(cid+'_coherent_brow_mass',vv,ff,material))
         for j in range(250 if quality=='high' else 60):
             t=rng.random();x,y=brow_point(s,t)
             fullness=(.30+.70*math.sin(math.pi*t)**.55)*(1-.32*t)
             y+=(rng.random()*2-1)*p['brow']*.73*fullness
             extent=mix(.0027,.0041,math.sin(math.pi*t))*(.75+.5*rng.random())
+            if cid=='zo':extent*=1.9
             points=[]
             for k in range(3):
-                q=k/2;xx=x+s*extent*.76*q;yy=y+extent*(.68-.65*t)*q
+                q=k/2;xx=x+s*extent*.76*q;yy=y+extent*((.35-.75*t) if cid=='zo' else (.68-.65*t))*q
                 points.append(Vector((xx,yy,sample(bvh,xx,yy)+.00020+.00045*math.sin(math.pi*q))))
             groom.fibre(points,.00016 if cid!='zo' else .00020,.7+rng.random()*.9,.20)
-    return [groom.object(cid+'_rooted_brow_groom',material)]
+    return masses+[groom.object(cid+'_rooted_brow_groom',material)]
 
 def hair_height(a,p):
     f=HAIR_FORMS[next(k for k,v in CAST.items() if v is p)]
@@ -352,7 +455,10 @@ def hairline(v,p):
     # The temple boundary stays dense; only the exposed frontal edge varies.
     h+=(.0024*math.sin(x*53+.65)+.0010*math.sin(x*331+.3))*smooth(.005,.050,z)
     if p is CAST['ryo']:h+=.0045*max(-1,min(1,x/.06))*smooth(.005,.045,z)
-    return y-h
+    # Ear cartilage remains bare. Source topology contains the ears in the same
+    # mesh, so a simple height cut would otherwise groom their upper surfaces.
+    ear=1-((abs(x)-.066*p['width'])/(.014*p['width']))**2-((y-.007)/.043)**2-((z+.004)/.027)**2
+    return min(y-h,-ear*.035)
 
 def scalp(cid,p,head,material,quality):
     f=HAIR_FORMS[cid];vv=[];ff=[]
@@ -377,7 +483,12 @@ def scalp(cid,p,head,material,quality):
             wave+=.0040*gauss(angle+.32,.53)*gauss(v.y-.102,.032)*smooth(.005,.055,v.z)
             wave-=.0012*gauss(angle-.72,.27)*gauss(v.y-.105,.027)
             loft=.0010+(.0030+top+side+wave)*growth
-            ids.append(len(vv));vv.append(v+n*loft)
+            point=v+n*loft
+            if cid in ('ryo','sou','u'):
+                quiff=gauss(v.y-.095,.036)*smooth(.012,.062,v.z)*growth
+                point.y+=({'ryo':.008,'sou':.006,'u':.006}[cid])*(.65+.35*gauss(v.x+.025,.035))*quiff
+                point.x+=.0025*quiff*(1 if cid=='ryo' else .3)
+            ids.append(len(vv));vv.append(point)
         ff.append(tuple(ids))
     cap=mesh_object(cid+'_continuous_scalp',vv,ff,material)
     bm=bmesh.new();bm.from_mesh(cap.data);bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=.000015);bm.to_mesh(cap.data);bm.free();cap.data.update()
@@ -400,7 +511,7 @@ def scalp(cid,p,head,material,quality):
             if j:
                 for k in range(sides):faces.append(((j-1)*sides+k,(j-1)*sides+(k+1)%sides,j*sides+(k+1)%sides,j*sides+k))
         faces.extend([tuple(range(sides-1,-1,-1)),tuple((len(points)-1)*sides+k for k in range(sides))])
-        return mesh_object(name,verts,faces,material)
+        return mesh_object(name,verts,[tuple(reversed(face)) for face in faces],material)
     # Broad flattened locks are laid into this exact lofted cap. They divide the
     # large highlight into a swept flow, with a taller wave for Xiang Yu and a
     # wider, irregular silhouette for Fan Kuai.
@@ -421,26 +532,50 @@ def scalp(cid,p,head,material,quality):
             widths.append((.0063+.0022*math.sin(lock*1.9)**2)*(1+f['rough']*.25)*taper)
             heights.append((.00035+.00030*math.sin(lock*2.1)**2+f['rough']*.0008)*taper)
         parts.append(lock_mesh(cid+'_swept_hair_mass',points,norms,widths,heights))
-    # Continuous side masses arc above the ear and meet the nape behind it.
+    # The fitted cap already contains temporal volume. Its old repeated bands
+    # projected onto the ear and read as plaits; they are intentionally replaced
+    # by the continuous scalp and the following anatomical framing guides.
     for side in (-1,1):
-        for band in range(4 if cid=='kai' else 3):
-            points=[];norms=[];widths=[];heights=[]
-            for j in range(29):
-                t=j/28;a=side*mix(.94+band*.08,2.25+band*.035,t)
-                y=.034+band*.006+.021*math.sin(math.pi*t)-.052*t
-                d=Vector((math.sin(a)*.078*p['width'],y-center.y,math.cos(a)*.085))
-                point,normal=scalp_point(d);points.append(point);norms.append(normal)
-                taper=.12+.88*math.sin(math.pi*t)**.45
-                widths.append((.0062 if cid!='kai' else .0090)*taper);heights.append((.0016 if cid!='kai' else .0027)*taper)
-            parts.append(lock_mesh(cid+'_temporal_sweep',points,norms,widths,heights))
         if cid in ('ryo','sou'):
             points=[];norms=[];widths=[];heights=[]
             for j in range(29):
-                t=j/28;x=side*(.051+.003*math.sin(t*math.pi))*p['width'];y=mix(.086,-.039 if cid=='ryo' else -.026,t)
+                t=j/28;x=side*mix(.049,.0435,t)*p['width'];y=mix(.086,-.039 if cid=='ryo' else -.026,t)
                 z=sample(bvh,x,y);near=bvh.find_nearest(Vector((x,y,z)));normal=near[1] if near[1] is not None else Vector((0,0,1))
                 point=Vector((x,y,z))+normal*(.0012+.0010*math.sin(math.pi*t))
-                points.append(point);norms.append(normal);widths.append(.0045*(1-t)**.75+.00005);heights.append(.0010*(1-t)+.00005)
+                points.append(point);norms.append(normal);widths.append(.0026*(1-t)**.75+.00005);heights.append(.00075*(1-t)+.00005)
             parts.append(lock_mesh(cid+'_framing_hair_mass',points,norms,widths,heights))
+        if cid in ('hai','u','kai','zo'):
+            for layer in range(3 if cid=='zo' else 2):
+                length={'hai':.112,'u':.155,'kai':.137,'zo':.175}[cid]
+                if cid=='zo':length*=.87+.09*layer
+                a=side*((1.92+.16*layer) if cid=='zo' else (2.00+.17*layer));d=Vector((math.sin(a)*.080*p['width'],(.024 if cid=='zo' else .017)-center.y,math.cos(a)*.085))
+                root,normal=scalp_point(d);points=[];norms=[];widths=[];heights=[]
+                def nape_flow(t,spread=0):
+                    point=root+Vector((-side*(.013+.003*layer)*t+spread*(1-.65*t),-length*t,-.014*t))
+                    if cid=='zo':
+                        phase=layer*1.7;wave=math.sin(math.pi*min(1,t))**.65
+                        point.x+=side*.0085*math.sin(t*math.pi*2.25+phase)*wave
+                        point.z+=.0060*math.sin(t*math.pi*1.9+phase)*wave-.009*t
+                    else:
+                        point.x+=side*.0035*math.sin(t*7+layer)*math.sin(math.pi*t)
+                        point.z+=.003*math.sin(t*6+layer)*math.sin(math.pi*t)
+                    return point
+                for j in range(31):
+                    t=j/30
+                    point=nape_flow(t)
+                    points.append(point);norms.append(normal)
+                    taper=(1-t)**.75
+                    widths.append((.006 if cid=='kai' else .0040 if cid=='zo' else .0048)*taper+.00004);heights.append(.0017*taper+.00004)
+                parts.append(lock_mesh(cid+'_loose_nape_layer',points,norms,widths,heights))
+                napegroom=GroomMesh();rng=random.Random(cid+str(side)+str(layer)+'-nape')
+                for strand in range(38 if quality=='high' else 15):
+                    spread=(rng.random()-.5)*.007;span=.74+.31*rng.random();pp=[]
+                    for j in range(7):
+                        t=j/6*span
+                        point=nape_flow(t,spread);point.z-=.0010
+                        pp.append(point)
+                    napegroom.fibre(pp,.00020 if quality=='high' else .00034,.7+.6*rng.random())
+                parts.append(napegroom.object(cid+'_loose_nape_fibres',material))
     # Fine swept fibres break the smooth cap highlight and its uniform edge.
     # These are a single static mesh, following the same scalp contact field.
     rng=random.Random(cid+'-scalp-flow');groom=GroomMesh()
@@ -467,27 +602,93 @@ def scalp(cid,p,head,material,quality):
     for j in range(24):
         for i in range(32):
             a=j*33+i;faces.append((a,a+1,a+34,a+33))
-    parts.append(mesh_object(cid+'_chignon',verts,faces,material))
+    parts.append(mesh_object(cid+'_chignon',verts,[tuple(reversed(face)) for face in faces],material))
     return parts
 
 def beard_growth(cid,p,v,n):
     """A soft density field over actual cheek, jaw and under-chin anatomy."""
     x,y,z=v;ax=abs(x);under=smooth(-.050,-.078,y)
     if cid=='chin':
-        top=-.047+.002*math.cos(x*90);limit=.022
+        top=-.047+.002*math.cos(x*90);limit=.0145
     else:
-        cheek={'u':.027,'kai':.036,'hai':.029,'zo':.027,'haku':.028}[cid]
+        cheek={'u':.027,'kai':.041,'hai':.029,'zo':.027,'haku':.028}[cid]
         top=-.047+cheek*smooth(.012,.060*p['width'],ax)
         top+=.003*math.sin(x*79)+.0012*math.sin(x*431)
         limit=(.066 if cid=='kai' else .060)*p['width']
-    return min(top-y,y+.087,limit-ax,z-mix(.026,.008,under),
+    return min(top-y,y+.076,limit-ax,z-mix(.026,.018,under),
                (n.z-mix(.16,-.45,under))*.040,
-               mix(.025,(-n.y-.025)*.050,under))
+               mix(.025,(-n.y-.24)*.050,under))
+
+def beard_root_mass(cid,p,head,material):
+    verts=[];faces=[];blends=[]
+    thickness={'u':.0017,'kai':.0031,'haku':.0022,'hai':.0015,'zo':.0013,'chin':.0013}[cid]
+    for face in head.data.polygons:
+        poly=[(head.data.vertices[i].co.copy(),head.data.vertices[i].normal.copy()) for i in face.vertices]
+        clipped=[]
+        for j,(v,n) in enumerate(poly):
+            a,an=poly[j-1];da=beard_growth(cid,p,a,an)-.0018;db=beard_growth(cid,p,v,n)-.0018
+            if (da>=0)!=(db>=0):
+                t=da/(da-db);clipped.append((a.lerp(v,t),an.lerp(n,t).normalized()))
+            if db>=0:clipped.append((v,n))
+        if len(clipped)<3:continue
+        ids=[]
+        for v,n in clipped:
+            d=beard_growth(cid,p,v,n);feather=smooth(.0018,.008,d)
+            strand=.00022*math.sin(v.x*1430+v.y*35)
+            ids.append(len(verts));verts.append(v+n*(.00012+(thickness+strand)*feather))
+            blends.append((1-smooth(.0018,.0065,d))*.86)
+        faces.append(tuple(ids))
+    ob=mesh_object(cid+'_anatomical_beard_undercoat',verts,faces,material)
+    blend=ob.data.attributes.new(name='SkinBlend',type='FLOAT',domain='POINT')
+    for i,value in enumerate(blends):blend.data[i].value=value
+    bm=bmesh.new();bm.from_mesh(ob.data);bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=.000015);bm.to_mesh(ob.data);bm.free();ob.data.update()
+    return ob
+
+def long_beard_mass(cid,p,material,quality):
+    # The long beard has a rounded cross-section and a layered irregular hem.
+    # The two elders differ in width, curvature and lower taper at the primary
+    # silhouette stage, before individual fibres add their fine edge.
+    verts=[];faces=[];rows=35;sides=57
+    width=.043*p['width'] if cid=='hai' else .045*p['width'];length=.135 if cid=='hai' else .174
+    profile=[(0,.10),(.18,.96),(.45,.85),(.73,.59),(.93,.25),(1,.065)] if cid=='hai' else [(0,.10),(.18,.85),(.45,.97),(.73,.82),(.93,.40),(1,.10)]
+    def point_at(t,a):
+        taper=profile[-1][1]
+        for (a,v),(b,w) in zip(profile,profile[1:]):
+            if t<=b:taper=mix(v,w,smooth(a,b,t));break
+        return taper
+    def surface(t,a):
+        taper=point_at(t,a);rib=.0010*math.sin(a*13+t*5)+.00040*math.sin(a*31+t*12)
+        x=math.sin(a)*(width*taper+rib*math.sin(math.pi*t))
+        y=-.066-length*t-.0040*math.sin(a*3+1.2)*t**3
+        depth=(.019 if cid=='hai' else .016)*(.35+.65*taper)
+        z=mix(.024,.057 if cid=='hai' else .064,t)+math.cos(a)*(depth+rib)
+        return Vector((x,y,z))
+    for j in range(rows):
+        t=j/(rows-1)
+        for k in range(sides):
+            a=k/(sides-1)*math.tau;verts.append(surface(t,a))
+            if j and k:q=j*sides+k;faces.append((q-sides-1,q-sides,q,q-1))
+    core=mesh_object(cid+'_layered_long_beard_volume',verts,[tuple(reversed(face)) for face in faces],material)
+    # The outer surface receives a full circumference of softly curving fibres;
+    # side views therefore expose hair rather than an untextured smooth core.
+    groom=GroomMesh();rng=random.Random(cid+'-beard-envelope')
+    for strand in range(450 if quality=='high' else 180):
+        a=rng.random()*math.tau;end=.90+.14*rng.random();points=[]
+        for j in range(7 if quality=='high' else 5):
+            t=j/(6 if quality=='high' else 4)*end;angle=a+.045*math.sin(t*5+a)
+            point=surface(min(.995,t),angle)
+            if t>.995:point.y-=(t-.995)*length
+            point+=Vector((math.sin(angle),0,math.cos(angle)))*.00065
+            points.append(point)
+        groom.fibre(points,(.00043 if quality=='high' else .0008)*(.75+.5*rng.random()),.65+rng.random()*.85)
+    return [core,groom.object(cid+'_layered_beard_envelope',material)]
 
 def add_beard(cid,p,bvh,material,head,quality='high'):
     if not p['beard']:return []
     long=cid in ('hai','zo');rng=random.Random(cid+'-groom')
     groom=GroomMesh();me=head.data;me.calc_loop_triangles();triangles=[];areas=[];area=0
+    masses=[beard_root_mass(cid,p,head,material)]
+    if long:masses.extend(long_beard_mass(cid,p,material,quality))
     # Sample by triangle area, so source topology density cannot make clumps or
     # regular rows. Roots lie on the anatomical surface, including the underside.
     for tri in me.loop_triangles:
@@ -514,11 +715,11 @@ def add_beard(cid,p,bvh,material,head,quality='high'):
             # Root every long lock in a cheek/jaw follicle. The lower mass has
             # an oval cross-section: side fibres wrap behind the chin rather
             # than all collapsing into the same thin front-facing sheet.
-            hanging={'hai':.112,'zo':.177}[cid]
+            hanging={'hai':.135,'zo':.177}[cid]
             root_band=smooth(-.026,-.067,y)
             length=mix(.017,hanging,root_band)*(.90+.14*jitter)*(.72+.28*gauss(x,.033))
             target_y=-.077-length
-            target_x=x*(.22+.16*jitter)+.003*math.sin(phase)
+            target_x=x*((.34 if cid=='hai' else .45)+.14*jitter)+.004*math.sin(phase)
             target_z=.065+(.014 if cid=='hai' else .010)*math.sin(phase)+.25*(z-.050)
             target=Vector((target_x,target_y,target_z))
             points=[]
@@ -535,9 +736,10 @@ def add_beard(cid,p,bvh,material,head,quality='high'):
                 points.append(point)
             radius=(.00065 if quality=='high' else .00135)*(.65+.65*jitter)
         else:
-            base={'u':.0095,'kai':.022,'haku':.016,'chin':.026}[cid]
+            base={'u':.0095,'kai':.034,'haku':.014,'chin':.020}[cid]
             chin=gauss(x,.029)*smooth(-.040,-.071,y)
             length=base*(.50+.65*jitter)*(.62+.38*chin)
+            if cid=='chin':length*=.32+.68*gauss(x,.009)
             if cid=='kai':length*=1+.25*math.sin(x*173+y*113)**2
             direction=Vector((side*.15,-.92,.12))
             points=[]
@@ -555,10 +757,23 @@ def add_beard(cid,p,bvh,material,head,quality='high'):
     # The moustache is a small groom in two flowing lobes, leaving the philtrum
     # and vermilion readable instead of covering the mouth with a single tube.
     reach={'u':.025,'kai':.034,'hai':.031,'zo':.032,'haku':.028,'chin':.023}[cid]
+    tail={'u':.010,'kai':.012,'hai':.010,'zo':.012,'haku':.009,'chin':.005}[cid]
     for side in (-1,1):
+        # Two coherent lobes follow the upper lip and overlap at the philtrum.
+        vv=[];ff=[];rows=31
+        for j in range(rows):
+            t=j/(rows-1);x=side*mix(.0006,reach,t)
+            center_y=-.0268-.003*t-tail*t**3
+            half=(.0012 if cid=='chin' else .0024 if cid=='kai' else .0018)*(.30+.70*math.sin(math.pi*t)**.65)
+            for k in range(5):
+                u=k/4*2-1;y=center_y+u*half;z=sample(bvh,x,y)+.0002+.0011*(1-u*u)*math.sin(math.pi*t)
+                vv.append((x,y,z))
+                if j and k:
+                    q=j*5+k;face=(q-6,q-5,q,q-1);ff.append(tuple(reversed(face)) if side>0 else face)
+        masses.append(mesh_object(cid+'_flowing_moustache_lobe',vv,ff,material))
         for strand in range(180 if quality=='high' else 100):
             u=rng.random();x=side*mix(.002,reach*.87,u)
-            y=-.0268-.002*u+(rng.random()-.5)*(.0044 if cid=='kai' else .0032)
+            y=-.0268-.002*u-tail*u**3+(rng.random()-.5)*(.0044 if cid=='kai' else .0032)
             root=Vector((x,y,sample(bvh,x,y)+.00016));points=[]
             extent=(.004+.007*u)*( .75+.5*rng.random())
             for j in range(3):
@@ -566,7 +781,7 @@ def add_beard(cid,p,bvh,material,head,quality='high'):
                 zz=sample(bvh,xx,yy)+.00025+.0008*math.sin(math.pi*t)
                 points.append(Vector((xx,yy,zz)))
             groom.fibre(points,(.00021 if cid=='u' else .00030)*(.8+.4*rng.random())*(1 if quality=='high' else 1.5),.72+.8*rng.random(),.22)
-    return [groom.object(cid+'_anatomical_fibre_beard',material)]
+    return masses+[groom.object(cid+'_anatomical_fibre_beard',material)]
 
 def join_parts(parts,name):
     bpy.ops.object.select_all(action='DESELECT')
@@ -658,20 +873,27 @@ def color_hair(ob,p,facial=False):
     l.new(noise.outputs['Fac'],bump.inputs['Height']);l.new(bump.outputs['Normal'],n.get('Principled BSDF').inputs['Normal'])
 
 assets={};render_objects={};base_coords={}
-for q,level in [('high',1),('low',0)]:
+for q in QUALITIES:
+    level=1 if q=='high' else 0
     coords,faces=normalized_source(level)
     temp=mesh_object('normalized_neck_template',coords,faces,mat('temp',(.5,.5,.5)))
+    if q=='high':
+        # High portraits need enough source topology for the orbital bags and
+        # broad age folds to be sculpted into the surface, rather than painted.
+        sub=temp.modifiers.new('Portrait sculpt resolution','SUBSURF');sub.levels=1;sub.render_levels=1
+        bpy.context.view_layer.objects.active=temp
+        bpy.ops.object.modifier_apply(modifier=sub.name)
     trim_neck(temp)
     base_coords[q]=([v.co.copy() for v in temp.data.vertices],[tuple(f.vertices) for f in temp.data.polygons])
     bpy.data.objects.remove(temp,do_unlink=True)
 source.modifiers[0].levels=1
 for cid,p in CAST.items():
-    if PROTO and cid!='ryo':continue
+    if SELECTED and cid not in SELECTED:continue
     record={'lod':{},'skin':p['skin'],'hair':p['hair'],'age':p['age']}
     eye_anchors=[eye_anchor(e,p) for e in BASE_EYES]
     record['eyeForm']=dict(EYE_FORMS[cid])
     record['anchors']={'eyes':eye_anchors,'hat':{'offset':[0,.006,-.005],'scale':[p['width']*.98,1,1]},'crown':[0,.137,-.027],'chin':[0,-.068*p['length'],.045],'neck':[0,-.205,-.020]}
-    for quality in ('high','low'):
+    for quality in QUALITIES:
         coords,faces=base_coords[quality]
         skin=mat(cid+'_'+quality+'_skin',rgb(p['skin']),.54 if p['age']>.5 else .48)
         head=mesh_object(cid+'_'+quality+'_skin',[sculpt(v,p) for v in coords],faces,skin)
@@ -686,13 +908,13 @@ for cid,p in CAST.items():
             beard=join_parts(beardparts,cid+'_'+quality+'_beard');color_hair(beard,p,True);parts['beard']=beard
         record['lod'][quality]={name:export_mesh(ob) for name,ob in parts.items()}
         for ob in parts.values():ob['part']=ob.name.rsplit('_',1)[-1];ob['cast_id']=cid;ob.hide_render=True;ob.hide_set(True)
-        if quality=='high':render_objects[cid]=list(parts.values())+eyes_render(cid,p,eye_anchors)
+        if quality==QUALITIES[0]:render_objects[cid]=list(parts.values())+eyes_render(cid,p,eye_anchors)
     for ob in render_objects[cid]:ob.hide_render=True;ob.hide_set(True)
     assets[cid]=record
 
 out={'version':2,'indexEncoding':'delta-zigzag-varint','source':'Blender Studio Human Base Meshes v1.2.0 / CC0','quantization':.00001,'indices':INDEX_POOL,'cast':assets}
 js='/* Generated by tools/build-head-assets.py. CC0 source attribution: docs/assets/manifest.csv. */\nwindow.KM_HEAD_ASSETS='+json.dumps(out,separators=(',',':'))+';\n'
-export_path=(OUT/'head-assets-prototype.js') if PROTO else (ROOT/'src/js/koumon-head-assets.js')
+export_path=(OUT/'head-assets-preview.js') if PREVIEW else (ROOT/'src/js/koumon-head-assets.js')
 export_path.write_text(js,encoding='utf-8')
 if '--packing-audit' in sys.argv:
     # Keep a same-export raw reference: Blender may choose equivalent quad
@@ -704,6 +926,8 @@ setup_render()
 if '--quick-review' in sys.argv:
     bpy.context.scene.cycles.samples=24;bpy.context.scene.render.resolution_x=512;bpy.context.scene.render.resolution_y=640
 views=[('front',(0,.0,.7)),('threequarter',(.40,.025,.55)),('side',(.7,.0,.001)),('top',(.12,.6,.25))]
+if '--views' in sys.argv:
+    requested_views=sys.argv[sys.argv.index('--views')+1].split(',');views=[v for v in views if v[0] in requested_views]
 if '--no-render' in sys.argv:views=[]
 review_cast=sys.argv[sys.argv.index('--review-cast')+1].split(',') if '--review-cast' in sys.argv else None
 for cid,objects in render_objects.items():
@@ -711,18 +935,18 @@ for cid,objects in render_objects.items():
     for ob in objects:ob.hide_render=False;ob.hide_set(False)
     for name,pos in views:
         if '--quick-review' in sys.argv and not review_cast and (cid not in ('u','kai','ryo','sou','chin') or name not in ('front','threequarter','side')):continue
-        if not PROTO and '--all-views' not in sys.argv and cid!='ryo' and name not in ('front','threequarter'):continue
+        if not PREVIEW and '--all-views' not in sys.argv and cid!='ryo' and name not in ('front','threequarter'):continue
         target_camera(pos,(0,-.035,.005));bpy.context.scene.render.filepath=str(OUT/(cid+'-head-'+name+'.png'));bpy.ops.render.render(write_still=True)
     for ob in objects:ob.hide_render=True;ob.hide_set(True)
-for ob in render_objects['ryo']:ob.hide_render=False;ob.hide_set(False)
+for ob in render_objects.get('ryo',next(iter(render_objects.values()))):ob.hide_render=False;ob.hide_set(False)
 target_camera((.40,.025,.55),(0,-.035,.005))
 for ob in backup.objects:
     if ob.asset_data:
         print('ASSET_AUTHOR',ob.name,ob.asset_data.author,ob.asset_data.description)
 # Loaded cameras, stale materials and unused source blocks never enter exports.
 bpy.ops.outliner.orphans_purge(do_local_ids=True,do_linked_ids=False,do_recursive=True)
-bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'heads-assets.blend'))
-if not PROTO:
+bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'heads-portrait.blend'),compress=True)
+if not PREVIEW:
     editable=ROOT/'source-assets';editable.mkdir(exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(editable/'heads.blend'),compress=True)
 print('HEAD_ASSETS',[(k,{q:{n:(d['v'],d['t']) for n,d in v.items()} for q,v in a['lod'].items()}) for k,a in assets.items()])

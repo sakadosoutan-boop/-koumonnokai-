@@ -23,19 +23,31 @@ for i,g in enumerate(data['geometries']):
     meshes.append(mesh)
 materials=[]
 for i,m in enumerate(data['materials']):
-    mat=bpy.data.materials.new('atelier-material-%03d'%i);mat.diffuse_color=(*m['color'],1);mat.use_nodes=True
+    mat=bpy.data.materials.new(m.get('name') or 'atelier-material-%03d'%i);mat.diffuse_color=(*m['color'],1);mat.use_nodes=True
     bsdf=mat.node_tree.nodes.get('Principled BSDF');bsdf.inputs['Base Color'].default_value=(*m['color'],1);bsdf.inputs['Roughness'].default_value=m['roughness'];bsdf.inputs['Metallic'].default_value=m['metalness']
+    nodes=mat.node_tree.nodes;links=mat.node_tree.links
+    color=nodes.new('ShaderNodeRGB');color.outputs[0].default_value=(*m['color'],1);color_output=color.outputs[0]
+    def multiply(a,b):
+        node=nodes.new('ShaderNodeMixRGB');node.blend_type='MULTIPLY';node.inputs[0].default_value=1;links.new(a,node.inputs[1]);links.new(b,node.inputs[2]);return node.outputs['Color']
     if m.get('vertexColors'):
-        attr=mat.node_tree.nodes.new('ShaderNodeVertexColor');attr.layer_name='GarmentColor';mat.node_tree.links.new(attr.outputs['Color'],bsdf.inputs['Base Color'])
-    if m.get('map') and os.path.exists(m['map']):
-        image=bpy.data.images.load(m['map']);image.colorspace_settings.name='Non-Color';image.pack();tex=mat.node_tree.nodes.new('ShaderNodeTexImage');tex.image=image
-        mapping=mat.node_tree.nodes.new('ShaderNodeVectorMath');mapping.operation='MULTIPLY';mapping.inputs[1].default_value=(*m['repeat'],1)
-        uv=mat.node_tree.nodes.new('ShaderNodeTexCoord');mat.node_tree.links.new(uv.outputs['UV'],mapping.inputs[0]);mat.node_tree.links.new(mapping.outputs['Vector'],tex.inputs['Vector'])
-        mul=mat.node_tree.nodes.new('ShaderNodeMixRGB');mul.blend_type='MULTIPLY';mul.inputs[0].default_value=1;mul.inputs[1].default_value=(*m['color'],1);mat.node_tree.links.new(tex.outputs['Color'],mul.inputs[2]);mat.node_tree.links.new(mul.outputs['Color'],bsdf.inputs['Base Color'])
+        attr=nodes.new('ShaderNodeVertexColor');attr.layer_name='GarmentColor';color_output=multiply(color_output,attr.outputs['Color'])
+    for channel,texture in m.get('maps',{}).items():
+        if not os.path.exists(texture['file']):continue
+        image=bpy.data.images.load(texture['file'],check_existing=True);image.colorspace_settings.name='sRGB' if texture.get('srgb') else 'Non-Color';image.pack();tex=nodes.new('ShaderNodeTexImage');tex.image=image;tex.label=channel
+        mapping=nodes.new('ShaderNodeVectorMath');mapping.operation='MULTIPLY';mapping.inputs[1].default_value=(*texture['repeat'],1)
+        uv=nodes.new('ShaderNodeTexCoord');links.new(uv.outputs['UV'],mapping.inputs[0]);links.new(mapping.outputs['Vector'],tex.inputs['Vector'])
+        if channel=='map':color_output=multiply(color_output,tex.outputs['Color'])
+        elif channel=='bumpMap':
+            bump=nodes.new('ShaderNodeBump');bump.inputs['Strength'].default_value=1;bump.inputs['Distance'].default_value=m.get('bumpScale',.0002);links.new(tex.outputs['Color'],bump.inputs['Height']);links.new(bump.outputs['Normal'],bsdf.inputs['Normal'])
+        elif channel in ['roughnessMap','metalnessMap']:
+            amount=nodes.new('ShaderNodeMath');amount.operation='MULTIPLY';amount.inputs[1].default_value=m['roughness'] if channel=='roughnessMap' else m['metalness'];links.new(tex.outputs['Color'],amount.inputs[0]);links.new(amount.outputs[0],bsdf.inputs['Roughness' if channel=='roughnessMap' else 'Metallic'])
+    object_info=nodes.new('ShaderNodeObjectInfo');color_output=multiply(color_output,object_info.outputs['Color']);links.new(color_output,bsdf.inputs['Base Color'])
     materials.append(mat)
 for i,o in enumerate(data['objects']):
     mesh=meshes[o['geometry']]
-    ob=bpy.data.objects.new(o['name'],mesh)
+    ob=bpy.data.objects.new(o.get('character','cast')+' / '+o['name'],mesh)
+    ob.color=(*o.get('tint',[1,1,1]),1)
+    ob['character']=o.get('character','cast')
     # Runtime Y-up to Blender Z-up, while preserving a front-facing source scene.
     transform=Matrix((o['matrix'][0:4],o['matrix'][4:8],o['matrix'][8:12],o['matrix'][12:16])).transposed()
     conversion=Matrix(((1,0,0,0),(0,0,-1,0),(0,1,0,0),(0,0,0,1)))

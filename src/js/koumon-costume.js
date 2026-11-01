@@ -27,8 +27,31 @@
     }
     ctx.putImageData(im,0,0);var tex=new T.CanvasTexture(canvas);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(kind.indexOf('cloth')===0?7:3,kind.indexOf('cloth')===0?9:4);tex.anisotropy=4;if(kind==='cloth-color')tex.encoding=T.sRGBEncoding;SURFACES[kind]=tex;return tex;
   }
-  function fabric(mat) {
-    if(mat.userData.sewnFabric)return mat;mat.userData.sewnFabric=true;mat.map=grain('cloth-color');mat.bumpMap=grain('cloth-height');mat.bumpScale=.00023;mat.roughnessMap=grain('cloth-rough');mat.roughness=.96;mat.metalness=0;mat.needsUpdate=true;return mat;
+  function brocade(family) {
+    var key='brocade-'+family;if(SURFACES[key])return SURFACES[key];
+    var canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;var ctx=canvas.getContext('2d');
+    ctx.fillStyle='#ededeb';ctx.fillRect(0,0,512,512);ctx.lineCap='round';ctx.lineJoin='round';
+    var dense=family==='ochre'||family==='teal',light=family==='slate'||family==='blue',violet=family==='violet';
+    function scroll(x,y,flip){
+      ctx.save();ctx.translate(x,y);ctx.scale(flip,1);ctx.strokeStyle=dense?'#dedbd3':light?'#e0e2e3':violet?'#ded8df':'#e3e0db';ctx.lineWidth=3.1;
+      // Interlaced shoots are drawn as a repeated woven design. Adjacent
+      // leaves share a stem, so the pattern follows one authored flow.
+      ctx.beginPath();ctx.moveTo(-54,94);ctx.bezierCurveTo(34,63,-52,-9,16,-51);ctx.bezierCurveTo(62,-77,92,-12,51,4);ctx.bezierCurveTo(12,13,21,-30,43,-25);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(-25,47);ctx.bezierCurveTo(-65,30,-74,-6,-43,-21);ctx.bezierCurveTo(-29,8,-42,27,-25,47);ctx.moveTo(-16,14);ctx.bezierCurveTo(24,18,52,45,21,63);ctx.bezierCurveTo(-4,55,5,27,-16,14);ctx.stroke();
+      ctx.strokeStyle='#f9f7ef';ctx.globalAlpha=.45;ctx.lineWidth=1.1;ctx.beginPath();ctx.moveTo(-53,97);ctx.bezierCurveTo(38,64,-48,-8,18,-48);ctx.stroke();ctx.restore();
+    }
+    for(var row=-1;row<4;row++)for(var col=-1;col<4;col++)scroll(col*170+(row%2)*85,row*170,(col+row)%2?1:-1);
+    // Fine, low-contrast crossed thread is separate from the larger brocade.
+    ctx.globalAlpha=.12;ctx.lineWidth=.6;ctx.strokeStyle='#8a8d8c';
+    for(var j=0;j<512;j+=4){ctx.beginPath();ctx.moveTo(j,0);ctx.lineTo(j,512);ctx.moveTo(0,j);ctx.lineTo(512,j);ctx.stroke();}
+    var texture=new T.CanvasTexture(canvas);texture.encoding=T.sRGBEncoding;texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.repeat.set(7.2,4.5);texture.anisotropy=8;SURFACES[key]=texture;return texture;
+  }
+  function clothFamily(color) {
+    for(var id in STYLES)if(STYLES[id].robe===color)return STYLES[id].fabric||'linen';return 'linen';
+  }
+  function fabric(mat,family) {
+    family=family||'linen';if(mat.userData.sewnFabric===family)return mat;mat.userData.sewnFabric=family;
+    mat.name='Woven '+family+' garment';mat.map=family==='linen'||family==='rugged'?grain('cloth-color'):brocade(family);mat.bumpMap=grain('cloth-height');mat.bumpScale=family==='rugged'?.00035:.00019;mat.roughnessMap=grain('cloth-rough');mat.roughness=family==='linen'||family==='rugged'?.96:.84;mat.metalness=0;mat.needsUpdate=true;return mat;
   }
   function leatherMaterial(c) {return material(c,.78,0,{side:T.DoubleSide,bumpMap:grain('leather'),bumpScale:.00034});}
   function paint(g, fn) {
@@ -99,7 +122,10 @@
         var line2 = sd * (.095 + .055*t);
         crease += -.006*bell(x-line2,.012) + .006*bell(x-line2+sd*.015,.023);
       });
-      z += front * (crease*belt + .007*bell(y+.09,.13)*bell(x,.15));
+      var ax=Math.abs(x),shoulderGather=.005*bell(y-(.12-.32*ax),.013)-.003*bell(y-(.10-.32*ax),.010);
+      var neckFold=.0045*bell(y-(.235-.50*ax),.006)-.0035*bell(y-(.228-.50*ax),.005)+.003*bell(y-(.211-.38*ax),.005)-.0023*bell(y-(.204-.38*ax),.005);
+      shoulderGather+=neckFold*ease(.038,.085,ax)*(1-ease(.17,.205,ax));
+      z += front * (crease*belt + .007*bell(y+.09,.13)*bell(x,.15)+shoulderGather*ease(.03,.10,Math.abs(x)));
       z -= back * ease(-.34,-.18,y) * (1-ease(.10,.18,y)) * (.010*Math.sin(a*5+.6) + .005*Math.sin(a*9-.8));
       var side = Math.pow(Math.abs(sn),8); z += cs * side * .007 * Math.sin((y+.32)*21 + a*2) * (1-ease(.09,.18,y));
       return [x*s,y*s,z*s];
@@ -109,28 +135,32 @@
   }
 
   var STYLES = {
-    hai:{robe:0x28484b,trim:0x182e30,inner:0xcfc7b4,belt:0x26211c},
+    hai:{robe:0x25464c,trim:0x22383d,thread:0x9c8b65,inner:0xc8c2ae,belt:0x26211c,fabric:'teal'},
     ko:{robe:0x1d1719,trim:0x68372a,inner:0xd5cbb5,belt:0x9a783a},
-    ryo:{robe:0x495865,trim:0x2a3540,inner:0xd8d3c7,belt:0x25282d},
-    zo:{robe:0x817054,trim:0x393023,inner:0xc9bd9d,belt:0x3d3024},
-    haku:{robe:0x554653,trim:0x30262e,inner:0xc5bdaf,belt:0x302427},
-    chin:{robe:0x495560,trim:0x2a3239,inner:0xd2d0c5,belt:0x24282b},
-    u:{robe:0x602821,trim:0x2c2523,inner:0xc7b69b,belt:0x392b21,lace:0x57241c,cape:0x68231d,metal:0x252123,edge:0x98784b},
-    kai:{robe:0x28353a,trim:0x18272c,inner:0xb4afa0,belt:0x2d241c,lace:0x202c2c,metal:0x41484b,edge:0x635d4b},
-    sou:{robe:0x704733,trim:0x39271f,inner:0xb8a78e,belt:0x38251b,lace:0x573727,metal:0x4b3a2d,edge:0x8a7050}
+    ryo:{robe:0x344856,trim:0x263740,thread:0x758692,inner:0xccc7b8,belt:0x25282d,fabric:'blue'},
+    zo:{robe:0x8b7755,trim:0x493c2b,thread:0xa68e60,inner:0xc9bd9d,belt:0x3d3024,fabric:'ochre'},
+    haku:{robe:0x5c495d,trim:0x403441,thread:0x9a8493,inner:0xc5bdaf,belt:0x302427,fabric:'violet'},
+    chin:{robe:0x354854,trim:0x293944,thread:0x7e8e9b,inner:0xc9c8be,belt:0x24282b,fabric:'slate'},
+    u:{robe:0x602b25,trim:0x3c2924,thread:0x9b7950,inner:0x99816b,belt:0x392b21,lace:0x472b28,cape:0x68231d,metal:0x252123,edge:0x98784b,legs:0x302624,fabric:'crimson',scarf:0x722c26},
+    kai:{robe:0x252f32,trim:0x172224,thread:0x5b6b6c,inner:0x7f8176,belt:0x2d241c,lace:0x233033,metal:0x323638,edge:0x635d4b,legs:0x283033,fabric:'rugged',scarf:0x263337},
+    sou:{robe:0x684c3d,trim:0x382b26,thread:0x8e7458,inner:0xb8a78e,belt:0x38251b,lace:0x4b372e,metal:0x423a31,edge:0x8a7050,legs:0x4c3a30,fabric:'linen',scarf:0x76513d}
   };
   function resolveStyle(id, c) { return Object.assign({},c,STYLES[id] || {}); }
   var FABRICS = {};
-  function trimMaterial(color) {
-    var key = color.toString(); if(FABRICS[key]) return FABRICS[key];
-    var canvas = document.createElement('canvas'); canvas.width=128;canvas.height=256;var c=canvas.getContext('2d');
-    c.fillStyle='#e5e1d8';c.fillRect(0,0,128,256);
-    c.strokeStyle='rgba(48,42,32,.13)';c.lineWidth=1.5;
-    // Quiet woven meanders, following the long grain of the lapel.
-    for(var y=-32;y<280;y+=64) for(var x=-16;x<150;x+=48){ c.beginPath();c.moveTo(x,y+30);c.bezierCurveTo(x+35,y-4,x+48,y+36,x+19,y+43);c.bezierCurveTo(x+4,y+44,x+8,y+21,x+24,y+28);c.stroke(); }
-    c.strokeStyle='rgba(230,219,181,.24)';c.lineWidth=.8;c.setLineDash([2,3]);c.beginPath();c.moveTo(9,0);c.lineTo(9,256);c.moveTo(119,0);c.lineTo(119,256);c.stroke();
-    var tex=new T.CanvasTexture(canvas);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(1,4);
-    tex.encoding=T.sRGBEncoding;return FABRICS[key]=material(color,.91,0,{map:tex,side:T.DoubleSide,bumpMap:grain('cloth-height'),bumpScale:.00018});
+  function trimMaterial(color,thread,plain) {
+    var key=color+'-'+thread+'-'+plain;if(FABRICS[key])return FABRICS[key];
+    var canvas=document.createElement('canvas');canvas.width=256;canvas.height=512;var ctx=canvas.getContext('2d'),base=new T.Color(color),embroidery=new T.Color(thread||0x8d8269);
+    embroidery.lerp(base,.34);ctx.fillStyle='#'+base.getHexString();ctx.fillRect(0,0,256,512);ctx.lineCap='round';ctx.strokeStyle='#'+embroidery.getHexString();ctx.globalAlpha=.68;ctx.lineWidth=1.4;
+    [21,28,228,235].forEach(function(x){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,512);ctx.stroke();});
+    if(!plain)for(var y=-64;y<550;y+=64){
+      // Fine interlaced leaf brocade, smaller than the band width. The border
+      // reads as woven edging at portrait distance instead of isolated logos.
+      ctx.lineWidth=1.25;ctx.beginPath();ctx.moveTo(113,y);ctx.bezierCurveTo(165,y+18,91,y+45,143,y+64);ctx.moveTo(143,y);ctx.bezierCurveTo(91,y+18,165,y+45,113,y+64);ctx.stroke();
+      [-1,1].forEach(function(sd){ctx.beginPath();ctx.moveTo(128+sd*8,y+16);ctx.bezierCurveTo(128+sd*35,y+4,128+sd*44,y+25,128+sd*18,y+31);ctx.bezierCurveTo(128+sd*25,y+19,128+sd*18,y+18,128+sd*8,y+16);ctx.moveTo(128+sd*8,y+48);ctx.bezierCurveTo(128+sd*35,y+36,128+sd*44,y+57,128+sd*18,y+63);ctx.stroke();});
+    }
+    ctx.globalAlpha=.35;ctx.lineWidth=1;ctx.setLineDash([3,4]);[11,245].forEach(function(x){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,512);ctx.stroke();});
+    var tex=new T.CanvasTexture(canvas);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(1,2.1);tex.encoding=T.sRGBEncoding;tex.anisotropy=8;
+    var mat=material(0xffffff,.78,0,{map:tex,side:T.DoubleSide,bumpMap:grain('cloth-height'),bumpScale:.00019});mat.name='Sewn embroidered collar border';return FABRICS[key]=mat;
   }
   /* A folded lapel is a volume with a rolled inner edge. Its cross section
      lifts at the neck and relaxes onto the chest, instead of being a stripe. */
@@ -148,26 +178,38 @@
     var cut = armored ? -.115 : -.255;
     function pts(side,under){
       var xy=under?[[-.048,.232],[-.052,.203],[-.047,.169],[-.008,.114],[.010,.086]]:[[.048,.232],[.052,.202],[.046,.156],[-.012,.064],[-.082,-.071],[-.144,cut]];
-      return xy.map(function(p,i){var z=i===0?-.015:i===1?.045:chestFront(p[0],p[1],b)+.007+(under?0:.007);return [p[0],p[1],z];});
+      return xy.map(function(p,i){var z=i===0?-.015:i===1?.045:chestFront(p[0],p[1],b)+.007+(under?0:.007);if(armored&&i>1)z-=.022*ease(.17,.05,p[1]);return [p[0],p[1],z];});
     }
-    var broad=trimMaterial(c.trim),lining=fabric(material(c.inner||0xd2c6b2,.94,0,{side:T.DoubleSide}));
+    var broad=trimMaterial(c.trim,c.thread,armored),lining=fabric(material(c.inner||0xd2c6b2,.94,0,{side:T.DoubleSide}));
+    var backingMat=fabric(material(c.scarf||c.robe,.88,0,{side:T.DoubleSide}),armored?'rugged':c.fabric);
     var under=pts(-1,true),over=pts(1,false);
     // The facing continues up behind the neck-side lapels. A lower top edge
     // exposed the hollow interior between the shirt and the anatomical neck.
-    var facing=sheet(16,12,function(u,v){var y=mix(.095,.190,u)-.009*ease(.65,1,u)*Math.pow(v*2-1,2),half=mix(.009,.029,u),x=(v*2-1)*half,z=mix(chestFront(x,y,b)-.008,.026,ease(.35,1,u));return [x*s,y*s,z*s];},.0016*s,false,true);
-    group.add(object(facing,lining,'underrobe-throat-facing'));
-    group.add(ribbon(under,function(u){return mix(.033,.046,u);},.004,broad,'under-collar',function(u,v){return .003*Math.sin(v*PI)*(1-.5*u);},s));
-    group.add(ribbon(over,function(u){return mix(.035,armored?.048:.052,u);},.004,broad,'rolled-over-lapel',function(u,v){return .004*Math.sin(v*PI);},s));
+    var facing=sheet(16,12,function(u,v){var y=mix(.095,.190,u)-.009*ease(.65,1,u)*Math.pow(v*2-1,2),half=mix(.009,.029,u),x=(v*2-1)*half,z=mix(chestFront(x,y,b)-.008,.049,ease(.35,1,u));return [x*s,y*s,z*s];},.0016*s,false,true);
+    group.add(object(facing,backingMat,'underrobe-throat-facing'));
+    if(armored){
+      // A single draped collar skirt is gathered at the nape and lies on the
+      // shoulder cloth. The red/teal/brown wrap remains under the cuirass lip.
+      var wrap=sheet(26,68,function(u,v){var a=mix(-PI*.91,PI*.91,v),sn=Math.sin(a),cs=Math.cos(a),y=.212-.082*u-.022*u*Math.pow(Math.abs(sn),1.3),d=bodySize(y,b);
+        var x=mix(sn*.058,cpow(sn,2/2.6)*(d[0]+.004),u),z=mix(cs*.046,cpow(cs,2/2.4)*(d[1]+.006),u)+cs*.025*Math.sin(u*PI);
+        y+=.005*Math.sin(u*PI*5+a*2)*Math.sin(u*PI);z+=.004*Math.sin(u*PI*5+a*2)*Math.sin(u*PI);return [x*s,y*s,z*s];},.0038*s,false,true);
+      group.add(object(wrap,backingMat,'gathered-neck-and-shoulder-wrap'));
+    }
+    group.add(ribbon(under,function(u){return mix(.039,armored?.050:.058,u);},.005,armored?backingMat:broad,'under-collar',function(u,v){return .004*Math.sin(v*PI)*(1-.35*u);},s));
+    group.add(ribbon(over,function(u){return mix(.040,armored?.064:.067,u);},.005,armored?backingMat:broad,'rolled-over-lapel',function(u,v){return .0055*Math.sin(v*PI);},s));
+    // Narrow sewn piping follows the rolled outer collar, sharing its curve.
+    // Its motif is mapped to the cloth itself, rather than floating jewelry.
+    if(armored){var outerEdge=over.map(function(p,i,all){var A=all[Math.max(0,i-1)],B=all[Math.min(all.length-1,i+1)],d=new V(B[0]-A[0],B[1]-A[1],0).normalize(),q=new V(-d.y,d.x,0).multiplyScalar(-.022);return [p[0]+q.x,p[1]+q.y,p[2]+.002];});group.add(ribbon(outerEdge,.011,.002,broad,'bound-armored-wrap-edge',function(u,v){return .0014*Math.sin(v*PI);},s));}
     // The pale underrobe is a separate sewn layer, visible only inside the V.
     [under.slice(0,4),over.slice(0,4)].forEach(function(path,k){
-      path=path.map(function(p,i,all){var q0=all[Math.max(0,i-1)],q1=all[Math.min(all.length-1,i+1)],d=new V(q1[0]-q0[0],q1[1]-q0[1],0).normalize(),q=new V(-d.y,d.x,0).multiplyScalar(k?-.017:.015);return [p[0]+q.x,p[1]+q.y,p[2]-.003];});
+      path=path.map(function(p,i,all){var q0=all[Math.max(0,i-1)],q1=all[Math.min(all.length-1,i+1)],d=new V(q1[0]-q0[0],q1[1]-q0[1],0).normalize(),q=new V(-d.y,d.x,0).multiplyScalar(k?-.023:.021);return [p[0]+q.x,p[1]+q.y,p[2]-.003];});
       // A broad flat facing sits under the outer lapel. Recomputing its Z from
       // the chest would pull the neck end forward into a floating white loop.
-      group.add(ribbon(path,.010,.002,lining,'overlapped-linen-inner-collar',function(u,v){return .0007*Math.sin(v*PI);},s));
+      group.add(ribbon(path,armored?.007:.012,.002,lining,'overlapped-linen-inner-collar',function(u,v){return .0007*Math.sin(v*PI);},s));
     });
     // Back collar has a stand, with a folded top. It bridges both lapels at the nape.
     var back=sheet(32,6,function(u,v){var a=mix(PI*.47,PI*1.53,u),r=.054+(v-.5)*.010;return [Math.sin(a)*r*s,(.217+(v-.5)*.031)*s,Math.cos(a)*r*.86*s];},.004*s,false,true);
-    group.add(object(back,broad,'standing-nape-collar'));return group;
+    group.add(object(back,armored?backingMat:broad,'standing-nape-collar'));return group;
   }
   function waist(c,s,b,armored) {
     var g=new T.Group();g.name=armored?'leather-girdle':'folded-silk-girdle';var color=c.belt||0x29221c;
@@ -189,7 +231,7 @@
   /* Deep folds are irregularly spaced and continue from the belt capture to
      the weighted hem. The wrapped front is a second cut piece of cloth. */
   function skirt(o,mat) {
-    fabric(mat);
+    fabric(mat,clothFamily(o.color));
     var group=new T.Group();group.name=o.seat?'seated-wrapped-robe':'standing-wrapped-robe';
     var folds=[[-2.82,.018],[-2.21,-.014],[-1.70,.020],[-1.10,-.017],[-.62,.018],[-.13,-.022],[.35,.020],[.83,-.018],[1.31,.020],[1.94,-.014],[2.44,.017],[2.92,-.016]];
     function surf(u,a,off){
@@ -214,18 +256,20 @@
     }
     function colored(geo,isWrap){var N=geo.userData.outerCount,base=new T.Color(o.color),trim=new T.Color(o.trim);return paint(geo,function(i,x,y,z,c){var j=i%N,u=Math.floor(j/(geo.userData.nv+1))/geo.userData.nu,v=(j%(geo.userData.nv+1))/geo.userData.nv;c.copy(u>.958||isWrap&&v<.035?trim:base);c.multiplyScalar(i>=N?.62:isWrap?1:.94);});}
     var full=colored(sheet(42,112,function(u,v){return surf(u,v*PI*2,0);},.0035*(o.len>.7?1:.8),true,true),false);
+    var fullUV=full.attributes.uv;for(var q=0;q<fullUV.count;q++){fullUV.setXY(q,fullUV.getX(q)*(o.r0+o.r1)*PI/.95,fullUV.getY(q)*o.len/.575);}fullUV.needsUpdate=true;
     group.add(object(full,mat,'under-robe-with-weighted-hem'));
     if(o.wrap){
       var over=colored(sheet(46,68,function(u,v){var edge=-1.45+2.60*Math.pow(u,.91),a=edge+v*3.95;return surf(u,a,.007+.004*Math.sin(v*PI));},.004,false,true),true);
+      var overUV=over.attributes.uv;for(var q=0;q<overUV.count;q++){overUV.setXY(q,overUV.getX(q)*(o.r0+o.r1)*1.975/.95,overUV.getY(q)*o.len/.575);}overUV.needsUpdate=true;
       group.add(object(over,mat,'overlapping-curved-front-panel'));
     }
     group.userData.surface=surf;return group;
   }
 
   function sleeve(o,mat) {
-    fabric(mat);
+    if(!mat.userData.sewnFabric)fabric(mat,clothFamily(o.color));
     var nu=o.upper?(QUALITY==='low'?14:22):(QUALITY==='low'?18:28),nv=QUALITY==='low'?24:40,N=(nu+1)*(nv+1),baseU=[],baseA=[],pos=[],uv=[],idx=[],s=o.scale||1,side=o.side||1;
-    for(var layer=0;layer<2;layer++)for(var i=0;i<=nu;i++)for(var j=0;j<=nv;j++){var u=i/nu,a=j/nv*PI*2;baseU.push(u);baseA.push(a);pos.push(0,0,0);uv.push(j/nv*2,u*2);}
+    for(var layer=0;layer<2;layer++)for(var i=0;i<=nu;i++)for(var j=0;j<=nv;j++){var u=i/nu,a=j/nv*PI*2;baseU.push(u);baseA.push(a);pos.push(0,0,0);uv.push(j/nv*.42,u*.54);}
     for(i=0;i<nu;i++)for(j=0;j<nv;j++){var a0=i*(nv+1)+j,b0=a0+nv+1;idx.push(a0,b0,a0+1,a0+1,b0,b0+1,a0+N,a0+1+N,b0+N,a0+1+N,b0+1+N,b0+N);}
     for(j=0;j<nv;j++){var e=nu*(nv+1)+j;idx.push(j,j+N,j+1,j+1,j+N,j+1+N,e,e+1,e+N,e+1,e+1+N,e+N);}
     // The padded shoulder root continues beneath the armhole when raised.
@@ -264,15 +308,31 @@
   }
 
   var METALS={};
+  function lacquerPlateMap() {
+    if(SURFACES.lamellaLacquer)return SURFACES.lamellaLacquer;
+    var canvas=document.createElement('canvas');canvas.width=192;canvas.height=256;var ctx=canvas.getContext('2d');ctx.fillStyle='#252121';ctx.fillRect(0,0,192,256);
+    ctx.strokeStyle='#796548';ctx.lineWidth=2;ctx.strokeRect(10,8,172,240);ctx.strokeStyle='#4e4336';ctx.lineWidth=1;ctx.strokeRect(15,13,162,230);
+    // Inlaid edge bands belong to each lacquer lamella; no floating gold
+    // overlays or extra studs are needed to distinguish the commander's suit.
+    ctx.strokeStyle='#8b6e48';ctx.beginPath();ctx.moveTo(66,19);ctx.bezierCurveTo(73,29,84,31,96,21);ctx.bezierCurveTo(108,31,119,29,126,19);ctx.stroke();
+    var tex=new T.CanvasTexture(canvas);tex.encoding=T.sRGBEncoding;tex.anisotropy=8;SURFACES.lamellaLacquer=tex;return tex;
+  }
   function metalMaterial(c) {
     var lacquer=c.armor==='lacq',key=(lacquer?'lacquer':'iron')+(c.metal||0x303033);
-    if(!METALS[key]){METALS[key]=material(c.metal||0x303033,lacquer?.31:.63,lacquer?.12:.72,{side:T.DoubleSide,bumpMap:grain(lacquer?'lacquer':'iron'),bumpScale:lacquer?.000055:.00018});METALS[key].name=lacquer?'Black oxblood lacquered armor':'Worked dark forged iron';}return METALS[key];
+    if(!METALS[key]){METALS[key]=material(lacquer?0xffffff:c.metal||0x303033,lacquer?.34:.63,lacquer?.18:.72,{side:T.DoubleSide,bumpMap:grain(lacquer?'lacquer':'iron'),bumpScale:lacquer?.000055:.00018});if(lacquer)METALS[key].map=lacquerPlateMap();METALS[key].name=lacquer?'Black lacquer lamellae with narrow brass inlay':'Worked dark forged iron';}return METALS[key];
+  }
+  function shoulderChasing(c) {
+    var key='shoulder-chasing';if(METALS[key])return METALS[key];
+    var canvas=document.createElement('canvas');canvas.width=512;canvas.height=256;var ctx=canvas.getContext('2d');ctx.fillStyle='#272322';ctx.fillRect(0,0,512,256);
+    ctx.strokeStyle='#997647';ctx.lineWidth=7;ctx.lineJoin='round';ctx.strokeRect(20,17,472,222);ctx.lineWidth=2;ctx.strokeRect(32,28,448,200);
+    for(var side=-1;side<=1;side+=2){ctx.save();ctx.translate(256,125);ctx.scale(side,1);ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(0,72);ctx.bezierCurveTo(37,60,49,31,33,4);ctx.bezierCurveTo(7,-35,45,-76,83,-50);ctx.bezierCurveTo(121,-25,95,28,68,9);ctx.bezierCurveTo(51,-3,73,-25,84,-9);ctx.stroke();ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(37,35);ctx.bezierCurveTo(97,54,156,37,141,-15);ctx.bezierCurveTo(180,-7,195,30,169,47);ctx.moveTo(43,-23);ctx.bezierCurveTo(31,-73,6,-86,0,-65);ctx.stroke();ctx.restore();}
+    var tex=new T.CanvasTexture(canvas);tex.encoding=T.sRGBEncoding;tex.anisotropy=8;METALS[key]=material(0xffffff,.42,.64,{map:tex,side:T.DoubleSide,bumpMap:grain('lacquer'),bumpScale:.000065});METALS[key].name='Chased brass inlay on black shoulder plate';return METALS[key];
   }
   function cord(points,r,color,name){return object(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(function(p){return new V(p[0],p[1],p[2]);})),Math.max(12,points.length*3),r,5,false),color&&color.isMaterial?color:material(color,.84),name);}
   function plate(w,h) {
     var sh=new T.Shape(),r=.004;sh.moveTo(-w/2+r,-h/2);sh.lineTo(w/2-r,-h/2);sh.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r);sh.lineTo(w/2,h/2-.002);sh.quadraticCurveTo(w/2,h/2,w/2-.002,h/2);sh.lineTo(-w/2+.002,h/2);sh.quadraticCurveTo(-w/2,h/2,-w/2,h/2-.002);sh.lineTo(-w/2,-h/2+r);sh.quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2);
     var g=new T.ExtrudeGeometry(sh,{depth:.004,bevelEnabled:QUALITY!=='low',bevelSize:.0012,bevelThickness:.0012,bevelSegments:1,curveSegments:QUALITY==='low'?1:2,steps:1}),p=g.attributes.position;
-    for(var i=0;i<p.count;i++)p.setZ(i,p.getZ(i)+.003*(1-Math.pow(p.getX(i)/(w/2),2)));g.computeVertexNormals();return g;
+    var uv=g.attributes.uv;for(var i=0;i<p.count;i++){p.setZ(i,p.getZ(i)+.003*(1-Math.pow(p.getX(i)/(w/2),2)));uv.setXY(i,.5+p.getX(i)/w,.5+p.getY(i)/h);}uv.needsUpdate=true;g.computeVertexNormals();return g;
   }
   function ringSample(a,y,b,offset){var d=bodySize(y,b),x=cpow(Math.sin(a),2/2.6)*(d[0]+offset),z=cpow(Math.cos(a),2/2.4)*(d[1]+offset);return [x,y,z];}
   function stud(group,point,normal,s,c){var m=object(new T.SphereGeometry(.0025*s,7,5),material(c,.45,.65),'peened-rivet');m.position.copy(point);m.scale.z=.55;m.quaternion.setFromUnitVectors(new V(0,0,1),normal);group.add(m);}
@@ -293,7 +353,7 @@
             var reach=.052+.010*ease(0,.40,t)-.007*ease(.45,1,t),socket=-.025*(1-ease(0,.26,t)),depth=.066-.009*t;
             return [sd*(Math.cos(a)*reach+socket-.006*(1-Math.cos(a)))*s,(yy-.006*Math.abs(Math.sin(a)))*s,Math.sin(a)*depth*s];
           }
-          group.add(object(sheet(8,28,p,.0045*s,false,sd<0),steel,'sloping-overlapped-shoulder-lame-'+l));
+          group.add(object(sheet(8,28,p,.0045*s,false,sd<0),c.gold&&l===0?shoulderChasing(c):steel,'sloping-overlapped-shoulder-lame-'+l));
           var low=[];for(var j=0;j<=28;j++)low.push(p(1,j/28));rim(low,'bound-shoulder-lower-edge');
           if(QUALITY!=='low')[-.75,.0,.75].forEach(function(a){var q=p(.27,(a+1.42)/2.84);stud(group,new V(q[0],q[1]+.002*s,q[2]),new V(sd*Math.cos(a),.3,Math.sin(a)).normalize(),s,edge);});
           [-1,1].forEach(function(k){var points=[];for(var z=0;z<4;z++){var q=p(z/3,(k*.96+1.42)/2.84);q[0]+=sd*.002*s;points.push(q);}group.add(cord(points,.0018*s,lace,'shoulder-lacing'));});
@@ -315,17 +375,20 @@
       addPlateInstances(group,plateGeo,steel,positions,normals,c,s);
       return group;
     }
-    // Cuirass lining and the shaped upper edge remain visible between plates.
-    var backing=sheet(26,80,function(u,v){var a=v*2*PI,top=.120+.016*Math.pow(Math.abs(Math.sin(a)),2),y=mix(-.320,top,u),p=ringSample(a,y,b,.010);return [p[0]*s,p[1]*s,p[2]*s];},.006*s,true);group.add(object(backing,base,'padded-cuirass-foundation'));
-    var topRim=[],bottomRim=[];for(var k=0;k<=96;k++){var a=k/96*PI*2,y=.125+.016*Math.pow(Math.abs(Math.sin(a)),2),p=ringSample(a,y,b,.014);topRim.push(p.map(function(v){return v*s;}));p=ringSample(a,-.324,b,.014);bottomRim.push(p.map(function(v){return v*s;}));}rim(topRim,'cuirass-bound-neckline');rim(bottomRim,'cuirass-bound-waist');
+    // The cuirass is tailored over the upper chest instead of ending as a
+    // horizontal barrel below the clavicles. Its raised sides meet the straps
+    // while the central dip leaves the crossed neck wrap visible.
+    function neckline(a){return .169+.021*Math.pow(Math.abs(Math.sin(a)),2)-.022*Math.pow(Math.max(0,Math.cos(a)),4);}
+    var backing=sheet(32,88,function(u,v){var a=v*2*PI,top=neckline(a),y=mix(-.320,top,u),p=ringSample(a,y,b,.0045);return [p[0]*s,p[1]*s,p[2]*s];},.006*s,true);group.add(object(backing,base,'padded-cuirass-foundation'));
+    var topRim=[],bottomRim=[];for(var k=0;k<=96;k++){var a=k/96*PI*2,y=neckline(a)+.004,p=ringSample(a,y,b,.010);topRim.push(p.map(function(v){return v*s;}));p=ringSample(a,-.324,b,.010);bottomRim.push(p.map(function(v){return v*s;}));}rim(topRim,'cuirass-bound-neckline');rim(bottomRim,'cuirass-bound-waist');
     var positions=[],normals=[];
-    for(var row=0;row<10;row++){
-      var y=.094-row*.043,per=2*PI*Math.sqrt((.18*.18+.128*.128)/2),count=Math.round(per/.035);
+    for(var row=0;row<11;row++){
+      var y=.141-row*.043,per=2*PI*Math.sqrt((.18*.18+.128*.128)/2),count=Math.round(per/(c.armor==='iron'?.033:.035));
       for(k=0;k<count;k++){
-        var a=(k+(row%2)*.5)/count*PI*2,p=ringSample(a,y,b,.015+(.001*(9-row))),n=new V(Math.sin(a),.035,Math.cos(a)*1.15).normalize();positions.push(new V(p[0]*s,p[1]*s,p[2]*s));normals.push(n);
+        var a=(k+(row%2)*.5)/count*PI*2,yy=y+(neckline(a)-.169)*(1-row/11),p=ringSample(a,yy,b,.0075+(.00035*(10-row))),n=new V(Math.sin(a),.035,Math.cos(a)*1.15).normalize();positions.push(new V(p[0]*s,p[1]*s,p[2]*s));normals.push(n);
       }
       // Continuous through-laces tie each row into the padded foundation.
-      if(QUALITY!=='low'||row%2===0){var l=[];for(k=0;k<=96;k++){a=k/96*PI*2;p=ringSample(a,y+.018,b,.022);p[1]+=.0018*Math.sin(a*count);l.push(p.map(function(v){return v*s;}));}group.add(cord(l,.0015*s,lace,'row-through-lacing'));}
+      if(QUALITY!=='low'||row%2===0){var l=[];for(k=0;k<=96;k++){a=k/96*PI*2;var yy=y+(neckline(a)-.169)*(1-row/11);p=ringSample(a,yy+.018,b,.014);p[1]+=.0018*Math.sin(a*count);l.push(p.map(function(v){return v*s;}));}group.add(cord(l,.0015*s,lace,'row-through-lacing'));}
     }
     addPlateInstances(group,plate(.040*s,.059*s),steel,positions,normals,c,s);
     [-1,1].forEach(function(sd){
@@ -353,18 +416,25 @@
     [.11,.205].forEach(function(y){var path=[];for(var j=0;j<=40;j++){var a=j/40*PI*2;path.push([Math.sin(a)*.059*s,-y*s,Math.cos(a)*.059*s]);}group.add(cord(path,.0035*s,0x201914,'vambrace-strapping'));});return group;
   }
   function cape(c,s,b) {
-    var nu=48,nv=64,baseU=[],g=sheet(nu,nv,function(u,v){
-      var t=v*2-1,w=mix(.225,.425,Math.pow(u,.65))*b,x=t*w;
-      var y=-1.22*u-.029*Math.pow(Math.abs(t),1.6)*(1-u)+.018*Math.cos(t*PI*2.5)*Math.pow(u,8);
-      var z=.185*t*t*Math.pow(1-u,2)-.035*u-.018*Math.cos(t*PI*5+.4)*(.25+.75*u)-.012*Math.cos(t*PI*2)*u;
+    var nu=64,nv=84,baseU=[],g=sheet(nu,nv,function(u,v){
+      var t=v*2-1,w=mix(.198,.412,Math.pow(u,.65))*b,x=t*w,topY=.19-.045*Math.pow(Math.abs(t),1.6);
+      var y=-1.22*u-.045*Math.pow(Math.abs(t),1.6)*(1-u)+.017*Math.cos(t*PI*2.5)*Math.pow(u,8);
+      // The upper edge is cut to the nape/shoulder surface. It is not a broad
+      // planar board hovering behind the neck. Below that sewn capture, the
+      // cloth falls clear of the back in long gathered channels.
+      var rootZ=.16*b-chestFront(t*.198*b,topY,b)-.012;
+      var hangingZ=.16*b-.185-.040*u;
+      var z=mix(rootZ,hangingZ,ease(0,.22,u));
+      z-=(.023*Math.cos(t*PI*5+.4)+.011*Math.cos(t*PI*9+u*.8)+.010*Math.cos(t*PI*2))*ease(0,.10,u)*(.38+.62*u);
       return [x*s,y*s,z*s];
     },.004*s,false),N=g.userData.outerCount;
     for(var layer=0;layer<2;layer++)for(var i=0;i<=g.userData.nu;i++)for(var j=0;j<=g.userData.nv;j++)baseU.push(i/g.userData.nu);
     var base=new T.Color(c.cape);paint(g,function(i,x,y,z,t){t.copy(base).multiplyScalar(i>=N?.63:1);if(baseU[i]>.967)t.multiplyScalar(.57);});
     var m=object(g,fabric(material(0xffffff,.96,0,{vertexColors:true,side:T.DoubleSide})),'gathered-wool-cloak');m.position.set(0,.19*s,-.16*s*b);g.userData.base=g.attributes.position.array.slice();g.userData.hemU=baseU;
     [-1,1].forEach(function(sd){
-      var mount=object(new T.SphereGeometry(.023*s,16,10),material(c.trim,.86),'cloak-gather');mount.scale.set(1,.55,.40);mount.position.set(sd*.185*s*b,-.025*s,.154*s*b);m.add(mount);
-      var clasp=object(new T.CylinderGeometry(.016*s,.018*s,.006*s,16),material(c.edge||0x917343,.40,.7),'cloak-brooch');clasp.rotation.x=PI/2;clasp.position.set(sd*.185*s*b,-.021*s,.163*s*b);m.add(clasp);
+      var claspX=sd*.162*b,claspZ=.16*b-chestFront(claspX,.158,b)-.009;
+      var mount=object(new T.SphereGeometry(.023*s,16,10),material(c.trim,.86),'cloak-gather');mount.scale.set(1,.55,.40);mount.position.set(claspX*s,-.032*s,claspZ*s);m.add(mount);
+      var clasp=object(new T.CylinderGeometry(.016*s,.018*s,.006*s,16),material(c.edge||0x917343,.40,.7),'cloak-brooch');clasp.rotation.x=PI/2;clasp.position.set(claspX*s,-.028*s,(claspZ+.006)*s);m.add(clasp);
       var ring=object(new T.TorusGeometry(.012*s,.0018*s,5,18),material(0x33251b,.55,.4),'brooch-inset');ring.position.copy(clasp.position);ring.position.z+=.004*s;m.add(ring);
     });return m;
   }

@@ -610,7 +610,7 @@
     return mesh(g, std(0x8a4a3a, .55));
   }
   function jueMesh() {
-    return mesh(new THREE.TorusGeometry(.04, .012, 12, 32, PI * 1.82), std(0x9fdcb8, .18, .1, { emissive: col(0x1a5038), emissiveIntensity: .55 }), false);
+    return mesh(new THREE.TorusGeometry(.04, .012, 12, 32, PI * 1.82), std(0x789681, .48, .04), false);
   }
   /** 佩玉：大帯から下げる玉の連なり */
   function peiMesh() {
@@ -889,6 +889,7 @@
 
     // 頭・髪・冠
     var hp = headParts(c, id), HEAD_PIV = [0, -.032, -.018];
+    var mouthContact = hp.asset && hp.anchors && hp.anchors.mouth ? hp.anchors.mouth.slice() : [0,-.038,.073];
     var headG = new THREE.Group(); headG.position.set(-HEAD_PIV[0], -HEAD_PIV[1] + .1 * s, -HEAD_PIV[2]); headG.scale.setScalar(s); headPiv.add(headG);
     if (hp.head) headG.add(hp.head); else { var hb = mesh(new THREE.SphereGeometry(.1, 20, 16), skinM); hb.position.y = .03; headG.add(hb); }
     if (hp.hair) headG.add(hp.hair);
@@ -925,12 +926,26 @@
     if (c.sword) { props.sheath = swordMesh(false); props.sheath.scale.setScalar(s); props.sheath.position.set(.17 * s * b, -.27 * s, .02); props.sheath.rotation.set(.35, 0, .3); chest.add(props.sheath); props.sword = swordMesh(true); props.sword.scale.setScalar(s); props.sword.visible = false; }
     if (c.shield) { props.shield = shieldMesh(); props.shield.scale.setScalar(s); }
     if (c.halberd) props.halberd = halberdMesh();
-    if (c.jue) { props.jue = jueMesh(); props.jueHang = jueMesh(); props.jueHang.scale.setScalar(.8); props.jueHang.position.set(.12 * s, -.36 * s, .1 * s); props.jueHang.rotation.x = PI / 2; chest.add(props.jueHang); }
+    if (c.jue) {
+      props.jue = jueMesh();
+      props.jueHang = new THREE.Group(); props.jueHang.name = 'belt-suspended-jade-jue';
+      var jadeFront = (costume && costume.chestFront ? costume.chestFront(.115, -.275, b) + .014 : .10) * s;
+      props.jueHang.position.set(.115 * s, -.270 * s, jadeFront);
+      var cordMat = std(0x514036, .82);
+      var cordPath = new THREE.CatmullRomCurve3([
+        new V3(0, 0, 0), new V3(0, -.045 * s, .022 * s), new V3(0, -.075 * s, .042 * s)
+      ]);
+      props.jueHang.add(mesh(new THREE.TubeGeometry(cordPath, 12, .002 * s, 6, false), cordMat, false));
+      var beltKnot = mesh(new THREE.SphereGeometry(.0045 * s, 8, 6), cordMat, false);
+      props.jueHang.add(beltKnot);
+      var pendant = jueMesh(); pendant.scale.setScalar(.8 * s); pendant.position.set(0, -.104 * s, .044 * s);
+      props.jueHang.add(pendant); chest.add(props.jueHang);
+    }
     props.cup = cupMesh(); props.cup.visible = false;
     props.meat = meatMesh(); props.meat.visible = false;
     if (window.KM_BANQUET) { props.morsel = window.KM_BANQUET.morsel(); props.morsel.visible = false; }
 
-    var rig = { root: root, body: body, pelvis: pelvis, spine: spine, chest: chest, neck: neck, headPiv: headPiv, head: headG, arms: arms, legs: legs, headTop: headTop, props: props, s: s, armored: armored, hat: hat };
+    var rig = { root: root, body: body, pelvis: pelvis, spine: spine, chest: chest, neck: neck, headPiv: headPiv, head: headG, mouthContact: mouthContact, arms: arms, legs: legs, headTop: headTop, props: props, s: s, armored: armored, hat: hat };
 
     /** p: 腕を前へ上げる / r: 横へ開く / e: 肘を曲げる / yaw: 前腕を体の前へ寄せる（上腕のひねり） */
     function setArm(k, p, r, e, yaw) {
@@ -1242,11 +1257,11 @@
         spine.rotation.set(lerp(.24,.075,lift),0,0);neck.rotation.set(0,0,0);
         headPiv.rotation.set(lerp(.16,.035,lift)+.018*bite,0,0);headPiv.position.set(0,0,.014*s*bite);
         alignHeldHandle('R');root.updateMatrixWorld(true);
-        var mouth=root.worldToLocal(headG.localToWorld(new V3(0,-.038,.073)));
+        var mouth=root.worldToLocal(headG.localToWorld(new V3().fromArray(mouthContact)));
         var meatQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(.045*lift,0,-.055*lift));
         var floorCenter=new V3(0,(.1195-(props.meat.userData.placementBaseY||-.104))*s,.50*s);
         var biteLocal=new V3().fromArray(props.meat.userData.biteContact||[0,.100,-.126]);
-        var biteTarget=mouth.clone().add(new V3(0,-.003*s,.007*s));
+        var biteTarget=mouth.clone().add(new V3(0,-.001*s,.001*s));
         var carriedCenter=biteTarget.clone().sub(biteLocal.clone().multiplyScalar(s).applyQuaternion(meatQ));
         var meatCenter=floorCenter.clone().lerp(carriedCenter,lift);
         // The same complete shoulder remains visible through cutting, lifting,
@@ -1287,9 +1302,9 @@
           headPiv.position.copy(neckBase.clone().applyQuaternion(neck.quaternion.clone().invert())).sub(neckBase.clone().applyQuaternion(headPiv.quaternion));
         }else headPiv.position.set(0,0,.040*s*tilted);
         root.updateMatrixWorld(true);
-        var mouth=root.worldToLocal(headG.localToWorld(new V3(0,-.038,.073)));
+        var mouth=root.worldToLocal(headG.localToWorld(new V3().fromArray(mouthContact)));
         var cupQ=new THREE.Quaternion().setFromAxisAngle(new V3(1,0,0),pitch).multiply(new THREE.Quaternion().setFromAxisAngle(new V3(0,1,0),PI));
-        var rimTarget=mouth.clone().add(new V3(0,-.004*s,.009*s));
+        var rimTarget=mouth.clone().add(new V3(0,-.001*s,.001*s));
         var liftedCenter=rimTarget.clone().sub(new V3().fromArray(props.cup.userData.drinkContact).multiplyScalar(s).applyQuaternion(cupQ));
         var center=new V3(0,1.27*s,.31*s).lerp(liftedCenter,raised);
         state.cupRotation=root.getWorldQuaternion(new THREE.Quaternion()).multiply(cupQ);
