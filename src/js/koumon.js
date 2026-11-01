@@ -285,9 +285,8 @@
         '<button class="km-chip km-btn-chip" data-km="menu">目次</button>' +
         '<button class="km-chip km-btn-chip" data-km="book">原文帳</button>' +
         '<button class="km-chip km-btn-chip" data-km="characters">人物</button>' +
-        '<button class="km-chip km-btn-chip" data-km="settings">授業設定</button>' +
+        '<button class="km-chip km-btn-chip" data-km="settings" aria-label="授業設定"><span class="km-chip-long">授業設定</span><span class="km-chip-short">設定</span></button>' +
         '<button class="km-chip km-btn-chip" data-km="log">履歴</button>' +
-        '<button class="km-chip km-btn-chip" data-km="view" title="本文を隠して場面の絵だけを見る（H キー）">絵を見る</button>' +
         '<button class="km-chip km-btn-chip" data-km="sound" id="km-sound" aria-pressed="false">音 切</button>' +
       '</div>' +
       '<button class="km-quit" data-km="quit" title="楚漢の章を閉じる" aria-label="閉じる">✕</button>' +
@@ -1009,7 +1008,7 @@
       (safe ? '' : '<div class="km-life" aria-label="命 ' + st.life + '">' + '<span>命</span>' + hearts + '</div>') +
       (meters ? meter('項王の怒り', st.ikari, 'ikari') + meter('范増の殺意', st.satsu, 'satsu') : '') +
       (meta.classroom ? '<div class="km-study-badge">授業モード</div>' : '<div class="km-saku" title="策（ヒント）の残り"><span>ヒント</span>' + st.saku + '</div>') +
-      (st.items.length ? '<div class="km-items">' + st.items.map(function (it) { var x = K.items[it]; return '<span title="' + esc(x.name) + '">' + esc(x.glyph) + '</span>'; }).join('') + '</div>' : '');
+      (st.items.length ? '<div class="km-items" aria-label="持ち物：' + esc(st.items.map(function (it) { return K.items[it].name; }).join('・')) + '"><em>持ち物</em>' + st.items.map(function (it) { var x = K.items[it]; return '<span title="' + esc(x.name) + '">' + esc(x.glyph) + '</span>'; }).join('') + '</div>' : '');
   }
 
   /* ============================ 小さな遊び ============================ */

@@ -7,15 +7,19 @@ const {execFileSync}=require('node:child_process');
 const {createCanvas}=require(process.env.CANVAS_MODULE||path.join(process.env.USERPROFILE,'.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/@napi-rs/canvas'));
 const root=path.resolve(__dirname,'..'),out=path.resolve(process.argv[2]||'model-preview-output/blender-scene');
 const id=process.argv[3]||'ryo',pose=process.argv[4]||'idle',quality=process.argv[5]||'high';
+const portraitAssetArg=process.argv.find(a=>a.startsWith('--head-assets='));
+const portraitAsset=portraitAssetArg?path.resolve(portraitAssetArg.slice(14)):null;
 fs.mkdirSync(out,{recursive:true});
 const context={console,performance,document:{createElement(){return createCanvas(1,1);}},setTimeout,clearTimeout};context.window=context;vm.createContext(context);
 for(const file of ['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-banquet-props.js','src/js/koumon-cast3d.js']){
   let source;
-  if(process.env.MODEL_REF){try{source=execFileSync('git',['show',process.env.MODEL_REF+':'+file],{cwd:root,encoding:'utf8',maxBuffer:50000000,stdio:['ignore','pipe','ignore']});}catch(error){if(file.endsWith('three.min.js')||file.endsWith('koumon-figkit.js')||file.endsWith('koumon-cast3d.js'))throw error;continue;}}
+  if(file==='src/js/koumon-head-assets.js'&&portraitAsset)source=fs.readFileSync(portraitAsset,'utf8');
+  else if(process.env.MODEL_REF){try{source=execFileSync('git',['show',process.env.MODEL_REF+':'+file],{cwd:root,encoding:'utf8',maxBuffer:50000000,stdio:['ignore','pipe','ignore']});}catch(error){if(file.endsWith('three.min.js')||file.endsWith('koumon-figkit.js')||file.endsWith('koumon-cast3d.js'))throw error;continue;}}
   else{const target=path.join(root,file);if(!fs.existsSync(target))continue;source=fs.readFileSync(target,'utf8');}
   vm.runInContext(source,context,{filename:file});
 }
 const T=context.THREE;context.KM_CAST3D.setQuality(quality);
+if(portraitAsset&&!context.KM_HEAD_ASSETS.cast[id])throw Error('Prototype does not include requested character: '+id);
 const figure=context.KM_CAST3D.makeFigure(id);figure.userData.setPose(pose);
 const phaseArg=process.argv.find(a=>a.startsWith('--phase='));if(phaseArg)figure.userData.state.actionProgress=Number(phaseArg.slice(8));
 figure.userData.update(0,0);figure.updateMatrixWorld(true);
@@ -26,7 +30,7 @@ function materialIndex(m){
   for(const channel of ['map','bumpMap','roughnessMap']){
     const tex=m[channel];if(!tex||!tex.image||!tex.image.toBuffer)continue;
     const name=id+'-'+pose+'-mat'+index+'-'+channel+'.png';fs.writeFileSync(path.join(out,name),tex.image.toBuffer('image/png'));
-    entry[channel]={file:name,repeat:[tex.repeat.x,tex.repeat.y],offset:[tex.offset.x,tex.offset.y],flipY:tex.flipY};
+    entry[channel]={file:name,repeat:[tex.repeat.x,tex.repeat.y],offset:[tex.offset.x,tex.offset.y],flipY:tex.flipY,srgb:tex.encoding===T.sRGBEncoding};
   }
   entry.bumpScale=m.bumpScale||0;registry.set(m.uuid,index);materials.push(entry);return index;
 }

@@ -11,6 +11,8 @@ const canvasModule=process.env.CANVAS_MODULE||path.join(process.env.USERPROFILE,
 const {createCanvas}=require(canvasModule);
 const root=path.resolve(__dirname,'..'),out=path.resolve(process.argv[2]||path.join(root,'model-preview-output'));
 const ids=(process.argv[3]||'hai,u').split(','),quality=process.argv[4]||'low';
+const portraitAssetArg=process.argv.find(a=>a.startsWith('--head-assets='));
+const portraitAsset=portraitAssetArg?path.resolve(portraitAssetArg.slice(14)):null;
 const motionOption=process.argv.find(a=>a.startsWith('--motion-frames='));
 const motionFrames=motionOption?Number(motionOption.slice(16)):0;
 if(motionOption&&(!Number.isInteger(motionFrames)||motionFrames<8||motionFrames>120))throw Error('Motion frames must be an integer from 8 to 120');
@@ -21,7 +23,7 @@ const modules=['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumo
 const optional=new Set(modules.slice(2,-1));
 for(const file of modules){
   let source;
-  try { source=process.env.MODEL_REF?execFileSync('git',['show',process.env.MODEL_REF+':'+file],{cwd:root,encoding:'utf8',maxBuffer:50000000,stdio:['ignore','pipe','ignore']}):fs.readFileSync(path.join(root,file),'utf8'); }
+  try { source=file==='src/js/koumon-head-assets.js'&&portraitAsset?fs.readFileSync(portraitAsset,'utf8'):process.env.MODEL_REF?execFileSync('git',['show',process.env.MODEL_REF+':'+file],{cwd:root,encoding:'utf8',maxBuffer:50000000,stdio:['ignore','pipe','ignore']}):fs.readFileSync(path.join(root,file),'utf8'); }
   catch(error){if(optional.has(file))continue;throw error;}
   vm.runInContext(source,context,{filename:file});
 }
@@ -128,6 +130,7 @@ const portraits=portraitsOnly?createCanvas(tileW*4,Math.ceil(ids.length/4)*tileH
 const claySheet=clayFaces?createCanvas(1920,Math.ceil(ids.length/4)*440):null;
 const names={hai:'Liu Bang',u:'Xiang Yu',ryo:'Zhang Liang',zo:'Fan Zeng',haku:'Xiang Bo',kai:'Fan Kuai',sou:'Xiang Zhuang',chin:'Chen Ping'};
 for(const id of ids){
+  if(portraitAsset&&!context.KM_HEAD_ASSETS.cast[id])throw Error('Prototype does not include requested character: '+id);
   if(eyeOnly){
     const started=performance.now(),built=context.KM_HEADS.build(id,context.KM_CAST3D.CAST[id].head,quality);
     if(!built)throw Error('No anatomical eye asset for '+id);

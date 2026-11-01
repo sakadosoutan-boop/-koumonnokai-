@@ -40,6 +40,7 @@ for entry in data['materials']:
     for channel in ['map','bumpMap','roughnessMap']:
         if channel not in entry:continue
         spec=entry[channel];tex=nodes.new('ShaderNodeTexImage');tex.image=bpy.data.images.load(str(source.parent/spec['file']))
+        tex.image.colorspace_settings.name='sRGB' if channel=='map' and spec.get('srgb',True) else 'Non-Color'
         coords=nodes.new('ShaderNodeTexCoord');mapping=nodes.new('ShaderNodeMapping')
         mapping.inputs['Scale'].default_value=(spec['repeat'][0],spec['repeat'][1] if spec['flipY'] else -spec['repeat'][1],1)
         mapping.inputs['Location'].default_value=(spec['offset'][0],spec['offset'][1] if spec['flipY'] else 1-spec['offset'][1],0)
@@ -50,7 +51,9 @@ for entry in data['materials']:
         elif channel=='bumpMap':
             tex.image.colorspace_settings.name='Non-Color';bump=nodes.new('ShaderNodeBump');bump.inputs['Strength'].default_value=.3;bump.inputs['Distance'].default_value=min(.002,entry.get('bumpScale',.001))
             links.new(tex.outputs['Color'],bump.inputs['Height']);links.new(bump.outputs[0],shader.inputs['Normal'])
-        else: links.new(tex.outputs['Color'],shader.inputs['Roughness'])
+        else:
+            rough=nodes.new('ShaderNodeMath');rough.operation='MULTIPLY';rough.inputs[1].default_value=entry['roughness']
+            links.new(tex.outputs['Color'],rough.inputs[0]);links.new(rough.outputs[0],shader.inputs['Roughness'])
     links.new(base,shader.inputs['Base Color']);mesh.materials.append(mat)
 for poly,mi in zip(mesh.polygons,data['materialIndices']):poly.material_index=mi
 

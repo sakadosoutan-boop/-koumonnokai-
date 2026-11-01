@@ -24,6 +24,35 @@ function healthy(object,label='asset'){
     assert.ok(o.matrixWorld.elements.every(Number.isFinite),'finite placement');
   });assert.ok(count>0);
 }
+const mouthSurfaces=new WeakMap();
+function actualMouth(head){
+  let local=mouthSurfaces.get(head);
+  if(!local){
+    head.updateMatrixWorld(true);const V=C.THREE.Vector3,skins=[];
+    head.traverse(o=>{if(o.isMesh&&o.userData.part==='skin')skins.push(o);});
+    const origin=head.localToWorld(new V(0,-.038,.3)),toward=head.localToWorld(new V(0,-.038,-.1)).sub(origin).normalize();
+    const hit=new C.THREE.Raycaster(origin,toward).intersectObjects(skins,false)[0];
+    assert.ok(hit,'independent ray reaches the actual indexed outer lip');
+    local=head.worldToLocal(hit.point.clone());mouthSurfaces.set(head,local);
+  }
+  return head.localToWorld(local.clone());
+}
+test('asset mouth anchors are cached outer-lip contacts in both LODs',()=>{
+  const prototype=C.THREE.Raycaster.prototype,original=prototype.intersectObject;let probes=0,first,second;
+  prototype.intersectObject=function(...args){probes++;return original.apply(this,args);};
+  try{
+    first=C.KM_HEADS.build('ryo',{},'high');second=C.KM_HEADS.build('ryo',{},'high');
+    assert.equal(probes,1,'repeated builds ray-test the same id and LOD only once');
+    const z=second.anchors.mouth[2];first.anchors.mouth[2]=0;
+    assert.equal(C.KM_HEADS.build('ryo',{},'high').anchors.mouth[2],z,'callers cannot mutate the cached anchor');
+    assert.equal(probes,1);
+  }finally{prototype.intersectObject=original;}
+  for(const quality of ['low','high'])for(const id of ids){
+    const built=C.KM_HEADS.build(id,{},quality);built.group.updateMatrixWorld(true);
+    const anchor=built.group.localToWorld(new C.THREE.Vector3().fromArray(built.anchors.mouth)),surface=actualMouth(built.group);
+    assert.ok(anchor.distanceTo(surface)<.001,id+'/'+quality+' contact lands on the outer lip within one millimetre');
+  }
+});
 test('every principal character uses an anatomical head in both quality levels',()=>{
   for(const quality of ['low','high'])for(const id of ids){
     const built=C.KM_HEADS.build(id,C.KM_CAST3D.CAST[id].head,quality);
@@ -201,7 +230,8 @@ for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder an
         assert.ok(Math.abs(arm.el.rotation.x+joint.flex)<1e-9,label+' elbow diagnostic matches the actual joint');
         assert.ok(arm.sh.getWorldPosition(new V()).y-arm.el.getWorldPosition(new V()).y>(pose==='drink'?-.20:.02)*r.s,label+' elbow elevation stays within the action range');
       }
-      const mouth=r.head.localToWorld(new V(0,-.038,.073));
+      const mouth=actualMouth(r.head),declared=r.head.localToWorld(new V().fromArray(r.mouthContact));
+      assert.ok(declared.distanceTo(mouth)<.001*r.s,label+' declared mouth contact lies on the actual lip surface');
       const palm=r.arms.L.wr.localToWorld(new V(-.012*r.s,-.075*r.s,0));
       if(pose==='eat'){
         const contact=meat.userData.contactState;
@@ -228,7 +258,7 @@ for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder an
         }
         if(u>=.67&&u<=.77){
           const bite=meat.localToWorld(new V().fromArray(meat.userData.biteContact));
-          assert.ok(bite.distanceTo(mouth)<.015*r.s,label+' the whole shoulder cut face reaches the lips');
+          assert.ok(bite.distanceTo(mouth)<.003*r.s,label+' the whole shoulder cut face reaches the actual lips within three millimetres');
           assert.ok(center.y>endpoints[0].y+.4*r.s,label+' lifts the full shoulder from the shield');
           const line=new C.THREE.Line3(prop.localToWorld(new V().fromArray(prop.userData.bladeRoot)),prop.localToWorld(new V().fromArray(prop.userData.bladeTip)));
           assert.ok(line.closestPointToPoint(mouth,true,new V()).distanceTo(mouth)>.14*r.s,label+' the blade clears the face during the bite');
@@ -250,7 +280,7 @@ for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder an
         if(cup.userData.contactState.raised>.999999){
           const rim=cup.localToWorld(new V().fromArray(cup.userData.drinkContact));
           const center=cup.getWorldPosition(new V()),forward=new V(0,0,1).applyQuaternion(r.head.getWorldQuaternion(new Q()));
-          assert.ok(rim.distanceTo(mouth)<.015*r.s,label+' drinking edge reaches the lips');
+          assert.ok(rim.distanceTo(mouth)<.003*r.s,label+' drinking edge reaches the actual lips within three millimetres');
           assert.ok(center.clone().sub(mouth).dot(forward)>.05*r.s,label+' cup stays in front of the mouth');
           assert.ok(rim.clone().sub(center).dot(forward)<-.04*r.s,label+' the near rim faces the lips');
           drinking.lipFrames++;if(pitch<=-1.35)drinking.guzzleFrames++;

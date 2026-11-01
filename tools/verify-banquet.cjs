@@ -9,6 +9,20 @@ function max(name,value){if(!Number.isFinite(value))throw Error('Nonfinite '+nam
 function min(name,value){if(!Number.isFinite(value))throw Error('Nonfinite '+name);minima[name]=Math.min(minima[name]===undefined?Infinity:minima[name],value);return value;}
 function check(condition,label){if(!condition)throw Error(label);}
 function frame(f,u){f.userData.state.actionProgress=u;f.userData.update(0,0);f.updateMatrixWorld(true);}
+const mouthSurfacePoints=new WeakMap();
+function actualMouth(r,label){
+ let local=mouthSurfacePoints.get(r.head);
+ if(!local){
+  const skin=[];r.head.traverse(o=>{if(o.isMesh&&o.userData.part==='skin')skin.push(o);});
+  const origin=r.head.localToWorld(new V(0,-.038,.3)),toward=r.head.localToWorld(new V(0,-.038,-.1)).sub(origin).normalize();
+  const hit=new C.THREE.Raycaster(origin,toward).intersectObjects(skin,false)[0];
+  check(!!hit,label+' independent actual-skin ray misses the lip');
+  local=r.head.worldToLocal(hit.point.clone());mouthSurfacePoints.set(r.head,local);
+ }
+ const surface=r.head.localToWorld(local.clone()),declared=r.head.localToWorld(new V().fromArray(r.mouthContact));
+ check(max('mouthAnchorSurfaceGap',declared.distanceTo(surface))<.001*r.s,label+' mouth anchor is not on the actual outer lip');
+ return surface;
+}
 function nodes(r){
  const out={body:r.body,pelvis:r.pelvis,spine:r.spine,neck:r.neck,head:r.headPiv};
  for(const side of ['L','R'])for(const name of ['sh','el','wr','hand'])out[side+'/'+name]=r.arms[side][name];
@@ -210,7 +224,7 @@ function inspect(f,q,id,pose,u,kind){
  }else{
   check(Object.keys(state.ikDetails).length===2&&Object.keys(state.contactErrors).length===2,label+' must solve both hands');
   row.ik=JSON.parse(JSON.stringify(state.contactErrors));
-  const mouth=r.head.localToWorld(new V(0,-.038,.073)),palm=r.arms.L.wr.localToWorld(new V(-.012*r.s,-.075*r.s,0));
+  const mouth=actualMouth(r,label),palm=r.arms.L.wr.localToWorld(new V(-.012*r.s,-.075*r.s,0));
   if(pose==='eat'){
    const meat=r.props.meat,contact=meat.userData.contactState;
    check(contact.wholeShoulder&&meat.visible&&meat.parent===f,label+' must carry the full existing shoulder');
@@ -224,7 +238,7 @@ function inspect(f,q,id,pose,u,kind){
    }
    if(u>=.67&&u<=.77){
     row.shoulderBiteGap=max('shoulderBiteGap',meat.localToWorld(new V().fromArray(meat.userData.biteContact)).distanceTo(mouth));
-    check(row.shoulderBiteGap<.015*r.s,label+' full shoulder misses the lips');
+    check(row.shoulderBiteGap<.003*r.s,label+' full shoulder misses the actual lips by more than three millimetres');
     const line=new C.THREE.Line3(prop.localToWorld(new V().fromArray(prop.userData.bladeRoot)),prop.localToWorld(new V().fromArray(prop.userData.bladeTip)));
     row.bladeLipClearance=min('bladeLipClearance',line.closestPointToPoint(mouth,true,new V()).distanceTo(mouth));check(row.bladeLipClearance>.14*r.s,label+' blade reaches the face');
    }
@@ -247,7 +261,7 @@ function inspect(f,q,id,pose,u,kind){
    row.cupPitch=Math.atan2(up.z,up.y);max('cupTilt',Math.abs(row.cupPitch));check(row.cupPitch<=1e-8&&row.cupPitch>-1.51,label+' cup tilts away or inverts');
    if(cup.userData.contactState.raised>.999999){
     const rim=cup.localToWorld(new V().fromArray(cup.userData.drinkContact)),center=cup.getWorldPosition(new V()),forward=new V(0,0,1).applyQuaternion(r.head.getWorldQuaternion(new Q()));
-    row.cupRimGap=max('cupRimGap',rim.distanceTo(mouth));check(row.cupRimGap<.015*r.s,label+' rim misses the lips');
+    row.cupRimGap=max('cupRimGap',rim.distanceTo(mouth));check(row.cupRimGap<.003*r.s,label+' rim misses the actual lips by more than three millimetres');
     row.cupForward=min('cupForward',center.clone().sub(mouth).dot(forward));check(row.cupForward>.05*r.s,label+' cup center is behind the mouth');
     row.nearRimForward=rim.clone().sub(center).dot(forward);check(row.nearRimForward<-.04*r.s,label+' the wrong rim faces the lips');
    }

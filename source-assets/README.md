@@ -21,4 +21,12 @@ npm run build
 
 `tools/character-gallery.html` は実際のThree.js素材を使う人物確認ページです。[形状と検証範囲](../docs/model-quality.md)も参照してください。Blenderの照明で作った画像と、ブラウザーのWebGL画面は別の検証です。
 
+2026-11-01版は、`heads.blend` 内に肖像アトラスを梱包した非表示・選択不可の `REFERENCE_LOCKED` と、元の人体を残す `BODY_BASE` を持ちます。精細な肌は49,281頂点、軽量な肌は3,143頂点。衣装には色・織り・凹凸・粗さの各画像を梱包し、冠は人物別の曲面と厚みを保存しています。
+
+試作は `-- --preview --ids ryo,u,zo --lod both --out model-preview-output/portrait-prototype` で原本を上書きせず作れます。既存の試作を全身へ組み込んで確認する場合は `node tools/model-preview.cjs OUTPUT ryo,u,zo high --head-assets=PATH/TO/head-assets-preview.js` を使います。試作に含まれない人物はエラーにし、旧造形への代替を比較画像へ紛れ込ませません。`tools/export-model-scene.cjs` も同じ引数に対応しています。
+
+肌・眼球の実交差と外唇の接触位置は `node tools/verify-portrait.cjs OUTPUT.json` で検査します。この値は表示可能な目と接触の確認で、肖像への類似度を数値化したものではありません。
+
 宴席の剣・卮・生肉と冠は原作成メッシュ（MIT）です。出典と補間表現は docs/model-quality.md と banquet-props.manifest.json を参照。動作は src/js/koumon-cast3d.js、冠は koumon-heads.js が生成元です。
+
+変更前後の比較は、変更前のコミットを `MODEL_REF=9983031` として `tools/model-preview.cjs` で `model-preview-output/portrait-before` に8人のhigh肖像を描き、環境変数を解除して現在のhigh/low肖像と4方向を `portrait-final` に描いた後、`tools/portrait-evidence.py` で組みます。比較に使う元の肖像画像自体は変更しません。

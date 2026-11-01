@@ -1,25 +1,110 @@
 {
-  "asset": "楚漢衣装アトリエ v1",
-  "generatedAt": "2026-10-26T04:47:13.176Z",
+  "asset": "楚漢衣装アトリエ — portrait fidelity v2",
+  "generatedAt": "2026-10-31T16:32:59.757Z",
   "nativeSource": "source-assets/costumes.blend",
   "runtime": "src/js/koumon-costume.js",
   "reproduce": "node tools/author-costume-assets.cjs",
-  "author": "Original meshes authored for this project by Codex",
+  "author": "Original meshes and textile designs authored for this project by Codex",
   "sourceKind": "Original continuous parametric cut-and-drape garment surfaces; no third-party garment imports",
   "license": "MIT, matching the project license",
   "reference": "src/assets/character-atlas.png (project-supplied reference)",
+  "characters": [
+    "hai",
+    "u",
+    "ryo",
+    "zo",
+    "haku",
+    "kai",
+    "sou",
+    "chin"
+  ],
   "contents": [
-    "folded bodice with open crossed neckline",
-    "sewn layered collars and nape stand",
-    "folded girdle and curved belt tails",
-    "underrobe and separate overlapping curved front",
+    "folded continuous bodices with open right crossed neckline",
+    "broad rolled embroidered lapels and layered linen facings",
+    "original interlaced brocade motifs for teal, blue-gray, ochre, violet and slate robes",
+    "folded girdles and captured curved belt tails",
+    "underrobes and separate overlapping curved fronts",
     "double-surface gravity-deformed bag sleeves",
-    "padded lamellar backing, curved bevelled lamellae, through-laces and rivets",
-    "three sloping shoulder lames with suspension straps",
+    "clavicle-height tailored cuirass lining and curved bevelled lamellae",
+    "chased brass shoulder inlay for Xiang Yu; worked iron for Fan Kuai",
+    "red, charcoal teal and reddish-brown gathered neck wraps",
     "four divided tassets and bound edges",
     "gathered thick cloak and mounted brooches"
   ],
-  "validation": "CPU multiview and pose images in model-preview-output/costume-rebuild; CPU rendering is not runtime WebGL or cloth simulation",
-  "geometryAssets": 218,
-  "meshInstances": 2850
+  "materials": "Packed base-color, woven bump and roughness maps. Vertex color and texture multiply as in runtime; instance tint is preserved per Blender object.",
+  "validation": "CPU multiview and pose previews in model-preview-output/portrait-costumes. CPU Lambert does not reproduce WebGL PBR. Blender validation saved separately.",
+  "geometryAssets": 392,
+  "meshInstances": 4724,
+  "palette": {
+    "hai": {
+      "robe": "#25464c",
+      "trim": "#22383d",
+      "thread": "#9c8b65",
+      "inner": "#c8c2ae"
+    },
+    "u": {
+      "robe": "#602b25",
+      "trim": "#3c2924",
+      "thread": "#9b7950",
+      "inner": "#99816b",
+      "scarf": "#722c26",
+      "metal": "#252123",
+      "edge": "#98784b"
+    },
+    "ryo": {
+      "robe": "#344856",
+      "trim": "#263740",
+      "thread": "#758692",
+      "inner": "#ccc7b8"
+    },
+    "zo": {
+      "robe": "#8b7755",
+      "trim": "#493c2b",
+      "thread": "#a68e60",
+      "inner": "#c9bd9d"
+    },
+    "haku": {
+      "robe": "#5c495d",
+      "trim": "#403441",
+      "thread": "#9a8493",
+      "inner": "#c5bdaf"
+    },
+    "kai": {
+      "robe": "#252f32",
+      "trim": "#172224",
+      "thread": "#5b6b6c",
+      "inner": "#7f8176",
+      "scarf": "#263337",
+      "metal": "#323638",
+      "edge": "#635d4b"
+    },
+    "sou": {
+      "robe": "#684c3d",
+      "trim": "#382b26",
+      "thread": "#8e7458",
+      "inner": "#b8a78e",
+      "scarf": "#76513d",
+      "metal": "#423a31",
+      "edge": "#8a7050"
+    },
+    "chin": {
+      "robe": "#354854",
+      "trim": "#293944",
+      "thread": "#7e8e9b",
+      "inner": "#c9c8be"
+    }
+  },
+  "evidence": {
+    "cpuPortraits": "model-preview-output/portrait-costumes/final/portraits-high.png",
+    "cpuMultiviews": "model-preview-output/portrait-costumes/multiview/",
+    "cpuPoseChecks": "model-preview-output/portrait-costumes/poses/ (drink, eat, dance, sit)",
+    "blenderPbr": [
+      "model-preview-output/portrait-costumes/blender/yu-drape/u-stand-head-three-quarter.png",
+      "model-preview-output/portrait-costumes/blender/yu-drape/u-stand-head-side.png",
+      "model-preview-output/portrait-costumes/blender/ryo-color/ryo-stand-head-three-quarter.png"
+    ],
+    "blenderRenderer": "Cycles, 16 samples, AgX; runtime mesh export; PBR review rather than WebGL output",
+    "contactAudit": "Upper cuirass stand-off reduced, collar tails captured underneath, cape nape/shoulder edge fitted, neck and armhole openings retained.",
+    "limitations": "Sleeve gravity drape is authored runtime deformation, not cloth simulation. Runtime WebGL validation and the final full-cast joint/contact test are recorded by the parent task."
+  }
 }
