@@ -125,6 +125,8 @@ const eyeSheet=eyeOnly?createCanvas(1440,Math.ceil(ids.length/4)*260):null;
 const bodies=process.argv.includes('--bodies')&&!clayFaces;
 const pose=(process.argv.find(a=>a.startsWith('--pose='))||'--pose=stand').slice(7);
 const portraitsOnly=(process.argv.includes('--portraits')||bodies)&&!clayFaces;
+const portraitYaw=Number((process.argv.find(a=>a.startsWith('--portrait-yaw='))||'--portrait-yaw=25').slice(15));
+if(!Number.isFinite(portraitYaw))throw Error('Invalid --portrait-yaw');
 const tileW=bodies?384:360,tileH=bodies?620:420;
 const portraits=portraitsOnly?createCanvas(tileW*4,Math.ceil(ids.length/4)*tileH):null;
 const claySheet=clayFaces?createCanvas(1920,Math.ceil(ids.length/4)*440):null;
@@ -197,7 +199,7 @@ for(const id of ids){
   if(portraitsOnly){
     const pc=portraits.getContext('2d'),i=ids.indexOf(id),x=i%4*tileW,y=Math.floor(i/4)*tileH;
     pc.fillStyle='#ebe8e1';pc.fillRect(x,y,tileW,tileH);
-    pc.drawImage(render(model,bodies?new V(0,1.05,0):head,bodies?2.34:.48,[25,4],tileW,tileH-50),x,y+35);
+    pc.drawImage(render(model,bodies?new V(0,1.05,0):head,bodies?2.34:.48,[portraitYaw,4],tileW,tileH-50),x,y+35);
     pc.fillStyle='#262a2a';pc.font='18px sans-serif';pc.fillText(names[id]||id,x+12,y+25);
     pc.font='12px sans-serif';pc.fillText('CPU geometry preview / not WebGL',x+12,y+tileH-6);
   }else{
@@ -214,4 +216,4 @@ for(const id of ids){
 if(portraitsOnly)fs.writeFileSync(path.join(out,(bodies?'bodies-':'portraits-')+quality+'.png'),portraits.toBuffer('image/png'));
 if(eyeOnly)fs.writeFileSync(path.join(out,'eyes-'+(grayEyes?'clay-':'')+quality+'.png'),eyeSheet.toBuffer('image/png'));
 if(clayFaces)fs.writeFileSync(path.join(out,'clay-faces-'+quality+'.png'),claySheet.toBuffer('image/png'));
-fs.writeFileSync(path.join(out,clayFaces?'clay-report.json':'report.json'),JSON.stringify({generatedAt:new Date().toISOString(),renderer:'CPU Lambert; not runtime WebGL',models:report},null,2));
+fs.writeFileSync(path.join(out,clayFaces?'clay-report.json':'report.json'),JSON.stringify({generatedAt:new Date().toISOString(),renderer:'CPU Lambert; not runtime WebGL',portraitView:portraitsOnly?{yaw:portraitYaw,pitch:4}:null,models:report},null,2));

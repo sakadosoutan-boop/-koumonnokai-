@@ -777,7 +777,7 @@
     var torso = mesh(torsoGeo(s, b, armored ? laceColor : robeColor), cloth); chest.add(torso);
     // 襟（右衽）・中衣の白・大帯
     if (costume) {
-      chest.add(costume.collar(c, s, b, armored));
+      chest.add(costume.collar(c, s, b, armored, id));
       chest.add(costume.waist(c, s, b, armored));
       if (armored) chest.add(costume.armor(c, s, b, 'torso'));
       if (!armored && c.pei) { var peiLayered = peiMesh(); peiLayered.position.set(.12 * s, -.3 * s, .06 * s); peiLayered.scale.setScalar(s); chest.add(peiLayered); }

@@ -29,4 +29,4 @@ npm run build
 
 宴席の剣・卮・生肉と冠は原作成メッシュ（MIT）です。出典と補間表現は docs/model-quality.md と banquet-props.manifest.json を参照。動作は src/js/koumon-cast3d.js、冠は koumon-heads.js が生成元です。
 
-変更前後の比較は、変更前のコミットを `MODEL_REF=9983031` として `tools/model-preview.cjs` で `model-preview-output/portrait-before` に8人のhigh肖像を描き、環境変数を解除して現在のhigh/low肖像と4方向を `portrait-final` に描いた後、`tools/portrait-evidence.py` で組みます。比較に使う元の肖像画像自体は変更しません。
+変更前後の比較は、変更前のコミットを `MODEL_REF=ffbedc9` とし、`tools/model-preview.cjs OUTPUT hai,u,ryo,zo,haku,kai,sou,chin high --portraits --portrait-yaw=-25` で描きます。環境変数を解除し、現在のhigh/low肖像と4方向を別フォルダへ出力します。`tools/portrait-evidence.py --before BEFORE_DIR --after AFTER_DIR --label 2026-11-02` で比較を組みます。顔の向き・照明・構図を変更前後で揃え、元の肖像画像自体は変更しません。

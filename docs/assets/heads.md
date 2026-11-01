@@ -46,7 +46,7 @@ blender -b --python tools/build-head-assets.py -- --preview --lod both --out mod
 
 `anchors.mouth` はfactoryが実際の肌メッシュへ `(0,-.038,.3)` から-Z方向のrayを当てて求める外唇の接触点。id/LODごとに一度だけ計算し、呼び出しごとに配列を複製する。rigはこれを `rig.mouthContact` として公開する。器の口縁・肩肉の接触targetには、ともに `(0,-.001*s,.001*s)` のoffsetを用いる（`s` は人物scale）。SDFへのfallbackでは従来の `[0,-.038,.073]` を維持する。
 
-肌は high が49,281頂点、low が3,143頂点で、両方とも眼瞼の元のループを保持する。各パートはuint16の頂点上限内に収める。座標は10μm単位のint16、法線はint8、肌色は線形RGBのuint8。三角形indexは差分・zigzag・varintで可逆圧縮し、デコード時に頂点範囲とストリーム終端を検査する。lowの眉・髭・頭髪は専用形状。今回の全8人・両LODのJSは約29.6MB、編集用blendは約42.2MB。
+肌は high が49,281頂点、low が3,143頂点で、両方とも眼瞼の元のループを保持する。各パートはuint16の頂点上限内に収める。座標は10μm単位のint16、法線はint8、肌色は線形RGBのuint8。三角形indexは差分・zigzag・varintで可逆圧縮し、デコード時に頂点範囲とストリーム終端を検査する。lowの眉・髭・頭髪は専用形状。今回の全8人・両LODのJSは約32.7MB、編集用blendは約45.0MB。
 
 同じ書き出しの量子化後position・normal・color各60 streamをbytesで照合し、index60 streamを実runtime decoderで展開して全要素が一致することを確認した。記録は `model-preview-output/portrait-final-heads/packing-audit.json`。
 

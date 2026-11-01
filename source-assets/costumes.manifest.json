@@ -1,6 +1,6 @@
 {
-  "asset": "楚漢衣装アトリエ — portrait fidelity v2",
-  "generatedAt": "2026-10-31T16:32:59.757Z",
+  "asset": "楚漢衣装アトリエ — portrait fidelity v3",
+  "generatedAt": "2026-11-01T22:14:54.051Z",
   "nativeSource": "source-assets/costumes.blend",
   "runtime": "src/js/koumon-costume.js",
   "reproduce": "node tools/author-costume-assets.cjs",
@@ -99,12 +99,12 @@
     "cpuMultiviews": "model-preview-output/portrait-costumes/multiview/",
     "cpuPoseChecks": "model-preview-output/portrait-costumes/poses/ (drink, eat, dance, sit)",
     "blenderPbr": [
-      "model-preview-output/portrait-costumes/blender/yu-drape/u-stand-head-three-quarter.png",
-      "model-preview-output/portrait-costumes/blender/yu-drape/u-stand-head-side.png",
-      "model-preview-output/portrait-costumes/blender/ryo-color/ryo-stand-head-three-quarter.png"
+      "docs/model-preview/portrait-ryo_threequarter.jpg",
+      "docs/model-preview/portrait-ryo_side.jpg",
+      "docs/model-preview/portrait-kai_drink_side.jpg"
     ],
-    "blenderRenderer": "Cycles, 16 samples, AgX; runtime mesh export; PBR review rather than WebGL output",
-    "contactAudit": "Upper cuirass stand-off reduced, collar tails captured underneath, cape nape/shoulder edge fitted, neck and armhole openings retained.",
+    "blenderRenderer": "Cycles, 32 samples, AgX; runtime mesh export; PBR review rather than WebGL output",
+    "contactAudit": "Continuous underrobe fills the neckline; inner and outer lapels share a surface frame; nape collar and opening fit each anatomical neck. Shoulder padding reduced. Existing cuirass and cape attachments retained.",
     "limitations": "Sleeve gravity drape is authored runtime deformation, not cloth simulation. Runtime WebGL validation and the final full-cast joint/contact test are recorded by the parent task."
   }
 }
