@@ -5,10 +5,17 @@ This makes review sheets, not new character textures or a likeness score.
 """
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+import argparse
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / 'model-preview-output'
-OUT = ROOT / 'docs/model-preview'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--before', type=Path, default=WORK / 'portrait-before')
+parser.add_argument('--after', type=Path, default=WORK / 'portrait-final')
+parser.add_argument('--out', type=Path, default=ROOT / 'docs/model-preview')
+parser.add_argument('--label', default='2026-11-01')
+args = parser.parse_args()
+OUT = args.out
 OUT.mkdir(parents=True, exist_ok=True)
 font_path = Path('C:/Windows/Fonts/arial.ttf')
 font = ImageFont.truetype(str(font_path), 19) if font_path.exists() else ImageFont.load_default()
@@ -16,11 +23,11 @@ small = ImageFont.truetype(str(font_path), 14) if font_path.exists() else font
 names = ['Liu Bang', 'Xiang Yu', 'Zhang Liang', 'Fan Zeng', 'Xiang Bo', 'Fan Kuai', 'Xiang Zhuang', 'Chen Ping']
 ids = ['hai', 'u', 'ryo', 'zo', 'haku', 'kai', 'sou', 'chin']
 atlas = Image.open(ROOT / 'src/assets/character-atlas.png').convert('RGB')
-before = Image.open(WORK / 'portrait-before/portraits-high.png').convert('RGB')
-after = Image.open(WORK / 'portrait-final/portraits-high.png').convert('RGB')
+before = Image.open(args.before / 'portraits-high.png').convert('RGB')
+after = Image.open(args.after / 'portraits-high.png').convert('RGB')
 sheet = Image.new('RGB', (1560, 1420), '#ebe8e1')
 d = ImageDraw.Draw(sheet)
-d.text((16, 12), 'Portrait reference / previous model / updated model - 2026-11-01', fill='#252a2a', font=font)
+d.text((16, 12), 'Portrait reference / previous model / updated model - ' + args.label, fill='#252a2a', font=font)
 d.text((16, 40), 'Same CPU geometry renderer and framing for before/after. Not a WebGL or photorealistic comparison.', fill='#414848', font=small)
 for i, name in enumerate(names):
     x = (i % 2) * 780
@@ -38,11 +45,11 @@ for i, name in enumerate(names):
         sheet.paste(tile, (x+(j+1)*260+(260-tile.width)//2, y+54))
 sheet.save(OUT / 'portrait-comparison.jpg', quality=92)
 after.save(OUT / 'portrait-after.jpg', quality=93)
-Image.open(WORK / 'portrait-final/portraits-low.png').convert('RGB').save(OUT / 'portrait-low.jpg', quality=91)
+Image.open(args.after / 'portraits-low.png').convert('RGB').save(OUT / 'portrait-low.jpg', quality=91)
 # Preserve actual four-view head crops for all eight, with view labels visible.
 multi = Image.new('RGB', (1440, 8*400), '#ebe8e1')
 for i, cid in enumerate(ids):
-    image = Image.open(WORK / f'portrait-final/views/{cid}-high.png').convert('RGB')
+    image = Image.open(args.after / f'views/{cid}-high.png').convert('RGB')
     multi.paste(image.crop((0, 720, 1440, 1120)), (0, i*400))
 multi.save(OUT / 'portrait-multiview.jpg', quality=92)
 print('Saved comparison, high/low portraits and four-view head evidence.')

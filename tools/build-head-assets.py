@@ -90,12 +90,12 @@ def mix(a,b,t): return a*(1-t)+b*t
 # Primary forms are authored independently. Values describe actual anatomy,
 # never an atlas face pasted over a common round head.
 CAST={
- 'ryo': dict(width=1.075,jaw=1.025,cheek=1.055,length=1.055,nose=.0015,bridge=.0010,eye=.67,tilt=.0026,space=1.04,age=.05,skin='d4b297',hair='13100e',grey=0,brow=.00215,slope=.001,beard=0,recede=.0,knot=.025),
+ 'ryo': dict(width=1.075,jaw=1.020,cheek=1.075,length=1.000,nose=.0005,bridge=.0010,eye=.67,tilt=.0026,space=1.04,age=.05,skin='c9a383',hair='13100e',grey=0,brow=.0035,slope=.001,beard=0,recede=.0,knot=.025),
  'hai': dict(width=1.11,jaw=1.10,cheek=1.03,length=1.04,nose=.009,bridge=.003,eye=.69,tilt=.000,space=1.02,age=.8,skin='b68c6b',hair='25201a',grey=.23,brow=.003,slope=-.001,beard=.105,recede=.010,knot=.024),
  'u': dict(width=1.14,jaw=1.13,cheek=1.055,length=1.015,nose=.005,bridge=.004,eye=.60,tilt=.0040,space=1.025,age=.22,skin='bf9475',hair='17120f',grey=0,brow=.0039,slope=.004,beard=.014,recede=.001,knot=.037),
- 'zo': dict(width=.99,jaw=.93,cheek=1.06,length=1.09,nose=.008,bridge=.002,eye=.59,tilt=-.0015,space=1.00,age=1.45,skin='be9877',hair='c9c5bb',grey=.95,brow=.0040,slope=-.002,beard=.178,recede=.020,knot=.023),
+ 'zo': dict(width=.99,jaw=.93,cheek=1.06,length=1.09,nose=.008,bridge=.002,eye=.59,tilt=-.0015,space=1.00,age=1.45,skin='be9877',hair='c9c5bb',grey=.95,brow=.0058,slope=-.002,beard=.178,recede=.020,knot=.023),
  'haku': dict(width=1.15,jaw=1.07,cheek=1.11,length=.95,nose=.003,bridge=.001,eye=.72,tilt=-.002,space=1.04,age=.85,skin='b88d6e',hair='302a24',grey=.40,brow=.0028,slope=-.002,beard=.061,recede=.011,knot=.025),
- 'kai': dict(width=1.24,jaw=1.26,cheek=1.15,length=1.015,nose=.0055,bridge=.001,eye=.58,tilt=.004,space=1.04,age=.55,skin='aa7c5e',hair='17130f',grey=.06,brow=.0053,slope=.004,beard=.032,recede=.001,knot=.038),
+ 'kai': dict(width=1.24,jaw=1.26,cheek=1.15,length=1.015,nose=.0055,bridge=.001,eye=.58,tilt=.004,space=1.04,age=.55,skin='aa7c5e',hair='17130f',grey=.06,brow=.0062,slope=.004,beard=.032,recede=.001,knot=.038),
  'sou': dict(width=1.05,jaw=1.01,cheek=1.06,length=1.01,nose=.001,bridge=.001,eye=.64,tilt=.0042,space=1.07,age=.04,skin='c59b7c',hair='18130f',grey=0,brow=.0028,slope=.004,beard=0,recede=.0,knot=.033),
  'chin': dict(width=1.01,jaw=.98,cheek=1.00,length=1.05,nose=.004,bridge=.001,eye=.72,tilt=.0018,space=1.05,age=.18,skin='caa587',hair='201913',grey=.03,brow=.0022,slope=.000,beard=.030,recede=.005,knot=.025)
 }
@@ -113,12 +113,14 @@ FACE_FORMS={
  'chin':dict(nasal=.97,chin=.0014,plane=.0011,corner=.0011,lip=.00055)
 }
 FACE_FORMS['zo']['corner']=-.0025
+FACE_FORMS['ryo'].update(plane=.0005,corner=.0016)
+FACE_FORMS['kai']['corner']=-.0018
 
 # Portrait proportions are an anatomical height lattice, followed by paired
 # facial landmarks. This changes the connected source skull and mandibular
 # silhouette before any grooming or surface detail is applied.
 PORTRAIT_FORMS={
- 'ryo':dict(widths=[1.02,1.015,1.020,.990,1.035,1.035],zygoma=.0030,hollow=.0032,angle=.0018,chin=.0038,ala=-.0013,radix=.0018,tip=.0003,orbit=.0013),
+ 'ryo':dict(widths=[1.02,1.015,1.025,1.030,1.020,1.000],zygoma=.0018,hollow=.0012,angle=.0012,chin=.0028,ala=-.0005,radix=.0015,tip=-.0012,orbit=.0013),
  'hai':dict(widths=[1.03,1.020,1.015,.980,1.025,1.030],zygoma=.0025,hollow=.0030,angle=.0018,chin=.0022,ala=.0005,radix=.0021,tip=.0030,orbit=.0021),
  'u':dict(widths=[1.04,1.035,1.025,.975,1.045,1.055],zygoma=.0033,hollow=.0035,angle=.0027,chin=.0042,ala=.0007,radix=.0020,tip=.0010,orbit=.0023),
  'zo':dict(widths=[1.045,1.010,1.035,.920,.950,.940],zygoma=.0040,hollow=.0050,angle=.0008,chin=.0021,ala=.0008,radix=.0020,tip=.0040,orbit=.0040),
@@ -173,9 +175,12 @@ HAIR_FORMS={
  'sou':dict(front=.079,temple=.027,sideburn=.048,top=.0070,side=.0052,rough=.18,part=.22),
  'chin':dict(front=.080,temple=.029,sideburn=.043,top=.0060,side=.0048,rough=.07,part=.06)
 }
-HAIR_FORMS['ryo'].update(front=.079,temple=.025,top=.0090,side=.0055,part=.52,rough=.08)
-HAIR_FORMS['u'].update(front=.074,top=.0100,side=.0070,part=-.08)
-HAIR_FORMS['zo'].update(front=.087,side=.0055,part=.16)
+HAIR_FORMS['ryo'].update(front=.085,temple=.025,top=.0140,side=.0065,part=.65,rough=.10)
+HAIR_FORMS['u'].update(front=.079,top=.0130,side=.0080,part=-.16)
+HAIR_FORMS['zo'].update(front=.085,side=.0070,part=.16)
+HAIR_FORMS['kai'].update(front=.076,top=.0120,side=.0120,rough=.60)
+HAIR_FORMS['hai'].update(front=.082,top=.0060,side=.0060,part=-.12)
+HAIR_FORMS['haku'].update(side=.0065,part=.20)
 if SELECTED and set(SELECTED)-set(CAST):raise ValueError('Unknown --ids: '+','.join(sorted(set(SELECTED)-set(CAST))))
 
 # A lid is not a vertically scaled copy of another actor's lid. These profiles
@@ -195,6 +200,7 @@ for _cid,_upper,_lower,_width in [('ryo',.73,.60,1.27),('hai',.70,.73,1.11),('u'
     EYE_FORMS[_cid].update(upper=_upper,lower=_lower,width=_width)
 EYE_FORMS['ryo'].update(brow_y=.0378,brow_angle=.0030,brow_arch=.0026,brow_peak=.53)
 EYE_FORMS['zo'].update(brow_y=.0378,brow_angle=.0050,brow_arch=.0021,brow_peak=.32)
+EYE_FORMS['kai'].update(upper=.56,hood=.0025,brow_y=.0360)
 
 def ocular_form(p):
     return EYE_FORMS[next(k for k,v in CAST.items() if v is p)]
@@ -238,6 +244,7 @@ def sculpt(v,p):
         zz+=.0013*gauss(x,.008)*gauss(y-.015,.025)*front
         zz-=.0008*gauss(x,.013)*gauss(y+.005,.010)*front
     if identity=='ryo':
+        yy-=.0025*gauss(x,.022)*gauss(y+.012,.013)*front
         zz+=.0011*(gauss(x-.005,.0036)+gauss(x+.005,.0036))*gauss(y+.034,.0025)*front
         zz+=.0008*gauss(x,.016)*gauss(y+.041,.0030)*front
     # Independent upper/lower lid maps retain the continuous source topology.
@@ -298,6 +305,21 @@ def sculpt(v,p):
             zz-=.0014*(gauss(x-.005,.0018)+gauss(x+.005,.0018))*gauss(y-.047,.013)*front
             zz+=.0034*gauss(ax-.018,.021)*gauss(y-.044,.008)*front
             zz-=.0018*gauss(ax-.031,.018)*gauss(y+.021,.015)*front
+            for fold_y in (.062,.073,.083):
+                line=fold_y+.003*math.cos(x*49)
+                zz-=.0012*gauss(y-line,.0019)*gauss(x,.047)*front
+                zz+=.0007*gauss(y-line-.003,.0018)*gauss(x,.047)*front
+            for slope in (-.35,.05,.38):
+                zz-=.0014*gauss(y-(.022+(ax-.037)*slope),.0014)*gauss(ax-.043,.012)*front
+            nasolabial=.016+max(0,-y-.014)*.36
+            zz-=.0012*gauss(ax-nasolabial,.0024)*gauss(y+.030,.027)*front
+            zz-=.0018*gauss(ax-(.021+max(0,-y-.038)*.30),.0027)*gauss(y+.050,.014)*front
+    if identity=='kai':
+        zz+=.0032*gauss(ax-.018,.024)*gauss(y-.040,.008)*front
+        zz-=.0018*(gauss(x-.006,.0023)+gauss(x+.006,.0023))*gauss(y-.044,.015)*front
+    if identity=='u':
+        zz+=.0022*gauss(ax-.018,.023)*gauss(y-.041,.008)*front
+        zz-=.0015*(gauss(x-.004,.0018)+gauss(x+.004,.0018))*gauss(y-.047,.014)*front
     return portrait_form(Vector((xx,yy,zz)),v,identity)
 
 def trim_neck(ob):
@@ -402,6 +424,19 @@ class GroomMesh:
 def add_brows(cid,p,bvh,material,quality='high'):
     groom=GroomMesh();f=EYE_FORMS[cid];rng=random.Random(cid+'-brows')
     def brow_point(s,t):
+        authored={
+            'ryo':[(.009,.0345),(.020,.0360),(.032,.0480),(.049,.0410)],
+            'u':[(.008,.0325),(.018,.0330),(.041,.0480),(.053,.0400)],
+            'hai':[(.010,.0370),(.022,.0410),(.037,.0490),(.051,.0410)],
+            'kai':[(.0075,.0325),(.021,.0318),(.042,.0445),(.058,.0370)],
+            'zo':[(.0075,.0360),(.022,.0480),(.036,.0410),(.049,.0330)]
+        }
+        if cid in authored:
+            a,b,c,d=authored[cid];u=1-t
+            x=(u*u*u*a[0]+3*u*u*t*b[0]+3*u*t*t*c[0]+t*t*t*d[0])*s
+            y=u*u*u*a[1]+3*u*u*t*b[1]+3*u*t*t*c[1]+t*t*t*d[1]
+            if cid=='ryo':y+=(.0006 if s>0 else -.0002)*t
+            return x,y
         # Inner crowding, peak position, direction and tail fall differ by actor.
         inner=.0085 if cid in ('u','kai') else .0105
         x=s*mix(inner,.046*p['width'],t)
@@ -545,10 +580,10 @@ def scalp(cid,p,head,material,quality):
                 points.append(point);norms.append(normal);widths.append(.0026*(1-t)**.75+.00005);heights.append(.00075*(1-t)+.00005)
             parts.append(lock_mesh(cid+'_framing_hair_mass',points,norms,widths,heights))
         if cid in ('hai','u','kai','zo'):
-            for layer in range(3 if cid=='zo' else 2):
+            for layer in range(5 if cid=='zo' else 4 if cid in ('u','kai') else 3):
                 length={'hai':.112,'u':.155,'kai':.137,'zo':.175}[cid]
                 if cid=='zo':length*=.87+.09*layer
-                a=side*((1.92+.16*layer) if cid=='zo' else (2.00+.17*layer));d=Vector((math.sin(a)*.080*p['width'],(.024 if cid=='zo' else .017)-center.y,math.cos(a)*.085))
+                a=side*((1.88+.22*layer) if cid=='zo' else (1.90+.26*layer));d=Vector((math.sin(a)*.080*p['width'],(.024 if cid=='zo' else .017)-center.y,math.cos(a)*.085))
                 root,normal=scalp_point(d);points=[];norms=[];widths=[];heights=[]
                 def nape_flow(t,spread=0):
                     point=root+Vector((-side*(.013+.003*layer)*t+spread*(1-.65*t),-length*t,-.014*t))
@@ -568,8 +603,8 @@ def scalp(cid,p,head,material,quality):
                     widths.append((.006 if cid=='kai' else .0040 if cid=='zo' else .0048)*taper+.00004);heights.append(.0017*taper+.00004)
                 parts.append(lock_mesh(cid+'_loose_nape_layer',points,norms,widths,heights))
                 napegroom=GroomMesh();rng=random.Random(cid+str(side)+str(layer)+'-nape')
-                for strand in range(38 if quality=='high' else 15):
-                    spread=(rng.random()-.5)*.007;span=.74+.31*rng.random();pp=[]
+                for strand in range(60 if quality=='high' else 18):
+                    spread=(rng.random()-.5)*.012;span=.74+.31*rng.random();pp=[]
                     for j in range(7):
                         t=j/6*span
                         point=nape_flow(t,spread);point.z-=.0010
@@ -579,8 +614,8 @@ def scalp(cid,p,head,material,quality):
     # Fine swept fibres break the smooth cap highlight and its uniform edge.
     # These are a single static mesh, following the same scalp contact field.
     rng=random.Random(cid+'-scalp-flow');groom=GroomMesh()
-    for strand in range(650 if quality=='high' else 160):
-        a=mix(-1.89,1.89,rng.random());root_y=hair_height(abs(a),p)+rng.random()*.021
+    for strand in range(920 if quality=='high' else 220):
+        a=mix(-3.10,3.10,rng.random());root_y=hair_height(abs(a),p)+rng.random()*.028
         start=Vector((math.sin(a)*.076*p['width'],root_y-center.y,math.cos(a)*.091)).normalized()
         offset=rng.random();flow_end=.48+.49*rng.random();points=[]
         for j in range(7 if quality=='high' else 5):
@@ -727,8 +762,8 @@ def add_beard(cid,p,bvh,material,head,quality='high'):
                 t=j/(steps-1);ease=smooth(0,1,t)
                 point=root.lerp(target,ease)
                 point+=normal*(.00025+.0065*math.sin(math.pi*t)*(1-.35*t))
-                point.x+=.0025*math.sin(t*7+phase)*math.sin(math.pi*t)
-                point.z+=.0028*math.sin(t*6+x*107)*math.sin(math.pi*t)
+                point.x+=(.0080 if cid=='zo' else .0045)*math.sin(t*7+phase)*math.sin(math.pi*t)
+                point.z+=.0048*math.sin(t*6+x*107)*math.sin(math.pi*t)
                 # First growth follows the source cheek before it hangs freely.
                 if t<.55:
                     near=bvh.ray_cast(Vector((point.x,point.y,.3)),Vector((0,0,-1)))
@@ -746,7 +781,7 @@ def add_beard(cid,p,bvh,material,head,quality='high'):
             for j in range(steps):
                 t=j/(steps-1)
                 point=root+normal*(.00018+length*.42*math.sin(t*math.pi*.5))+direction*length*t
-                point.x+=length*.10*math.sin(phase+t*5)*t
+                point.x+=length*(.22 if cid=='kai' else .10)*math.sin(phase+t*5)*t
                 near=bvh.find_nearest(point)
                 if near[0] is not None and (point-near[0]).dot(near[1])<.00015:point=near[0]+near[1]*.00018
                 points.append(point)
@@ -756,28 +791,32 @@ def add_beard(cid,p,bvh,material,head,quality='high'):
         groom.fibre(points,radius,.65+rng.random()*.95,.30)
     # The moustache is a small groom in two flowing lobes, leaving the philtrum
     # and vermilion readable instead of covering the mouth with a single tube.
-    reach={'u':.025,'kai':.034,'hai':.031,'zo':.032,'haku':.028,'chin':.023}[cid]
+    reach={'u':.025,'kai':.041,'hai':.031,'zo':.034,'haku':.028,'chin':.023}[cid]
     tail={'u':.010,'kai':.012,'hai':.010,'zo':.012,'haku':.009,'chin':.005}[cid]
+    def moustache_y(t):
+        if cid=='kai':return -.024-.006*t-.010*t*t
+        if cid=='zo':return -.025-.013*t-.002*math.sin(math.pi*t)
+        return -.0268-.003*t-tail*t**3
     for side in (-1,1):
         # Two coherent lobes follow the upper lip and overlap at the philtrum.
         vv=[];ff=[];rows=31
         for j in range(rows):
             t=j/(rows-1);x=side*mix(.0006,reach,t)
-            center_y=-.0268-.003*t-tail*t**3
-            half=(.0012 if cid=='chin' else .0024 if cid=='kai' else .0018)*(.30+.70*math.sin(math.pi*t)**.65)
+            center_y=moustache_y(t)
+            half=(.0012 if cid=='chin' else .0045 if cid=='kai' else .0030 if cid=='zo' else .0018)*(.45+.55*math.sin(math.pi*t)**.55)
             for k in range(5):
-                u=k/4*2-1;y=center_y+u*half;z=sample(bvh,x,y)+.0002+.0011*(1-u*u)*math.sin(math.pi*t)
+                u=k/4*2-1;y=center_y+u*half;z=sample(bvh,x,y)+.0002+(.0018 if cid=='kai' else .0011)*(1-u*u)*math.sin(math.pi*t)
                 vv.append((x,y,z))
                 if j and k:
                     q=j*5+k;face=(q-6,q-5,q,q-1);ff.append(tuple(reversed(face)) if side>0 else face)
         masses.append(mesh_object(cid+'_flowing_moustache_lobe',vv,ff,material))
         for strand in range(180 if quality=='high' else 100):
             u=rng.random();x=side*mix(.002,reach*.87,u)
-            y=-.0268-.002*u-tail*u**3+(rng.random()-.5)*(.0044 if cid=='kai' else .0032)
+            y=moustache_y(u)+(rng.random()-.5)*(.0065 if cid=='kai' else .0042 if cid=='zo' else .0032)
             root=Vector((x,y,sample(bvh,x,y)+.00016));points=[]
             extent=(.004+.007*u)*( .75+.5*rng.random())
             for j in range(3):
-                t=j/2;xx=x+side*extent*t;yy=y-(.0015+.003*u)*t
+                t=j/2;xx=x+side*extent*t;yy=y+(moustache_y(min(1,u+extent/reach*t))-moustache_y(u))
                 zz=sample(bvh,xx,yy)+.00025+.0008*math.sin(math.pi*t)
                 points.append(Vector((xx,yy,zz)))
             groom.fibre(points,(.00021 if cid=='u' else .00030)*(.8+.4*rng.random())*(1 if quality=='high' else 1.5),.72+.8*rng.random(),.22)

@@ -86,7 +86,7 @@
     var g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(p, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
     g.userData.outerCount = N; g.userData.nu = nu; g.userData.nv = nv; return g;
   }
-  var BODY = [[-.34,.159,.112],[-.27,.155,.108],[-.16,.164,.117],[-.04,.178,.127],[.065,.187,.128],[.13,.193,.116],[.17,.184,.099],[.195,.150,.078],[.214,.097,.061],[.235,.052,.048]];
+  var BODY = [[-.34,.159,.112],[-.27,.155,.108],[-.16,.164,.117],[-.04,.178,.127],[.065,.187,.128],[.13,.188,.113],[.17,.171,.095],[.195,.130,.075],[.214,.083,.058],[.235,.052,.048]];
   function bodySize(y, b) {
     var v = BODY[0];
     // Continuous tangents through the tailoring stations avoid a horizontal
@@ -173,42 +173,50 @@
     },depth*.45*s,false,true);
     return object(g,mat,name);
   }
-  function collar(c,s,b,armored) {
+  function collar(c,s,b,armored,id) {
     var group=new T.Group();group.name='sewn-layered-collar';
+    // Tailor the opening to the actual anatomical neck, independently of
+    // shoulder width. The broad guard's collar must not cut through his neck.
+    var neckFit=({u:1.23,kai:1.36,hai:1.10,haku:1.12})[id]||1,neckDepth=1+(neckFit-1)*.75;
     var cut = armored ? -.115 : -.255;
     function pts(side,under){
-      var xy=under?[[-.048,.232],[-.052,.203],[-.047,.169],[-.008,.114],[.010,.086]]:[[.048,.232],[.052,.202],[.046,.156],[-.012,.064],[-.082,-.071],[-.144,cut]];
-      return xy.map(function(p,i){var z=i===0?-.015:i===1?.045:chestFront(p[0],p[1],b)+.007+(under?0:.007);if(armored&&i>1)z-=.022*ease(.17,.05,p[1]);return [p[0],p[1],z];});
+      var xy=under?[[-.061,.234],[-.058,.211],[-.044,.168],[-.008,.114],[.010,.086]]:[[.061,.234],[.058,.211],[.044,.163],[-.012,.064],[-.082,-.071],[-.144,cut]];
+      return xy.map(function(p,i){var x=p[0]*(i<2?neckFit:1),z=i===0?-.006:i===1?.040*neckDepth:chestFront(x,p[1],b)+.005+(under?0:.004);if(armored&&i>1)z-=.022*ease(.17,.05,p[1]);return [x,p[1],z];});
     }
     var broad=trimMaterial(c.trim,c.thread,armored),lining=fabric(material(c.inner||0xd2c6b2,.94,0,{side:T.DoubleSide}));
     var backingMat=fabric(material(c.scarf||c.robe,.88,0,{side:T.DoubleSide}),armored?'rugged':c.fabric);
     var under=pts(-1,true),over=pts(1,false);
-    // The facing continues up behind the neck-side lapels. A lower top edge
-    // exposed the hollow interior between the shirt and the anatomical neck.
-    var facing=sheet(16,12,function(u,v){var y=mix(.095,.190,u)-.009*ease(.65,1,u)*Math.pow(v*2-1,2),half=mix(.009,.029,u),x=(v*2-1)*half,z=mix(chestFront(x,y,b)-.008,.049,ease(.35,1,u));return [x*s,y*s,z*s];},.0016*s,false,true);
+    // The underrobe is a continuous open-neck shell: its upper ring follows
+    // the anatomical neck and its lower ring joins the clothed chest. A flat
+    // V-shaped bib left a deep empty cavity between neck and lapel.
+    var facing=sheet(26,64,function(u,v){var a=v*PI*2,cs=Math.cos(a),sn=Math.sin(a),front=Math.max(0,cs),y=mix(.075,.238-.052*front,u),rx=mix(.150*b,.060*neckFit,u),rz=mix(.124*b,.048*neckDepth,u),x=sn*rx,z=cs*rz-.003*u;return [x*s,y*s,z*s];},.0026*s,true,true);
     group.add(object(facing,backingMat,'underrobe-throat-facing'));
     if(armored){
       // A single draped collar skirt is gathered at the nape and lies on the
       // shoulder cloth. The red/teal/brown wrap remains under the cuirass lip.
       var wrap=sheet(26,68,function(u,v){var a=mix(-PI*.91,PI*.91,v),sn=Math.sin(a),cs=Math.cos(a),y=.212-.082*u-.022*u*Math.pow(Math.abs(sn),1.3),d=bodySize(y,b);
-        var x=mix(sn*.058,cpow(sn,2/2.6)*(d[0]+.004),u),z=mix(cs*.046,cpow(cs,2/2.4)*(d[1]+.006),u)+cs*.025*Math.sin(u*PI);
+        var x=mix(sn*.058*neckFit,cpow(sn,2/2.6)*(d[0]+.004),u),z=mix(cs*.046*neckDepth,cpow(cs,2/2.4)*(d[1]+.006),u)+cs*.025*Math.sin(u*PI);
         y+=.005*Math.sin(u*PI*5+a*2)*Math.sin(u*PI);z+=.004*Math.sin(u*PI*5+a*2)*Math.sin(u*PI);return [x*s,y*s,z*s];},.0038*s,false,true);
       group.add(object(wrap,backingMat,'gathered-neck-and-shoulder-wrap'));
     }
-    group.add(ribbon(under,function(u){return mix(.039,armored?.050:.058,u);},.005,armored?backingMat:broad,'under-collar',function(u,v){return .004*Math.sin(v*PI)*(1-.35*u);},s));
-    group.add(ribbon(over,function(u){return mix(.040,armored?.064:.067,u);},.005,armored?backingMat:broad,'rolled-over-lapel',function(u,v){return .0055*Math.sin(v*PI);},s));
+    function underWidth(u){return mix(.037,armored?.050:.058,u);}
+    function overWidth(u){return mix(.038,armored?.064:.067,u);}
+    function collarFrame(curve,u){var p=curve.getPoint(u),d=curve.getTangent(u),radial=new V(p.x*.85,0,p.z+.012).normalize(),normal=new V(0,0,1).lerp(radial,ease(.158,.223,p.y)).normalize(),across=normal.clone().cross(d).normalize();return {p:p,n:normal,q:across};}
+    function collarBand(path,width,name,roll){var curve=new T.CatmullRomCurve3(path.map(function(p){return new V(p[0],p[1],p[2]);}));return object(sheet(58,10,function(u,v){var f=collarFrame(curve,u),p=f.p.addScaledVector(f.q,width(u)*(v-.5)).addScaledVector(f.n,roll*Math.sin(v*PI));return [p.x*s,p.y*s,p.z*s];},.0018*s,false,true),armored?backingMat:broad,name);}
+    group.add(collarBand(under,underWidth,'under-collar',.0028));
+    group.add(collarBand(over,overWidth,'rolled-over-lapel',.0033));
     // Narrow sewn piping follows the rolled outer collar, sharing its curve.
     // Its motif is mapped to the cloth itself, rather than floating jewelry.
     if(armored){var outerEdge=over.map(function(p,i,all){var A=all[Math.max(0,i-1)],B=all[Math.min(all.length-1,i+1)],d=new V(B[0]-A[0],B[1]-A[1],0).normalize(),q=new V(-d.y,d.x,0).multiplyScalar(-.022);return [p[0]+q.x,p[1]+q.y,p[2]+.002];});group.add(ribbon(outerEdge,.011,.002,broad,'bound-armored-wrap-edge',function(u,v){return .0014*Math.sin(v*PI);},s));}
-    // The pale underrobe is a separate sewn layer, visible only inside the V.
-    [under.slice(0,4),over.slice(0,4)].forEach(function(path,k){
-      path=path.map(function(p,i,all){var q0=all[Math.max(0,i-1)],q1=all[Math.min(all.length-1,i+1)],d=new V(q1[0]-q0[0],q1[1]-q0[1],0).normalize(),q=new V(-d.y,d.x,0).multiplyScalar(k?-.023:.021);return [p[0]+q.x,p[1]+q.y,p[2]-.003];});
-      // A broad flat facing sits under the outer lapel. Recomputing its Z from
-      // the chest would pull the neck end forward into a floating white loop.
-      group.add(ribbon(path,armored?.007:.012,.002,lining,'overlapped-linen-inner-collar',function(u,v){return .0007*Math.sin(v*PI);},s));
+    // Both layers use the same continuous curve and tangent. Offsetting just
+    // the sparse control points made the white edging kink and detach.
+    [under,over].forEach(function(path,k){
+      var curve=new T.CatmullRomCurve3(path.map(function(p){return new V(p[0],p[1],p[2]);})),width=k?overWidth:underWidth,direction=k?-1:1,end=k?.53:1;
+      var inner=sheet(48,6,function(u,v){var t=u*end,f=collarFrame(curve,t),exposure=(armored?.004:.006)*(1-.65*ease(.82,1,u)),offset=direction*(width(t)*.5-.001+v*exposure),p=f.p.addScaledVector(f.q,offset).addScaledVector(f.n,-.0014+.00045*Math.sin(v*PI));return [p.x*s,p.y*s,p.z*s];},.0015*s,false,true);
+      group.add(object(inner,lining,'overlapped-linen-inner-collar'));
     });
     // Back collar has a stand, with a folded top. It bridges both lapels at the nape.
-    var back=sheet(32,6,function(u,v){var a=mix(PI*.47,PI*1.53,u),r=.054+(v-.5)*.010;return [Math.sin(a)*r*s,(.217+(v-.5)*.031)*s,Math.cos(a)*r*.86*s];},.004*s,false,true);
+    var back=sheet(40,8,function(u,v){var a=mix(PI*.46,PI*1.54,u),r=.059+(v-.5)*.006;return [Math.sin(a)*r*s*neckFit,(.234+(v-.5)*.034)*s,(Math.cos(a)*r*.75*neckDepth-.004)*s];},.003*s,false,true);
     group.add(object(back,armored?backingMat:broad,'standing-nape-collar'));return group;
   }
   function waist(c,s,b,armored) {
@@ -291,7 +299,7 @@
         var creaseAngle=Math.atan2(Math.sin(a-(.3+u*1.4)),Math.cos(a-(.3+u*1.4)));
         fold+=(-.006*bell(creaseAngle,.18)+.005*bell(creaseAngle-.24,.25))*s*Math.sin(u*PI);
         fold+=.0017*s*(Math.sin(a*13-u*6)+.50*Math.sin(a*21+u*9))*Math.sin(u*PI)*(.45+.55*elbow);
-        var cap=o.upper?(o.fitted?.008:.014)*s*Math.sin(u*PI)*(.5+.5*Math.abs(sn)):0;
+        var cap=o.upper?(o.fitted?.008:.006)*s*Math.sin(u*PI)*(.5+.5*Math.abs(sn)):0;
         var bendFold=o.upper?(.010*bell(u-.80,.045)-.006*bell(u-.88,.030)+.007*bell(u-.95,.025)):(.008*bell(u-.075,.040)-.005*bell(u-.16,.035));
         rad+=fold+cap+bendFold*s*elbow*Math.pow(Math.max(0,cs),2)-thick;
         var h=(o.H?o.H(u):0)*hang*(1-.63*raised);
