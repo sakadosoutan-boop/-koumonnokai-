@@ -298,3 +298,49 @@
   .km-panel-fixed .km-stem { max-height: 190px; font-size: 18px; }
   .km-cutin { top: calc(env(safe-area-inset-top) + 104px); }
 }
+
+/* ---- 全体の点検（2026-11-01） ---- */
+/* 読み解け：広い画面では白文を選択肢の右に置き、選び直しや解説のあいだも見えるように */
+@media (min-width:720px) {
+  .km-panel.km-ask-split { display: grid; grid-template-columns: minmax(0,1fr) auto; column-gap: 18px; align-content: start; }
+  .km-ask-split > * { grid-column: 1; min-width: 0; }
+  .km-ask-split > .km-ask-h { grid-column: 1 / -1; }
+  .km-ask-split > .km-stem-wrap { grid-column: 2; grid-row: 2 / span 12; align-self: start; position: sticky; top: 0; z-index: 1; margin: 0; min-width: 132px; max-width: 34vw; }
+  .km-ask-split .km-stem { max-height: min(300px, 44vh); }
+  .km-ask-split > .km-opts ~ .km-nav { position: static; margin: 10px 0 0; padding: 0; background: none; border-top: 0; }
+}
+/* チュートリアルの説明は本文の窓の上に浮かべる */
+.km-cap > .km-tip { position: absolute; left: 0; right: 0; bottom: calc(100% + 34px); margin: 0; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,.5); background: #2c2a1cf5; z-index: 4; }
+@media (max-height:520px) { .km-cap > .km-tip { bottom: calc(100% + 30px); font-size: 13px; padding: 8px 12px; } }
+/* 章の札のあいだは人物の名札・吹き出しを隠し、題を読みやすく */
+.km-carding .km-label, .km-carding .km-bub { opacity: 0 !important; transition: opacity .3s; }
+.km-card { background: radial-gradient(ellipse at center, rgba(0,0,0,.55), rgba(0,0,0,.85)); }
+/* 小さすぎた文字を読める大きさに */
+.km-tb { font-size: 11px; }
+.km-map .km-map-s { font-size: 11.5px; }
+.km-intro-quote figcaption small { font-size: 11px; }
+/* 鴻門への道：場面の点を押しやすく */
+.km-intro-nav nav button { min-width: 36px; min-height: 36px; align-content: center; }
+/* 本文が切り替わるときに、ふわりと出す */
+@keyframes kmPanelIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.km-panel-fixed > .km-speaker, .km-panel-fixed > .km-evidence-label, .km-panel-fixed > .km-text, .km-panel-fixed > .km-ask-h, .km-panel-fixed > .km-opts, .km-panel-fixed > .km-stem-wrap { animation: kmPanelIn .28s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .km-panel-fixed > * { animation: none !important; } }
+/* スマホ横向き：白文と紙芝居の札を小さくして、舞台を残す */
+@media (max-height:520px) and (min-width:720px) {
+  .km-ask-split .km-stem { max-height: 132px; font-size: 17px; }
+  .km-ask-split > .km-stem-wrap { min-width: 96px; }
+  .km-drama-card { padding: 8px 16px 8px; background: linear-gradient(120deg, rgba(10,29,34,.86), rgba(17,29,31,.8)); }
+  .km-drama-card .km-speaker-portrait { gap: 8px; padding-bottom: 4px; }
+  .km-drama-card .km-speaker-portrait .km-portrait { width: 30px; height: 30px; }
+  .km-drama-card .km-speaker-identity small { display: none; }
+  .km-drama-card .km-evidence-label { margin: 2px 0; }
+  .km-drama-text { font-size: 16px; line-height: 1.6; margin: 0 0 4px; }
+  .km-drama-text + .km-drama-gloss { margin: 0 0 6px; font-size: 12.5px; line-height: 1.55; }
+  .km-drama-nav .km-btn { padding-top: 6px; padding-bottom: 6px; }
+}
+/* 原文の段は読む場面なので、窓を高くする */
+@media (max-width:580px) { .km-panel.km-panel-fixed.km-panel-gen { height: 50dvh; max-height: 50dvh; } }
+@media (max-height:520px) and (orientation:landscape) {
+  .km-panel.km-panel-fixed.km-panel-gen { height: 64dvh; max-height: 64dvh; }
+  .km-panel-gen .km-paper { height: 118px; }
+}

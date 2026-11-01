@@ -1070,6 +1070,52 @@ button:disabled { opacity:.4; cursor:not-allowed; }
   .km-cutin { top: calc(env(safe-area-inset-top) + 104px); }
 }
 
+/* ---- 全体の点検（2026-11-01） ---- */
+/* 読み解け：広い画面では白文を選択肢の右に置き、選び直しや解説のあいだも見えるように */
+@media (min-width:720px) {
+  .km-panel.km-ask-split { display: grid; grid-template-columns: minmax(0,1fr) auto; column-gap: 18px; align-content: start; }
+  .km-ask-split > * { grid-column: 1; min-width: 0; }
+  .km-ask-split > .km-ask-h { grid-column: 1 / -1; }
+  .km-ask-split > .km-stem-wrap { grid-column: 2; grid-row: 2 / span 12; align-self: start; position: sticky; top: 0; z-index: 1; margin: 0; min-width: 132px; max-width: 34vw; }
+  .km-ask-split .km-stem { max-height: min(300px, 44vh); }
+  .km-ask-split > .km-opts ~ .km-nav { position: static; margin: 10px 0 0; padding: 0; background: none; border-top: 0; }
+}
+/* チュートリアルの説明は本文の窓の上に浮かべる */
+.km-cap > .km-tip { position: absolute; left: 0; right: 0; bottom: calc(100% + 34px); margin: 0; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,.5); background: #2c2a1cf5; z-index: 4; }
+@media (max-height:520px) { .km-cap > .km-tip { bottom: calc(100% + 30px); font-size: 13px; padding: 8px 12px; } }
+/* 章の札のあいだは人物の名札・吹き出しを隠し、題を読みやすく */
+.km-carding .km-label, .km-carding .km-bub { opacity: 0 !important; transition: opacity .3s; }
+.km-card { background: radial-gradient(ellipse at center, rgba(0,0,0,.55), rgba(0,0,0,.85)); }
+/* 小さすぎた文字を読める大きさに */
+.km-tb { font-size: 11px; }
+.km-map .km-map-s { font-size: 11.5px; }
+.km-intro-quote figcaption small { font-size: 11px; }
+/* 鴻門への道：場面の点を押しやすく */
+.km-intro-nav nav button { min-width: 36px; min-height: 36px; align-content: center; }
+/* 本文が切り替わるときに、ふわりと出す */
+@keyframes kmPanelIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.km-panel-fixed > .km-speaker, .km-panel-fixed > .km-evidence-label, .km-panel-fixed > .km-text, .km-panel-fixed > .km-ask-h, .km-panel-fixed > .km-opts, .km-panel-fixed > .km-stem-wrap { animation: kmPanelIn .28s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .km-panel-fixed > * { animation: none !important; } }
+/* スマホ横向き：白文と紙芝居の札を小さくして、舞台を残す */
+@media (max-height:520px) and (min-width:720px) {
+  .km-ask-split .km-stem { max-height: 132px; font-size: 17px; }
+  .km-ask-split > .km-stem-wrap { min-width: 96px; }
+  .km-drama-card { padding: 8px 16px 8px; background: linear-gradient(120deg, rgba(10,29,34,.86), rgba(17,29,31,.8)); }
+  .km-drama-card .km-speaker-portrait { gap: 8px; padding-bottom: 4px; }
+  .km-drama-card .km-speaker-portrait .km-portrait { width: 30px; height: 30px; }
+  .km-drama-card .km-speaker-identity small { display: none; }
+  .km-drama-card .km-evidence-label { margin: 2px 0; }
+  .km-drama-text { font-size: 16px; line-height: 1.6; margin: 0 0 4px; }
+  .km-drama-text + .km-drama-gloss { margin: 0 0 6px; font-size: 12.5px; line-height: 1.55; }
+  .km-drama-nav .km-btn { padding-top: 6px; padding-bottom: 6px; }
+}
+/* 原文の段は読む場面なので、窓を高くする */
+@media (max-width:580px) { .km-panel.km-panel-fixed.km-panel-gen { height: 50dvh; max-height: 50dvh; } }
+@media (max-height:520px) and (orientation:landscape) {
+  .km-panel.km-panel-fixed.km-panel-gen { height: 64dvh; max-height: 64dvh; }
+  .km-panel-gen .km-paper { height: 118px; }
+}
+
 </style>
 </head>
 <body class="soukan">
@@ -9775,7 +9821,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       (drama?dramaHTML(s):'')+'<div class="km-intro-layout"'+(drama?' hidden':'')+'><div class="km-intro-visual"><span class="km-visual-no" aria-hidden="true">0'+(index+1)+'</span>'+timelineHTML(s)+figureHTML(s)+'<div class="km-map-legend"><span>● 劉邦側</span><span>● 項羽側</span><small>人物名を押すと紹介</small></div><div id="km-intro-person" aria-live="polite"></div></div>'+
       '<article class="km-intro-copy" aria-live="polite">'+copyHTML(s)+
       '<details class="km-intro-source"><summary>出典と表現について</summary><p>原文は『史記』から短く引きました。書き下し文・現代語訳・説明は学習用です。地図と人物画は模式的な表現です。</p><a href="https://zh.wikisource.org/wiki/史記/卷007" target="_blank" rel="noopener">項羽本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷008" target="_blank" rel="noopener">高祖本紀</a> · <a href="https://zh.wikisource.org/wiki/史記/卷048" target="_blank" rel="noopener">陳渉世家</a></details></article></div>'+
-      '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前へ</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===scenes.length-1?'done':'next')+'">'+(index===scenes.length-1?'チュートリアル「霸上の夜」へ →':'次へ →')+'</button><small class="km-intro-playback">'+(auto?'紙芝居は7秒ごとに進む · 解説は「解説を読む」で開く':'手動で進む · ← → で場面、Enter でコマ送り')+'</small></footer>';
+      '<footer class="km-intro-nav"><button data-intro="prev" '+(index===0?'disabled':'')+'>← 前の場面</button><nav aria-label="紙芝居の場面">'+scenes.map(function(x,i){return '<button data-intro="step" data-step="'+i+'" aria-label="'+(i+1)+' '+x.tag+'" aria-current="'+(i===index?'step':'false')+'"><i></i><span>'+x.tag+'</span></button>';}).join('')+'</nav><button class="km-btn gold" data-intro="'+(index===scenes.length-1?'done':'next')+'">'+(index===scenes.length-1?'チュートリアル「霸上の夜」へ →':'次の場面 →')+'</button><small class="km-intro-playback">'+(auto?'紙芝居は7秒ごとに進む · 解説は「解説を読む」で開く':'手動で進む<span class="km-key-hint"> · ← → で場面、Enter でコマ送り</span>')+'</small></footer>';
     if(callbacks.stage)callbacks.stage(drama?s.drama[cut]:null);
     schedule();
   }
@@ -9981,6 +10027,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   function fixedPanel(on) {
     if (!el.panel) return;
     el.panel.classList.toggle('km-panel-fixed', !!on);
+    el.panel.classList.remove('km-ask-split', 'km-panel-gen');
     if (on) el.panel.scrollTop = 0;
     checkMore();
   }
@@ -10330,6 +10377,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     }
     cur = n;
     fixedPanel(false);
+    clearTips();
     if (n.t !== 'end') persist();
     var prog = chapProgress(st.ch);
     el.title.innerHTML = esc(chap(st.ch).no + '　' + chap(st.ch).title) + (prog ? '<small class="km-title-prog">' + prog + '</small>' : '');
@@ -10464,11 +10512,13 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     mode = 'card';
     el.card.innerHTML = '<div class="km-card-in"><div class="km-card-no">' + esc(c.no) + '</div><div class="km-card-t">' + esc(c.title) + '</div><div class="km-card-sub">' + esc(c.sub) + '</div><div class="km-card-tap">画面をタップして始める</div></div>';
     el.card.classList.add('on');
+    $root.classList.add('km-carding');
     var finished = false;
     function fin() {
       if (finished) return; finished = true;
       clearTimeout(cardTimer);
       el.card.classList.remove('on');
+      $root.classList.remove('km-carding');
       done();
     }
     showCard.fin = fin;
@@ -10494,7 +10544,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     meet(n);
     el.panel.innerHTML = speakerHTML(n.w) + '<span class="km-evidence-label">史記をもとにした場面（ゲームで作った台詞もふくむ）</span>' +
       '<div class="km-text' + (n.w ? '' : ' narr') + (n.w === 'you' ? ' inner' : '') + '" id="km-text"></div>' +
-      '<div class="km-nav"><span class="km-hint-key">タップ／Enter で次へ</span><button class="km-btn gold km-next" data-km="next">次へ ▶</button></div>';
+      '<div class="km-nav"><span class="km-hint-key">タップ<span class="km-key-hint">／Enter </span>で次へ</span><button class="km-btn gold km-next" data-km="next">次へ ▶</button></div>';
     typeText(document.getElementById('km-text'), n.x);
     tip('say');
   }
@@ -10567,6 +10617,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   function doGen(n) {
     mode = 'gen';
     fixedPanel(true);
+    // 原文の段は読む場面なので、窓を少し高くする
+    el.panel.classList.add('km-panel-gen');
     ST.hideBubble();
     if (ST.speaker) ST.speaker(null);
     var g = K.genbun[n.g];
@@ -10621,6 +10673,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     opts = shuffle(opts, n.id);
     n._order = opts.map(function (x) { return x.i; });
     var canHint = n.k === 'read' && n.hint;
+    // 広い画面では、白文を選択肢の右に置き、選び直しや解説のあいだも見えるようにする
+    el.panel.classList.toggle('km-ask-split', !!n.stem);
     el.panel.innerHTML =
       '<div class="km-ask-h">' + (n.k === 'read' ? '<span class="km-ask-tag read">読み解け</span>' : '<span class="km-ask-tag judge">決断</span>') +
         '<span class="km-ask-q">' + esc(n.q) + '</span></div>' +
@@ -10688,6 +10742,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     }
     renderStatus();
     showHint(n); persist();
+    var h = document.getElementById('km-hint');
+    if (h && h.scrollIntoView) h.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' });
   }
   function showHint(n) {
     var h = document.getElementById('km-hint');
@@ -11121,8 +11177,13 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     var box = document.createElement('div');
     box.className = 'km-tip'; box.setAttribute('role', 'note');
     box.innerHTML = '<b>チュートリアル</b><p>' + esc(TIPS[kind] + extra) + '</p><button class="km-btn" data-km="tipclose">わかった</button>';
-    el.panel.insertBefore(box, el.panel.firstChild);
+    // 本文の窓をふさがないよう、窓の上に浮かべる
+    el.cap.insertBefore(box, el.panel);
     persist();
+  }
+  function clearTips() {
+    if (!el.cap) return;
+    Array.prototype.forEach.call(el.cap.querySelectorAll('.km-tip'), function (b) { b.parentNode.removeChild(b); });
   }
   function startTutorial() {
     startNew(K.chapters[0].id);

@@ -161,6 +161,7 @@
   function fixedPanel(on) {
     if (!el.panel) return;
     el.panel.classList.toggle('km-panel-fixed', !!on);
+    el.panel.classList.remove('km-ask-split', 'km-panel-gen');
     if (on) el.panel.scrollTop = 0;
     checkMore();
   }
@@ -510,6 +511,7 @@
     }
     cur = n;
     fixedPanel(false);
+    clearTips();
     if (n.t !== 'end') persist();
     var prog = chapProgress(st.ch);
     el.title.innerHTML = esc(chap(st.ch).no + '　' + chap(st.ch).title) + (prog ? '<small class="km-title-prog">' + prog + '</small>' : '');
@@ -644,11 +646,13 @@
     mode = 'card';
     el.card.innerHTML = '<div class="km-card-in"><div class="km-card-no">' + esc(c.no) + '</div><div class="km-card-t">' + esc(c.title) + '</div><div class="km-card-sub">' + esc(c.sub) + '</div><div class="km-card-tap">画面をタップして始める</div></div>';
     el.card.classList.add('on');
+    $root.classList.add('km-carding');
     var finished = false;
     function fin() {
       if (finished) return; finished = true;
       clearTimeout(cardTimer);
       el.card.classList.remove('on');
+      $root.classList.remove('km-carding');
       done();
     }
     showCard.fin = fin;
@@ -674,7 +678,7 @@
     meet(n);
     el.panel.innerHTML = speakerHTML(n.w) + '<span class="km-evidence-label">史記をもとにした場面（ゲームで作った台詞もふくむ）</span>' +
       '<div class="km-text' + (n.w ? '' : ' narr') + (n.w === 'you' ? ' inner' : '') + '" id="km-text"></div>' +
-      '<div class="km-nav"><span class="km-hint-key">タップ／Enter で次へ</span><button class="km-btn gold km-next" data-km="next">次へ ▶</button></div>';
+      '<div class="km-nav"><span class="km-hint-key">タップ<span class="km-key-hint">／Enter </span>で次へ</span><button class="km-btn gold km-next" data-km="next">次へ ▶</button></div>';
     typeText(document.getElementById('km-text'), n.x);
     tip('say');
   }
@@ -747,6 +751,8 @@
   function doGen(n) {
     mode = 'gen';
     fixedPanel(true);
+    // 原文の段は読む場面なので、窓を少し高くする
+    el.panel.classList.add('km-panel-gen');
     ST.hideBubble();
     if (ST.speaker) ST.speaker(null);
     var g = K.genbun[n.g];
@@ -801,6 +807,8 @@
     opts = shuffle(opts, n.id);
     n._order = opts.map(function (x) { return x.i; });
     var canHint = n.k === 'read' && n.hint;
+    // 広い画面では、白文を選択肢の右に置き、選び直しや解説のあいだも見えるようにする
+    el.panel.classList.toggle('km-ask-split', !!n.stem);
     el.panel.innerHTML =
       '<div class="km-ask-h">' + (n.k === 'read' ? '<span class="km-ask-tag read">読み解け</span>' : '<span class="km-ask-tag judge">決断</span>') +
         '<span class="km-ask-q">' + esc(n.q) + '</span></div>' +
@@ -868,6 +876,8 @@
     }
     renderStatus();
     showHint(n); persist();
+    var h = document.getElementById('km-hint');
+    if (h && h.scrollIntoView) h.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' });
   }
   function showHint(n) {
     var h = document.getElementById('km-hint');
@@ -1301,8 +1311,13 @@
     var box = document.createElement('div');
     box.className = 'km-tip'; box.setAttribute('role', 'note');
     box.innerHTML = '<b>チュートリアル</b><p>' + esc(TIPS[kind] + extra) + '</p><button class="km-btn" data-km="tipclose">わかった</button>';
-    el.panel.insertBefore(box, el.panel.firstChild);
+    // 本文の窓をふさがないよう、窓の上に浮かべる
+    el.cap.insertBefore(box, el.panel);
     persist();
+  }
+  function clearTips() {
+    if (!el.cap) return;
+    Array.prototype.forEach.call(el.cap.querySelectorAll('.km-tip'), function (b) { b.parentNode.removeChild(b); });
   }
   function startTutorial() {
     startNew(K.chapters[0].id);
