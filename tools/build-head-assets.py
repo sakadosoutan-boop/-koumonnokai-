@@ -794,7 +794,7 @@ def add_beard(cid,p,bvh,material,head,quality='high'):
     reach={'u':.025,'kai':.041,'hai':.031,'zo':.034,'haku':.028,'chin':.023}[cid]
     tail={'u':.010,'kai':.012,'hai':.010,'zo':.012,'haku':.009,'chin':.005}[cid]
     def moustache_y(t):
-        if cid=='kai':return -.024-.0065*math.sin(math.pi*t)-.005*t
+        if cid=='kai':return -.024-.006*t-.010*t*t
         if cid=='zo':return -.025-.013*t-.002*math.sin(math.pi*t)
         return -.0268-.003*t-tail*t**3
     for side in (-1,1):
