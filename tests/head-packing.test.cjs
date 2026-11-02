@@ -81,3 +81,13 @@ test('all head parts have complete bounded indices and distinct low LOD grooms',
     }
   }
 });
+
+test('attribute decoder preserves wrapped signed components and rejects malformed runs',()=>{
+ const d=context.window.KM_HEADS.decodeAttribute;
+ assert.deepEqual(Array.from(d(base64([2,3,0,1,2,1,0,1]),6,false,'delta-rle-v1')),[1,254,0,2,253,0]);
+ assert.deepEqual(Array.from(d(base64([255,255,3,0,2]),3,true,'delta-rle-v1')),[0,128,0,0,0,0]);
+ for(const b of [[0],[0,0],[0,4],[128],[128,0],[0,2],[255,3]])assert.throws(()=>d(base64(b),3,false,'delta-rle-v1'));
+ assert.throws(()=>d('!',3,false,'delta-rle-v1'));
+ assert.throws(()=>d('',0,false,'unknown'));
+ assert.deepEqual(Array.from(d(base64([1,2,3]),3,false)),[1,2,3]);
+});

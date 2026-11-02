@@ -989,4 +989,9 @@ if not PREVIEW:
     editable=ROOT/'source-assets';editable.mkdir(exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(editable/'heads.blend'),compress=True)
 print('HEAD_ASSETS',[(k,{q:{n:(d['v'],d['t']) for n,d in v.items()} for q,v in a['lod'].items()}) for k,a in assets.items()])
-print('EXPORT_BYTES',len(js.encode('utf-8')))
+# Pack the wire representation without changing the authored Blender geometry.
+import importlib.util
+codec_spec=importlib.util.spec_from_file_location('head_asset_codec',ROOT/'tools/pack-head-assets.py')
+codec=importlib.util.module_from_spec(codec_spec);codec_spec.loader.exec_module(codec)
+codec.repack(export_path)
+print('EXPORT_BYTES',export_path.stat().st_size)

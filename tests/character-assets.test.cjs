@@ -483,3 +483,9 @@ test('the gate shield reaches the guard torso while the two bodies remain separa
     assert.ok(gap(shield,points(gr.props.halberd))>.07,quality+' the shield does not pass through the halberd');
   }
 });
+
+test('immutable anatomical head buffers are shared between instances without sharing transforms',()=>{
+ const a=C.KM_HEADS.build('ryo',C.KM_CAST3D.CAST.ryo.head,'high'),b=C.KM_HEADS.build('ryo',C.KM_CAST3D.CAST.ryo.head,'high');
+ assert.equal(a.surface.geometry,b.surface.geometry);assert.equal(a.surface.userData.shared,true);
+ a.group.position.x=3;assert.equal(b.group.position.x,0);
+});

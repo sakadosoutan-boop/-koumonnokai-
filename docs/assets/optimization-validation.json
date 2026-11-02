@@ -1,0 +1,15 @@
+{
+  "baseline": "45e07c98107f63a9989b45d5ea951b3229160d84",
+  "parts": 60,
+  "attributeBytesCompared": 14848452,
+  "positionsNormalsColorsIndicesAnchors": "exactly equal",
+  "beforeBytes": 32669817,
+  "afterBytes": 27902725,
+  "beforeGzip": 16854363,
+  "afterGzip": 15555925,
+  "afterSha256": "561fe23ac35f85c95402708b747bf419cfa4239da3add2b456386c8f8c5300f8",
+  "highPortraitImage": "Byte-identical PNG for all eight actors",
+  "offlineBeforeBytes": 35534490,
+  "offlineAfterBytes": 30769406,
+  "lowPortraitImage": "Byte-identical PNG for all eight actors"
+}
