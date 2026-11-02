@@ -54,11 +54,36 @@
     if (written !== count) throw new Error('Incomplete packed head indices');
     return result;
   }
+  // Axis deltas and zero runs preserve every original quantized component.
+  function decodeAttribute(encoded, count, position, encoding) {
+    if (!Number.isInteger(count) || count < 0 || count > 65535 * 3) throw new Error('Invalid head attribute dimensions');
+    if (typeof encoded !== 'string' || encoded.length % 4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) throw new Error('Invalid head attribute base64');
+    var raw=bytes(encoded), size=position?2:1;
+    if (!encoding) { if(raw.length!==count*size)throw new Error('Incomplete head attribute'); return raw; }
+    if (encoding!=='delta-rle-v1')throw new Error('Unsupported head attribute encoding');
+    var result=new Uint8Array(count*size), view=new DataView(result.buffer), prev=[0,0,0], offset=0, written=0, mask=position?65535:255;
+    function number() {
+      var value=0,shift=0,b;
+      do { if(offset>=raw.length)throw new Error('Incomplete attribute varint'); b=raw[offset++];value|=(b&127)<<shift;shift+=7;if(shift>21)throw new Error('Attribute varint overflow'); } while(b&128);
+      if(shift>7&&!(b&127))throw new Error('Noncanonical attribute varint');return value;
+    }
+    function write(delta) {
+      if(written>=count)throw new Error('Excess head attribute');
+      var axis=written%3,value=(prev[axis]+delta)&mask;prev[axis]=value;
+      if(position)view.setUint16(written*2,value,true);else result[written]=value;written++;
+    }
+    while(offset<raw.length) {
+      var value=number();
+      if(value===0) { var run=number();if(!run||run>count-written)throw new Error('Invalid attribute run');while(run--)write(0); }
+      else { if(value>mask)throw new Error('Attribute delta overflow');write((value>>>1)^-(value&1)); }
+    }
+    if(written!==count)throw new Error('Incomplete head attribute');return result;
+  }
   function geometry(data, key) {
-    if (CACHE[key]) return CACHE[key].clone();
-    var source = window.KM_HEAD_ASSETS, packed = bytes(data.p), view = new DataView(packed.buffer);
-    var pos = new Float32Array(data.v * 3), nor = new Float32Array(data.v * 3), normal = bytes(data.n);
-    var uv = new Float32Array(data.v * 2), col = data.c ? bytes(data.c) : null;
+    if (CACHE[key]) return CACHE[key];
+    var source = window.KM_HEAD_ASSETS, packed = decodeAttribute(data.p,data.v*3,true,data.encoding&&data.encoding.p), view = new DataView(packed.buffer);
+    var pos = new Float32Array(data.v * 3), nor = new Float32Array(data.v * 3), normal = decodeAttribute(data.n,data.v*3,false,data.encoding&&data.encoding.n);
+    var uv = new Float32Array(data.v * 2), col = data.c ? decodeAttribute(data.c,data.v*3,false,data.encoding&&data.encoding.c) : null;
     for (var i = 0; i < pos.length; i++) {
       pos[i] = view.getInt16(i * 2, true) * source.quantization;
       nor[i] = (normal[i] > 127 ? normal[i] - 256 : normal[i]) / 127;
@@ -73,7 +98,7 @@
     g.setAttribute('normal', new T.BufferAttribute(nor, 3)); g.setAttribute('uv', new T.BufferAttribute(uv, 2));
     if (col) g.setAttribute('color', new T.BufferAttribute(col, 3, true));
     g.setIndex(new T.BufferAttribute(idx, 1)); g.computeBoundingBox(); g.computeBoundingSphere();
-    CACHE[key] = g; return g.clone();
+    CACHE[key] = g; return g;
   }
   function canvas(w, h, draw) {
     if (typeof document === 'undefined') return null;
@@ -369,7 +394,7 @@
     var surface = null;
     Object.keys(data).forEach(function (kind) {
       var g = geometry(data[kind],key + '|' + q + '|' + kind), m = new T.Mesh(g,material(kind,asset,id));
-      m.name = id + '-' + kind; m.userData.part = kind; m.userData.asset = true; m.castShadow = m.receiveShadow = true;
+      m.name = id + '-' + kind; m.userData.part = kind; m.userData.asset = true; m.userData.shared = true; m.castShadow = m.receiveShadow = true;
       group.add(m); if (kind === 'skin') surface = m;
     });
     var eyes = makeEyes(asset,params,q); group.add(eyes);
@@ -384,5 +409,5 @@
     }
     return {group: group, surface: surface, eyes: eyes, anchors: anchors, asset: true, source: key, headwear:!!headwear};
   }
-  window.KM_HEADS = {build:build,decodePackedIndices:decodePackedIndices};
+  window.KM_HEADS = {build:build,decodePackedIndices:decodePackedIndices,decodeAttribute:decodeAttribute};
 })();
