@@ -131,16 +131,21 @@
   function makeHorse(kind) { return CM.makeHorse(kind); }
 
   /* ============================ 舞台の部品 ============================ */
-  function ground(size, colr, rough, seed, hills) {
+  function ground(size, colr, rough, seed, hills, lane) {
     var g = new THREE.PlaneGeometry(size, size, 80, 80);
     g.rotateX(-PI / 2);
     var p = g.attributes.position, R = rng(seed || 1), cols = [];
     var c0 = col(colr);
     for (var i = 0; i < p.count; i++) {
       var x = p.getX(i), z = p.getZ(i), d = Math.sqrt(x * x + z * z);
-      var y = (Math.sin(x * .15 + seed) * Math.cos(z * .12) * .3 + Math.sin(x * .9 + z * .7) * .04) * Math.min(1, d / 8);
+      // Characters use y=0 for their contact plane. Keep the acting area and
+      // the escape lane level, with a smooth transition to distant terrain.
+      var blend = Math.max(0, Math.min(1, (d - 6) / 6));
+      if (lane) blend *= Math.max(0, Math.min(1, (Math.abs(z) - 3) / 3));
+      blend = blend * blend * (3 - 2 * blend);
+      var y = Math.sin(x * .15 + seed) * Math.cos(z * .12) * .3 + Math.sin(x * .9 + z * .7) * .04;
       if (hills) y += Math.max(0, d - hills) * .12 * (1 + Math.sin(Math.atan2(x, z) * 5 + seed) * .5);
-      p.setY(i, y);
+      p.setY(i, y * blend);
       var k = .85 + R() * .25; cols.push(c0.r * k, c0.g * k, c0.b * k);
     }
     g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
@@ -237,7 +242,13 @@
       var pole = mesh(geo, M); pole.scale.y = hh; pole.position.set(x, 0, z + (R() - .5) * .05); g.add(pole);
       var tp = mesh(tipG, M); tp.scale.y = 1; tp.position.set(x, (hh - 1) * h, z); g.add(tp);
     }
-    [.3, .75].forEach(function (k) { var rail = mesh(new THREE.BoxGeometry(len, .1, .08), M); rail.position.set(0, h * k, z + .12); g.add(rail); });
+    var spans = gap ? [[-len / 2, gap[0]], [gap[1], len / 2]] : [[-len / 2, len / 2]];
+    [.3, .75].forEach(function (k) {
+      spans.forEach(function (span) {
+        var rail = mesh(new THREE.BoxGeometry(span[1] - span[0], .1, .08), M);
+        rail.position.set((span[0] + span[1]) / 2, h * k, z + .12); g.add(rail);
+      });
+    });
     return g;
   }
   function pineTree(h, seed) {
@@ -363,14 +374,15 @@
       leaves.push({ side: side, cloth: cloth, base: base, center: leaf.position.x });
     });
     door.userData.setProgress = function (u) {
-      var opened = ease((u - .015) / .24);
+      // Clear the leading shield before the body reaches the doorway.
+      var opened = ease((u - .015) / .13);
       var flutter = Math.sin(Math.max(0, u - .06) * 32) * Math.sin(PI * Math.max(0, Math.min(1, (u - .06) / .58))) * .035;
       leaves.forEach(function (leaf) {
         var p = leaf.cloth.geometry.attributes.position, base = leaf.base;
         for (var i = 0; i < p.count; i++) {
           var x = base[i * 3], y = base[i * 3 + 1], z = base[i * 3 + 2];
           var drop = (2.3 - y) / 4.6, pull = opened * (.4 + .56 * Math.sin(drop * PI / 2));
-          var gathered = x + (leaf.side * .85 - (x + leaf.center)) * pull;
+          var gathered = x + (leaf.side * .90 - (x + leaf.center)) * pull;
           p.setXYZ(i, gathered, y + opened * .08 * drop, z + opened * .14 * Math.sin(drop * PI) + flutter * drop * Math.cos(x * 16));
         }
         p.needsUpdate = true; leaf.cloth.geometry.computeVertexNormals();
@@ -583,12 +595,12 @@
       runners: [[-2.8, -.5], [-3.6, .6], [-4.6, -.2]],
       wide: [[2.5, 2.2, 7.2], [-.5, 1.4, 0]], light: 'moon', travel: 1.6,
       build: function (sc, S) {
-        sc.add(ground(220, 0x1a2030, .95, 13, 30));
+        sc.add(ground(220, 0x1a2030, .95, 13, 30, true));
         var mt = mesh(new THREE.ConeGeometry(40, 26, 24, 4), std(0x141c30, 1)); mt.position.set(-10, 0, -60); mt.scale.z = .6; sc.add(mt);
         sc.add(ridgeMesh(120, 32, 61, 0x18223a, -1.8, 1.8));
         var R = rng(8);
         for (var i = 0; i < 90; i++) { var p = pineTree(4 + R() * 5, i); var a = (R() - .5) * 120, z = -6 - R() * 40; p.position.set(a, 0, z); sc.add(p); }
-        for (i = 0; i < 30; i++) { var q = pineTree(5 + R() * 4, 100 + i); q.position.set((R() - .5) * 120, 0, 6 + R() * 8); sc.add(q); }
+        for (i = 0; i < 30; i++) { var q = pineTree(5 + R() * 4, 100 + i); q.position.set((R() - .5) * 120, 0, 11 + R() * 8); sc.add(q); }
         var path = mesh(new THREE.PlaneGeometry(240, 3.2), std(0x3a3a48, .95), false, true); path.rotation.x = -PI / 2; path.position.y = .02; sc.add(path);
       }
     },
@@ -890,7 +902,7 @@
       if (!f || !p) return;
       f.position.set(p[0], (S.platform && id === 'ko') ? S.platform : 0, p[1]); // 高祖は御座の段の上に座る
       f.rotation.set(0, p[2] || 0, 0);
-      f.userData.setPose(poses[id] || (p[3] === 'ride' ? 'sit' : p[3]) || 'stand');
+      f.userData.setPose(poses[id] || p[3] || 'stand');
       f.userData.home = { x: p[0], z: p[1], yaw: p[2] || 0 };
       placeDancer(f, id);
       sc.add(f);
@@ -899,6 +911,11 @@
         var h = S.horse || (S.horse = makeHorse('zhui'));
         h.position.set(p[0], 0, p[1]); h.rotation.y = p[2]; sc.add(h);
         f.position.set(p[0], h.userData.saddleY - .4 * (CAST[id].h / 1.72), p[1]);
+        f.userData.mountHeight = f.position.y;
+        if (h.userData.reinGrips) {
+          f.userData.state.reinGrips = {};
+          ['L','R'].forEach(function(side){var point=h.userData.reinGrips[side].slice();point[1]-=f.position.y;f.userData.state.reinGrips[side]=point;});
+        }
         f.userData.rideOn = h;
       } else f.userData.rideOn = null;
     });
@@ -1069,7 +1086,7 @@
   function beginEntrance(f) {
     var state = f.userData.state;
     state.actionStart = S.t + 'kai'.length;
-    state.entryDistance = 2.65;
+    state.entryDistance = 3.25;
     S.entry = { id: 'kai', duration: window.KM_BANQUET && window.KM_BANQUET.cycles.enter || 3.6,
       progress: 0, travel: 0, phase: '帷を押し開く', active: true, finished: false, interrupted: false, follow: true };
     S.from = null; S.to = null;
@@ -1093,7 +1110,7 @@
     u = Math.max(0, Math.min(1, u));
     if (S.reduced) state.actionProgress = 1;
     var travel = entranceTravel(u);
-    f.position.set(4.35 - state.entryDistance * travel, 0, 1.1); f.rotation.y = -PI / 2;
+    f.position.set(4.95 - state.entryDistance * travel, 0, 1.1); f.rotation.y = -PI / 2;
     entry.progress = u; entry.travel = travel; entry.active = u < 1; entry.finished = u >= 1;
     entry.phase = u < .25 ? '帷を押し開く' : u < .8 ? '盾を先に進み入る' : u < .97 ? '踏み止まる' : '西嚮して立つ';
     if (S.entranceCurtain) { S.entranceCurtain.userData.setProgress(u); entry.curtainOpen = S.entranceCurtain.userData.openness; }
@@ -1101,7 +1118,7 @@
   function entranceCamera() {
     var entry = S.entry, f = S.cast.kai;
     if (!entry || !entry.follow || !f || f.userData.state.pose !== 'enter') return false;
-    var spread = S.cw / S.ch < 1 ? 1.25 : 1;
+    var spread = (S.cw / S.ch < 1 ? 1.25 : 1) * 1.12;
     var fit = S.visibleFraction < .98 ? Math.min(1.9, 1.22 / Math.max(.4, S.visibleFraction)) : 1;
     // 東の壁の内側から通路を追い、沛公の背と張良の席の間を見通す。
     S.cam.pos.set(Math.max(-3.45, f.position.x - 2.5 * spread * fit), 1.9, f.position.z + 1.2 * spread * fit);
@@ -1237,6 +1254,25 @@
       if (f.userData.rig && f.userData.home && f === S.cast.hai && st === STAGES.feast) dir = new V3(.35, 0, 1).normalize(); // 背を向けた沛公は肩越しに
       pos = h.clone().add(dir.multiplyScalar(dist)); pos.y = h.y + .08;
       tgt = h.clone(); tgt.y -= .1;
+      if (f.userData.state.pose === 'eat') {
+        // Keep the floor-level shield, whole shoulder and mouth in one frame.
+        // The same framing is used by the story and the motion viewer.
+        var mealScale = f.userData.rig ? f.userData.rig.s : 1;
+        var aspect = S.cw / S.ch || S.camera.aspect || 1;
+        var visible = Math.max(.4, S.visibleFraction || 1);
+        var mealDistance = Math.max(dist, 3.6 * mealScale / visible, 2.7 * mealScale / aspect);
+        tgt = new V3(f.position.x, f.position.y + .80 * mealScale, f.position.z);
+        // Look along the open aisle: a westward diagonal puts Liu Bang
+        // between the lens and the floor-level shoulder and shield.
+        var mealDir = st === STAGES.feast ? new V3(0, 0, 1) : dir.normalize();
+        pos = tgt.clone().add(mealDir.multiplyScalar(mealDistance));
+        if (st === STAGES.feast && pos.x < -3.45) {
+          // Retreat through the open front, not through the west curtain.
+          pos.x = -3.45;
+          pos.z = tgt.z + Math.sqrt(Math.max(0, mealDistance * mealDistance - Math.pow(pos.x - tgt.x, 2)));
+        }
+        pos.y += .65 * mealScale;
+      }
       // 本文を避ける上下配置は frameAbovePanel に任せ、縦長でも二重に上へ寄せない。
       }
     }
@@ -1327,14 +1363,17 @@
     updateEntrance();
     // 道を駆ける場面：一行が進み、カメラも追う
     if (st.travel && !S.reduced) {
-      S.travel += st.travel * dt;
+      S.travel = (S.travel + st.travel * dt) % 60;
       Object.keys(S.cast).forEach(function (k) {
         var f = S.cast[k], h = f.userData.home; if (!h) return;
         f.position.x = h.x + S.travel;
+        f.userData.state.runSpeed = st.travel;
         if (f.userData.rideOn) f.userData.rideOn.position.x = h.x + S.travel;
       });
-      if (S.travel > 60) { S.travel = 0; }
     }
+    // The rider follows the current saddle bob, not last frame's horse pose.
+    if (S.horse && S.horse.parent) S.horse.userData.update(dt, S.t, !!st.travel);
+    Object.keys(S.cast).forEach(function(k){var f=S.cast[k];if(f.userData.rideOn)f.position.y=f.userData.mountHeight+(f.userData.rideOn.userData.riderBob||0);});
     // カメラ
     if (breachCamera() || entranceCamera()) {
       S.drift = 0;
@@ -1377,7 +1416,6 @@
         placeDancer(dancer,id);
       }
     });
-    if (S.horse && S.horse.parent) S.horse.userData.update(dt, t, !!st.travel);
     updateParticles(dt);
     // 閃光・赤い脈
     var fx = S.fx.material;
