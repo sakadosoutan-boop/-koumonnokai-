@@ -809,6 +809,24 @@
     skirtSit.visible = false; pelvis.add(skirtSit);
     var skirtKneel = mk({ len: .62 * s, r0: .17 * s, r1: .3 * s, hip: .03 * s, depth: .9, fold: .014, color: robeColor, trim: c.trim, frontLift: 0, wrap: !armored && !lady, seat: .24 * s, seed: 13 });
     skirtKneel.visible = false; pelvis.add(skirtKneel);
+    var skirtRide = null;
+    function ridingRobe() {
+      // Two connected-at-the-waist panels drape outside the saddle instead
+      // of stretching a closed seated skirt through the horse's barrel.
+      var group=new THREE.Group(),material=cloth.clone();material.side=THREE.DoubleSide;
+      [-1,1].forEach(function(side){
+        var positions=[],indices=[],rings=10,segments=24;
+        for(var i=0;i<=rings;i++)for(var j=0;j<=segments;j++){
+          var u=i/rings,a=(j/segments-.5)*PI,spread=sstep(0,.65,u),fold=Math.sin(a*9)*.009*u;
+          positions.push(side*lerp(.165*Math.cos(a),.44+.045*Math.cos(a)+fold,spread)*s,
+            (-.44*u+.045*Math.sin(a)*Math.sin(a)*u)*s,lerp(.13,.32,u)*Math.sin(a)*s);
+        }
+        for(var i=0;i<rings;i++)for(var j=0;j<segments;j++){var n=i*(segments+1)+j;indices.push(n,n+1,n+segments+1,n+1,n+segments+2,n+segments+1);}
+        var geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();
+        paintGeo(geometry,function(x,y,z,i,t){t.set(robeColor);});group.add(mesh(geometry,material));
+      });
+      group.name='Riding robe panels';return group;
+    }
     var skirtPlates = null;
     if (armored) { skirtPlates = costume ? costume.armor(c, s, b, 'skirt') : armorPlates(c.armor, s, b, skirtPlateRows(s, b), c.gold); pelvis.add(skirtPlates); }
 
@@ -1001,16 +1019,18 @@
       body.rotation.set(0, 0, 0); body.position.set(0, 0, 0);
       pelvis.rotation.set(0,0,0);pelvis.position.x=0;pelvis.position.z=0;
       spine.rotation.set(0, 0, 0); neck.rotation.set(0, 0, 0); headPiv.rotation.set(0, 0, 0);headPiv.position.set(0,0,0);
-      var seated = pose === 'sit' || pose === 'raise', kneel = pose === 'kneel' || pose === 'eat';
+      var riding = pose === 'ride', seated = pose === 'sit' || pose === 'raise' || riding, kneel = pose === 'kneel' || pose === 'eat';
       if (pose === 'stand' || seated || kneel) spine.rotation.x = c.restLean || 0;
       skirtStand.visible = !seated && !kneel;
-      skirtStand.scale.y=pose==='dance'&&!armored?.91:1;
-      skirtSit.visible = seated; skirtKneel.visible = kneel;
+      skirtStand.scale.y=pose==='run'&&!armored?.8:pose==='dance'&&!armored?.91:1;
+      skirtSit.visible = seated && !riding; skirtKneel.visible = kneel;
+      if(riding&&!skirtRide){skirtRide=ridingRobe();pelvis.add(skirtRide);}
+      if(skirtRide)skirtRide.visible=riding;
       skirtKneel.scale.y = pose === 'eat' ? .74 : 1;
       if (skirtPlates) { skirtPlates.visible = true; skirtPlates.position.y = seated ? .02 * s : kneel ? .0 : 0; skirtPlates.scale.y = seated ? .55 : kneel ? .8 : 1; }
-      shoesR.visible = !seated && !kneel && pose!=='dance' && pose!=='enter';
+      shoesR.visible = !seated && !kneel && pose!=='dance' && pose!=='enter' && pose!=='run';
       pelvis.position.y = seated ? .4 * s : pose === 'eat' ? .46*s : kneel ? .62 * s : .95 * s;
-      ['L', 'R'].forEach(function (k) { legs[k].hip.visible = (armored || pose==='dance' || pose==='enter') && !seated && !kneel; legs[k].hip.rotation.set(0, 0, 0); legs[k].knee.rotation.set(0, 0, 0);legs[k].shoe.quaternion.identity(); });
+      ['L', 'R'].forEach(function (k) { legs[k].hip.visible = riding || (armored || pose==='dance' || pose==='enter' || pose==='run') && !seated && !kneel; legs[k].hip.rotation.set(0, 0, 0); legs[k].knee.rotation.set(0, 0, 0);legs[k].shoe.quaternion.identity(); });
       if (props.sword) { props.sword.visible = false; if (props.sword.parent) props.sword.parent.remove(props.sword); if (props.sheath) props.sheath.visible = true; }
       ['shield', 'halberd', 'jue', 'cup', 'meat', 'morsel'].forEach(function (k) { if (props[k] && props[k].parent) props[k].parent.remove(props[k]); });
       if (props.jueHang) props.jueHang.visible = true;
@@ -1042,6 +1062,7 @@
       if (props.halberd && pose !== 'down') { holdIn('R', props.halberd, [0, 0, 0], [0, -.62, .02]); setArm('R', .45, .05, .9); hpz.R = 'grasp'; }
       if (pose === 'down') { body.rotation.x = -PI / 2; body.position.set(0, .14, .9 * s); setArm('L', 2.8, .4, .2); setArm('R', .3, .6, .4); }
       if (pose === 'run') hpz = { L: 'grasp', R: 'grasp' };
+      if (riding) { hpz = { L: 'grasp', R: 'grasp' }; spine.rotation.x = .08; }
       if(seated||kneel){arms.R.el.rotation.y=1.25;arms.L.el.rotation.y=-1.25;}
       ['L', 'R'].forEach(function (k) { if (arms[k].handPose !== hpz[k]) attachHand(k, hpz[k]); alignHeldHandle(k); });
       if(pose==='glare'&&id==='kai'){state.footContacts={};entranceMotion(1);}
@@ -1098,7 +1119,7 @@
       var circle=shoulder.clone().addScaledVector(toward,along);
       var hint=forearmHint.clone().applyQuaternion(rootToChest).normalize();
       var preferred=wrist.clone().addScaledVector(hint,-fore).sub(circle).normalize();
-      var pole=new V3(sd*(sideKey==='L'?1:.75),-1,sideKey==='L'?.8:state.pose==='drink'?1.20:-.75).applyQuaternion(rootToChest).addScaledVector(preferred,.10);
+      var pole=(state.pose==='ride'?new V3(sd*.75,-1,-.75):new V3(sd*(sideKey==='L'?1:.75),-1,sideKey==='L'?.8:state.pose==='drink'?1.20:-.75)).applyQuaternion(rootToChest).addScaledVector(preferred,.10);
       pole.addScaledVector(toward,-pole.dot(toward));
       if(pole.lengthSq()<.000001)pole.set(sd,-1,.3).addScaledVector(toward,-pole.dot(toward));
       var elbow=circle.clone().addScaledVector(pole.normalize(),radius);
@@ -1172,7 +1193,9 @@
     function entranceMotion(u,charging) {
       var gait=1-sstep(.78,.98,u),settled=sstep(.78,.99,u),stride=Math.sin((u-.02)*PI/.20)*sstep(0,.06,u)*gait;
       body.position.set(.025*s*stride,0,0);body.rotation.z=-.022*stride;
-      pelvis.position.y=((charging?.80:.83)+(charging?.10:.105)*sstep(.83,.99,u)-.015*stride*stride)*s;pelvis.rotation.set(0,.045*stride,0);
+      // A lower travelling stance accommodates the longer doorway approach;
+      // the arrival height remains .935, so the planted finish is unchanged.
+      pelvis.position.y=((charging?.80:.76)+(charging?.10:.175)*sstep(.83,.99,u)-.015*stride*stride)*s;pelvis.rotation.set(0,.045*stride,0);
       spine.rotation.set(charging?.20*gait+.16*settled:.11*gait+.025*settled,-.035*stride,0);neck.rotation.set(0,.03*stride,0);headPiv.rotation.set((charging?-.015:.035)*gait,-.035*stride,0);
       setArm('L',lerp(charging?.82:.70,charging?.68:.28,settled)+.025*stride,.38,lerp(1.0,charging?.95:.58,settled),-.08*(1-settled));
       setArm('R',lerp(charging?.20:.15,charging?.24:.20,settled)-.22*stride,.38,lerp(charging?.75:.60,charging?.65:.32,settled));
@@ -1321,7 +1344,7 @@
       if(pose==='drink'&&window.KM_BANQUET.updateLiquid){root.updateMatrixWorld(true);window.KM_BANQUET.updateLiquid(props.cup,lerp(.78,.02,sstep(.25,.65,u)),.25);}
     }
     function update(dt, t) {
-      var p = state.pose, br = p==='eat'||p==='drink'||p==='dance'||p==='enter'||p==='charge'&&typeof state.gateProgress==='number'?0:Math.sin(t * 1.3 + id.length) * .012;
+      var p = state.pose, br = p==='eat'||p==='drink'||p==='dance'||p==='enter'||p==='ride'||p==='charge'&&typeof state.gateProgress==='number'?0:Math.sin(t * 1.3 + id.length) * .012;
       chest.scale.set(1, 1 + br * .35, 1 + br);
       if(p==='glare'&&id==='kai')entranceMotion(1);
       // 視線：話し手のほうへ首を向ける
@@ -1353,12 +1376,34 @@
       }
       if (p === 'run') {
         var r = t * 9;
-        if (legs.L.hip.visible) {
-          legs.L.hip.rotation.x = Math.sin(r) * .8; legs.L.knee.rotation.x = Math.max(0, -Math.sin(r + .8)) * 1.2;
-          legs.R.hip.rotation.x = -Math.sin(r) * .8; legs.R.knee.rotation.x = Math.max(0, Math.sin(r + .8)) * 1.2;
+        var runPhase=((r/(2*PI))%1+1)%1, speed=typeof state.runSpeed==='number'?state.runSpeed:1.6, cycle=2*PI/9;
+        var flight=runPhase% .5;
+        flight=flight>.4?Math.pow(Math.sin(PI*(flight-.4)/.1),2):0;
+        body.position.set(0,0,0);pelvis.position.y=(.88+.025*flight)*s;spine.rotation.x=.18;state.footContacts={};
+        ['L','R'].forEach(function(k){
+          var side=k==='L'?1:-1,u=(runPhase+(k==='R'?.5:0))%1,front=.22*s,back=front-speed*cycle*.4;
+          var foot=u<.4?new V3(side*.16*s,0,front-speed*cycle*u):steppingFoot(new V3(side*.16*s,0,back),new V3(side*.16*s,0,front),.4,1,u,.12);
+          plantFoot(k,foot,side*.08);
+        });
+        setArm('R', .2+Math.cos(r)*.55, .15, .9);setArm('L', .2-Math.cos(r)*.55, .15, .9);
+        if (props.shield) {
+          // Carry the weight close to the left shoulder; do not swing the
+          // shield like the free running arm or rotate it with the wrist.
+          setArm('L', .38 + .035 * Math.sin(r), .35, .9);
+          root.updateMatrixWorld(true);
+          var shieldWorld = root.getWorldQuaternion(new THREE.Quaternion()).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(.04, .18, -.07)));
+          props.shield.quaternion.copy(arms.L.wr.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(shieldWorld));
+          props.shield.position.copy(gripOffset('L')).sub(new V3(0,0,-.035*s).applyQuaternion(props.shield.quaternion));
         }
-        setArm('R', -Math.sin(r) * .7 + .2, .15, .9); setArm('L', Math.sin(r) * .7 + .2, .15, .9);
-        body.position.y = Math.abs(Math.sin(r)) * .05; spine.rotation.x = .18;
+      }
+      if (p === 'ride') {
+        body.position.set(0,0,0);spine.rotation.x=.08;state.footContacts={};
+        ['L','R'].forEach(function(k){
+          var side=k==='L'?1:-1;
+          plantFoot(k,new V3(side*.46*s,-.32*s,0),side*.10,side*1.2);
+          var target=state.reinGrips&&state.reinGrips[k]||[side*.14,.4*s+.24,.35];
+          solveHandContact(k,new V3().fromArray(target),gripOffset(k),wristBasis(new V3(0,0,1),new V3(-side*.4,1,-.4)),new V3(side*.7,.65,.18));
+        });
       }
       if(p==='dance'||p==='eat'||p==='drink'||p==='enter')actionMotion(t);
       if(p==='charge'&&typeof state.gateProgress==='number'){
@@ -1455,7 +1500,7 @@
     var feath = mesh(new THREE.ConeGeometry(.05, .09, 10, 1, true), D); feath.position.set(0, -.04, -.02); feath.rotation.x = -.3; fet.add(feath);
     var past = mesh(new THREE.CylinderGeometry(.03, .036, .1, 10), D); past.position.set(0, -.06, .025); past.rotation.x = .45; fet.add(past);
     var hoof = mesh(new THREE.CylinderGeometry(.042, .056, .075, 14), std(0x14100e, .5)); hoof.position.set(0, -.13, .05); fet.add(hoof);
-    return { hip: hip, kn: knee, fet: fet };
+    return { hip: hip, kn: knee, fet: fet, hoof: hoof };
   }
   function makeHorseSDF() {
     var K = window.KM_FIGKIT;
@@ -1465,15 +1510,18 @@
     var trunk = new THREE.Group(); g.add(trunk); trunk.add(body);
     var M = std(0x3a3e46, .6), D = std(0x16161a, .6), hairM = std(0x0c0b0b, .7);
     // たてがみ：首の上の線に沿って片側へ垂れる房
-    var lockG = new THREE.ConeGeometry(.03, .2, 6, 3); lockG.translate(0, -.1, 0);
+    var lockG = new THREE.ConeGeometry(.03, .2, 6, 3); lockG.rotateZ(PI); lockG.translate(0, -.1, 0);
+    body.updateMatrixWorld(true);
+    var hairRay = new THREE.Raycaster(new V3(), new V3(0,-1,0), 0, 4);
+    function crestHeight(x,z,fallback){hairRay.ray.origin.set(x,3,z);var hits=hairRay.intersectObject(body,false);return hits.length?hits[0].point.y:fallback;}
     var NL = 26, locks = new THREE.InstancedMesh(lockG, hairM, NL), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), R = rng(23);
     for (var i = 0; i < NL; i++) {
       var t = i / (NL - 1), y = lerp(1.98, 1.46, t), z = lerp(1.0, .42, t) - Math.sin(t * PI) * .05;
       e.set(-.25 - R() * .2, 0, -.55 - R() * .3); q.setFromEuler(e);
-      m4.compose(new V3(.02, y + .02, z), q, new V3(1, .8 + R() * .5, 1)); locks.setMatrixAt(i, m4);
+      m4.compose(new V3(.02, crestHeight(.02,z,y)-.01, z), q, new V3(1, .8 + R() * .5, 1)); locks.setMatrixAt(i, m4);
     }
     locks.castShadow = true; trunk.add(locks);
-    var fore = mesh(new THREE.SphereGeometry(.05, 8, 6), hairM); fore.position.set(0, 1.98, 1.05); fore.scale.set(.8, .6, 1.4); trunk.add(fore);
+    var fore = mesh(new THREE.SphereGeometry(.05, 8, 6), hairM); fore.position.set(0, crestHeight(0,1.05,1.95)-.005, 1.05); fore.scale.set(.8, .6, 1.4); trunk.add(fore);
     // 尾：根元から房になって垂れる
     var tailG = new THREE.Group(); tailG.position.set(0, 1.36, -.96); trunk.add(tailG);
     for (i = 0; i < 9; i++) { var tl = mesh(new THREE.ConeGeometry(.045, .85, 6, 4), hairM); var tp = tl.geometry.attributes.position; for (var j = 0; j < tp.count; j++) { var yy = tp.getY(j); tp.setZ(j, tp.getZ(j) - (yy + .42) * (yy + .42) * .12); } tl.geometry.computeVertexNormals(); tl.position.set((i - 4) * .012, -.44, -.08); tl.rotation.set(PI + .18, 0, (i - 4) * .035); tailG.add(tl); }
@@ -1482,7 +1530,7 @@
     var nb = mesh(new THREE.TorusGeometry(.075, .007, 6, 20), bridle); nb.position.set(0, 1.6, 1.29); nb.rotation.x = PI / 2 + .62; nb.scale.set(1, 1.25, 1); trunk.add(nb);
     var cb = mesh(new THREE.TorusGeometry(.11, .007, 6, 20, PI), bridle); cb.position.set(0, 1.83, 1.1); cb.rotation.set(-.6, PI / 2, 0); trunk.add(cb);
     [-1, 1].forEach(function (sd) { var bit = mesh(new THREE.TorusGeometry(.016, .005, 6, 12), bron); bit.position.set(sd * .07, 1.58, 1.28); bit.rotation.y = PI / 2; trunk.add(bit); });
-    var rein = new THREE.CatmullRomCurve3([new V3(.07, 1.58, 1.28), new V3(.12, 1.5, 1.0), new V3(.14, 1.55, .6), new V3(0, 1.6, .35), new V3(-.14, 1.55, .6), new V3(-.12, 1.5, 1.0), new V3(-.07, 1.58, 1.28)]);
+    var rein = new THREE.CatmullRomCurve3([new V3(.07, 1.58, 1.28), new V3(.12, 1.65, 1.0), new V3(.14, 1.86, .35), new V3(0, 1.84, .31), new V3(-.14, 1.86, .35), new V3(-.12, 1.65, 1.0), new V3(-.07, 1.58, 1.28)]);
     trunk.add(mesh(new THREE.TubeGeometry(rein, 40, .006, 5), bridle, false));
     // 鞍（鐙はまだ無い時代）と障泥
     var pad = mesh(new THREE.CylinderGeometry(.31, .31, .62, 24, 1, true, -PI * .42, PI * .84), std(0x5a1410, .7, 0, { side: THREE.DoubleSide }));
@@ -1498,8 +1546,11 @@
     [[.15, .97, .5, 1, 0], [-.15, .97, .5, 1, PI], [.16, .98, -.64, 0, PI * .5], [-.16, .98, -.64, 0, PI * 1.5]].forEach(function (p) {
       var L = horseLeg(!!p[3], M, D); L.hip.position.set(p[0], p[1], p[2]); g.add(L.hip);
       if (!p[3]) { L.hip.rotation.x = .18; L.kn.rotation.x = -.32; L.fet.rotation.x = .14; }
-      legs.push({ hip: L.hip, kn: L.kn, fet: L.fet, ph: p[4], front: !!p[3] });
+      legs.push({ hip: L.hip, kn: L.kn, fet: L.fet, hoof: L.hoof, ph: p[4], front: !!p[3] });
     });
+    g.updateMatrixWorld(true);
+    legs.forEach(function(l){l.hip.position.y-=new THREE.Box3().setFromObject(l.hoof).min.y;});
+    g.userData.hooves=legs.map(function(l){return l.hoof;});
     var neckBob = 0;
     g.userData.update = function (dt, t, running) {
       legs.forEach(function (l) {
@@ -1509,10 +1560,12 @@
       });
       neckBob = running ? Math.sin(t * 9) * .02 : Math.sin(t * .6) * .006;
       trunk.position.y = running ? Math.abs(Math.sin(t * 9)) * .05 : neckBob;
+      g.userData.riderBob = trunk.position.y;
       tailG.rotation.x = running ? -.55 + Math.sin(t * 9) * .1 : Math.sin(t * .8) * .05;
       tailG.rotation.z = running ? 0 : Math.sin(t * 1.3) * .08;
     };
     g.userData.saddleY = 1.62;
+    g.userData.reinGrips = {L:[.14,1.86,.35],R:[-.14,1.86,.35]};
     return g;
   }
   function makeHorse(kind) {
@@ -1575,6 +1628,7 @@
       tailG.rotation.x = running ? -.5 + Math.sin(t * 9) * .1 : Math.sin(t * .8) * .05;
       tailG.rotation.z = running ? 0 : Math.sin(t * 1.3) * .08;
       g.position.y = running ? Math.abs(Math.sin(t * 9)) * .06 : 0;
+      g.userData.riderBob = g.position.y;
     };
     g.userData.saddleY = 1.68;
     return g;

@@ -5,7 +5,7 @@ function canvas(){
   const c={width:1,height:1},noop=()=>{},gradient={addColorStop:noop};
   c.getContext=()=>new Proxy({canvas:c,createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),getImageData:(x,y,w,h)=>({data:new Uint8ClampedArray(w*h*4)}),createLinearGradient:()=>gradient,createRadialGradient:()=>gradient,measureText:t=>({width:t.length*8})},{get:(o,k)=>k in o?o[k]:noop});return c;
 }
-function stageHarness(){
+function stageHarness(realCast=false){
   const callbacks=new Map();let serial=0;
   const C={console,document:{createElement:canvas},navigator:{},setTimeout:fn=>{queueMicrotask(fn);return ++serial;},clearTimeout(){},setInterval:()=>++serial,clearInterval(){},requestAnimationFrame:fn=>{callbacks.set(++serial,fn);return serial;},cancelAnimationFrame:id=>callbacks.delete(id)};C.window=C;vm.createContext(C);
   vm.runInContext(fs.readFileSync(path.join(root,'src/vendor/three.min.js'),'utf8'),C);
@@ -16,6 +16,12 @@ function stageHarness(){
       setPose(pose){state.pose=pose;state.actionStart=null;delete state.actionProgress;body.position.y=pose==='down'?.12:0;body.rotation.z=pose==='down'?-1.42:0;},
       update(dt,t){updates.push({t,progress:state.actionProgress,gateProgress:state.gateProgress,position:f.position.clone()});},lookAt(){},talk(){}};return f;
   }};
+  C.KM_CAST3D.makeHorse=()=>{const horse=new C.THREE.Group();horse.userData.saddleY=1.62;horse.userData.update=()=>{};return horse;};
+  if(realCast){
+    C.atob=s=>Buffer.from(s,'base64').toString('binary');
+    for(const name of ['figkit','head-assets','heads','hand-assets','hands','costume','banquet-props','cast3d'])
+      vm.runInContext(fs.readFileSync(path.join(root,'src/js/koumon-'+name+'.js'),'utf8'),C);
+  }
   vm.runInContext(fs.readFileSync(path.join(root,'src/js/koumon-3d.js'),'utf8'),C);
   const stage=C.KoumonStage3D,S=stage.S;S.camera=new C.THREE.PerspectiveCamera(45,1,.1,100);S.faceFill={intensity:0};S.renderer={render(){}};S.fx={material:{color:new C.THREE.Color(),opacity:0}};
   async function scene(poses={kai:'enter'},stageId='feast',cast=['u','haku','hai','ryo','kai']){await stage.setScene(stageId,'day',cast,poses);return S.cast.kai;}
@@ -56,6 +62,87 @@ test('Fan Kuai enters from the doorway with continuous, collision-free, determin
     const index=i*97%241;f.userData.state.actionProgress=index/240;h.stage.renderOnce();assert.ok(f.position.distanceTo(samples[index])<1e-9,'scrubbing entry is independent of frame order');
   }
   for(const [phase,index] of [[-1,0],[2,240]]){f.userData.state.actionProgress=phase;h.stage.renderOnce();assert.ok(f.position.distanceTo(samples[index])<1e-9,'entry clamps at the doorway and destination');}
+});
+
+test('the actual leading shield clears both curtain leaves throughout entrance',async()=>{
+  const h=stageHarness(true),f=await h.scene({kai:'enter'},'feast',['kai']);
+  const T=h.C.THREE,shield=f.userData.rig.props.shield,box=new T.Box3(),triangle=new T.Triangle();
+  for(let i=0;i<=180;i++){
+    f.userData.state.actionProgress=i/180;h.stage.renderOnce();f.updateMatrixWorld(true);
+    box.setFromObject(shield);const door=h.S.entranceCurtain;door.updateMatrixWorld(true);
+    for(const leaf of door.children){
+      const cloth=leaf.children[0],geometry=cloth.geometry,p=geometry.attributes.position,index=geometry.index;
+      for(let j=0;j<(index?index.count:p.count);j+=3){
+        [triangle.a,triangle.b,triangle.c].forEach((v,k)=>v.fromBufferAttribute(p,index?index.getX(j+k):j+k).applyMatrix4(cloth.matrixWorld));
+        assert.ok(!box.intersectsTriangle(triangle),'shield/curtain overlap at phase '+i/180);
+      }
+    }
+  }
+});
+
+test('the military gates leave a real opening in the palisade rails',async()=>{
+  const h=stageHarness(),T=h.C.THREE;
+  for(const [id,z,height] of [['gate',-2.6,2.6],['gaixia',-2.2,2.2]]){
+    await h.scene({},id,['u']);h.S.scene.updateMatrixWorld(true);
+    const solids=[];h.S.scene.traverse(o=>{if(o.isMesh)solids.push(o);});
+    for(const y of [height*.3,height*.75])for(const x of [-1,0,1]){
+      const ray=new T.Raycaster(new T.Vector3(x,y,z+.4),new T.Vector3(0,0,-1),0,.8);
+      assert.equal(ray.intersectObjects(solids,false).length,0,`${id}: rail blocks the opening at ${x}/${y}`);
+    }
+  }
+});
+
+test('the escape lane stays level and riders do not disappear at the travel wrap',async()=>{
+  const h=stageHarness(),T=h.C.THREE;await h.scene({},'road',['hai','kai']);h.S.scene.updateMatrixWorld(true);
+  const floors=h.S.scene.children.filter(o=>o.isMesh&&o.geometry.type==='PlaneGeometry');
+  for(const x of [0,15,31,59])for(const z of [-1.5,0,1.5]){
+    const ray=new T.Raycaster(new T.Vector3(x,2,z),new T.Vector3(0,-1,0),0,4),hits=ray.intersectObjects(floors,false);
+    assert.ok(hits.length&&Math.abs(hits[0].point.y)<.025,`ground meets the escape path at ${x}/${z}`);
+  }
+  h.S.travel=59.99;h.stage.renderOnce();
+  for(const f of Object.values(h.S.cast))assert.ok(Math.abs(f.position.x-f.userData.home.x-h.S.travel)<1e-8,'the camera and cast wrap on the same frame');
+});
+
+test('riding straddles the saddle and keeps both grips on the moving reins',async()=>{
+  const h=stageHarness(true);await h.scene({},'road',['hai']);const T=h.C.THREE,f=h.S.cast.hai,horse=h.S.horse,r=f.userData.rig;
+  assert.equal(f.userData.state.pose,'ride');
+  for(let i=0;i<=40;i++){
+    h.at(i/20);f.updateMatrixWorld(true);horse.updateMatrixWorld(true);
+    const pelvis=r.pelvis.getWorldPosition(new T.Vector3());
+    assert.ok(Math.abs(pelvis.y-horse.userData.saddleY-horse.userData.riderBob)<1e-7,'the rider follows the current saddle height');
+    for(const side of ['L','R']){
+      const leg=r.legs[side],foot=horse.worldToLocal(leg.shoe.getWorldPosition(new T.Vector3()));
+      assert.ok(leg.hip.visible&&Math.abs(foot.x)>.42&&foot.y>.65,'boots hang visibly outside the horse');
+      const hand=r.arms[side].hand.children[0],grip=hand.localToWorld(new T.Vector3().fromArray(hand.userData.gripCenter));
+      const target=horse.localToWorld(new T.Vector3().fromArray(horse.userData.reinGrips[side]));target.y+=horse.userData.riderBob;
+      assert.ok(grip.distanceTo(target)<.0005,'the actual hand mesh grips the rein');
+      assert.ok(f.userData.state.ikDetails[side].wristBend<.55,'wrists stay close to neutral');
+    }
+  }
+});
+
+test('meal framing contains the actual mouth, meat and shield across aspect ratios and story panels',async()=>{
+  const h=stageHarness(true),f=await h.scene({kai:'eat'},'feast',['kai','hai','u','haku','ryo']),T=h.C.THREE;
+  for(const [width,height,visible] of [[1280,720,1],[390,844,1],[1280,720,.62],[390,844,.55]]){
+    h.S.cw=width;h.S.ch=height;h.S.visibleFraction=visible;
+    const camera=h.S.camera;camera.aspect=width/height;camera.fov=38;
+    camera.setViewOffset(width,height,0,height*Math.min(.22,(1-visible)/2),width,height);camera.updateProjectionMatrix();
+    for(const phase of [0,.25,.5,.78,1]){
+      f.userData.state.actionProgress=phase;h.stage.renderOnce();h.stage.focus('kai',1.6);
+      h.S.tStart=h.S.t-2;h.stage.renderOnce();camera.updateMatrixWorld(true);
+      const parts=[f.userData.rig.props.meat,f.userData.rig.props.shield,f.userData.rig.headPiv];
+      const occluders=[];Object.values(h.S.cast).filter(actor=>actor!==f).forEach(actor=>actor.traverseVisible(o=>{if(o.isMesh)occluders.push(o);}));
+      for(const part of parts){
+        const box=new T.Box3().setFromObject(part);
+        const center=box.getCenter(new T.Vector3()),ray=new T.Raycaster(camera.position,center.clone().sub(camera.position).normalize(),0,camera.position.distanceTo(center)-.05);
+        assert.equal(ray.intersectObjects(occluders,false).length,0,`${width}x${height}/${visible}/${phase}: meal hidden by another actor`);
+        for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){
+          const p=new T.Vector3(x,y,z).project(camera);
+          assert.ok(Math.abs(p.x)<.98&&p.y<.98&&p.y>1-2*visible+.02,`${width}x${height}/${visible}/${phase}: meal clipped: part ${parts.indexOf(part)}, bounds ${box.min.toArray()} / ${box.max.toArray()}, camera ${camera.position.toArray()}, target ${h.S.to.tgt.toArray()}, at ${p.toArray()}`);
+        }
+      }
+    }
+  }
 });
 
 test('entry restarts and reduced motion or pose interruption settle to a consistent destination',async()=>{

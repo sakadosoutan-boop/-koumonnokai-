@@ -10,6 +10,41 @@ function canvas(){
 const C={console,performance,document:{createElement:canvas},atob:s=>Buffer.from(s,'base64').toString('binary'),setTimeout,clearTimeout};C.window=C;vm.createContext(C);
 for(const file of ['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-banquet-props.js','src/js/koumon-cast3d.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),C,{filename:file});
 const ids=['hai','u','ryo','zo','haku','kai','sou','chin'];
+test('a running shield stays upright and attached instead of swinging with the wrist',()=>{
+  C.KM_CAST3D.setQuality('low');const f=C.KM_CAST3D.makeFigure('kai'),r=f.userData.rig,V=C.THREE.Vector3;
+  f.userData.setPose('run');f.rotation.y=1.2;
+  for(let i=0;i<=60;i++){
+    f.userData.update(0,i/60);f.updateMatrixWorld(true);
+    const shield=r.props.shield,up=new V(0,1,0).applyQuaternion(shield.getWorldQuaternion(new C.THREE.Quaternion()));
+    assert.ok(up.y>.99,'the shield remains vertical through the running cycle');
+    const hand=r.arms.L.hand.children[0],grip=hand.localToWorld(new V().fromArray(hand.userData.gripCenter)),handle=shield.localToWorld(new V(0,0,-.035));
+    assert.ok(grip.distanceTo(handle)<.0005,'the handle stays in the left fist');
+  }
+});
+test('all four standing horse hooves meet the ground',()=>{
+  C.KM_CAST3D.setQuality('low');const horse=C.KM_CAST3D.makeHorse('zhui');
+  assert.equal(horse.userData.hooves.length,4);
+  for(const time of [0,.5,1,2,5,10]){
+    horse.userData.update(0,time,false);horse.updateMatrixWorld(true);
+    for(const hoof of horse.userData.hooves)assert.ok(Math.abs(new C.THREE.Box3().setFromObject(hoof).min.y)<.008,'each standing hoof contacts the floor');
+  }
+});
+test('running feet hold their world contact while the body advances',()=>{
+  C.KM_CAST3D.setQuality('low');const f=C.KM_CAST3D.makeFigure('kai'),r=f.userData.rig,V=C.THREE.Vector3,anchors={};
+  f.userData.setPose('run');f.userData.state.runSpeed=1.6;let grounded=0;
+  for(let i=0;i<=240;i++){
+    const time=i/240;f.position.z=time*1.6;f.userData.update(0,time);f.updateMatrixWorld(true);
+    for(const side of ['L','R']){
+      const foot=r.legs[side].shoe,contact=f.userData.state.footContacts[side],world=foot.getWorldPosition(new V());
+      assert.ok(contact.reachError<.0005,'the running foot stays within leg reach');
+      assert.ok(new C.THREE.Box3().setFromObject(foot).min.y>-.003,'running soles stay above the ground');
+      if(contact.target[1]<1e-8){
+        grounded++;if(anchors[side])assert.ok(world.distanceTo(anchors[side])<.0005,'the planted foot does not slide');anchors[side]=world.clone();
+      }else delete anchors[side];
+    }
+  }
+  assert.ok(grounded>150,'running contains planted steps, not continuous hovering');
+});
 function healthy(object,label='asset'){
   let count=0;object.updateMatrixWorld(true);
   object.traverse(o=>{if(!o.isMesh)return;count++;
@@ -436,10 +471,10 @@ for(const quality of ['low','high'])test('Xiang Bo shields Liu Bang during a gro
 test('the entrance stride plants actual feet in world space and holds its final stance',()=>{
   const V=C.THREE.Vector3;
   for(const quality of ['low','high']){
-    C.KM_CAST3D.setQuality(quality);const f=C.KM_CAST3D.makeFigure('kai'),r=f.userData.rig;f.rotation.y=-Math.PI/2;f.userData.setPose('enter');
+    C.KM_CAST3D.setQuality(quality);const f=C.KM_CAST3D.makeFigure('kai'),r=f.userData.rig;f.rotation.y=-Math.PI/2;f.userData.setPose('enter');f.userData.state.entryDistance=3.25;
     let previous;const plantedAnchors={};
     for(let i=0;i<=240;i++){
-      const u=i/240;f.position.set(4.35-2.65*C.KM_CAST3D.enterTravel(u),0,1.1);actionFrame(f,u);
+      const u=i/240;f.position.set(4.95-3.25*C.KM_CAST3D.enterTravel(u),0,1.1);actionFrame(f,u);
       const feet={};
       for(const side of ['L','R']){
         const contact=f.userData.state.footContacts[side],shoe=r.legs[side].shoe,target=f.localToWorld(new V().fromArray(contact.target)),actual=shoe.getWorldPosition(new V());
