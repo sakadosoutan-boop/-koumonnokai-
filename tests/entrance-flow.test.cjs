@@ -254,7 +254,8 @@ test('resuming an arrived story node restores the banquet position without repla
   const h=await storyHarness('drink');
   try{
     const scene=h.events.find(e=>e.kind==='scene'&&e.stage==='feast');assert.ok(scene,'the resumed scene is restored');
-    assert.equal(scene.poses.kai,'glare','quiet scene restoration starts from the arrived pose');
+    // 到着後の姿勢から描き直す（直前の「之に卮酒を賜へ」で拝礼しているので kneelbow）
+    assert.equal(scene.poses.kai,'kneelbow','quiet scene restoration starts from the arrived pose');
     assert.ok(!h.events.some(e=>e.kind==='scene'&&e.poses.kai==='enter'),'a saved mid-scene node does not replay the doorway entrance');
     assert.ok(h.events.some(e=>e.kind==='pose'&&e.id==='kai'&&e.pose==='drink'),'the saved wine action resumes after stage restoration');
     assert.deepEqual(h.errors,[]);
