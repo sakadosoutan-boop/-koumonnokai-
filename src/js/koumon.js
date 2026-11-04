@@ -478,7 +478,7 @@
     // 途中の場面へ戻るときは、その章の舞台を描き直してから続ける
     var sc = lastScene(st.node);
     cancelScene(); var epoch = sceneEpoch;
-    if (sc && sc.n !== n.n) applyScene(sc.n, true).then(function () { if (epoch === sceneEpoch && st) go(st.node, true); });
+    if (sc && sc.n !== n.n) applyScene(sc.n, true, st.node).then(function () { if (epoch === sceneEpoch && st) go(st.node, true); });
     else go(st.node, true);
   }
   function lastScene(id) {
@@ -596,11 +596,19 @@
   }
 
   /* ---------- 舞台 ---------- */
-  function applyScene(n, quiet) {
+  /** 場面の始まりから、途中の台詞 until の手前までに変わった姿勢（途中から再開するとき用） */
+  function posesSince(scene, until) {
+    var a = NODES[scene.id], b = NODES[until], out = {};
+    if (!a || !b || a.ch !== b.ch) return out;
+    var arr = K.script[a.ch];
+    for (var i = a.i + 1; i < b.i; i++) if (arr[i].pose && arr[i].t !== 'scene') Object.assign(out, arr[i].pose);
+    return out;
+  }
+  function applyScene(n, quiet, until) {
     var epoch = sceneEpoch;
     var indoor = /tent|feast|nangong/.test(n.stage);
     if (meta.sound) ambience(indoor ? 'in' : 'out');
-    var poses = n.pose || {};
+    var poses = until ? Object.assign({}, n.pose || {}, posesSince(n, until)) : (n.pose || {});
     // 途中の台詞へ復帰するとき、すでに終えた入場をもう一度始めない。
     if (quiet && poses.kai === 'enter') { poses = Object.assign({}, poses, { kai: 'glare' }); }
     return Promise.resolve(ST.setScene(n.stage, n.light, n.cast || [], poses)).then(function () {
@@ -1269,7 +1277,7 @@
     closeModal();
     cancelScene(); var epoch = sceneEpoch;
     var sc = lastScene(cp.node);
-    if (sc && sc.n !== NODES[cp.node].n) applyScene(sc.n, true).then(function () { if (epoch === sceneEpoch && st) go(cp.node, true); });
+    if (sc && sc.n !== NODES[cp.node].n) applyScene(sc.n, true, cp.node).then(function () { if (epoch === sceneEpoch && st) go(cp.node, true); });
     else go(cp.node, true);
   }
 

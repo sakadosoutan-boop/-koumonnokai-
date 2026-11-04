@@ -2549,7 +2549,7 @@ window.KUHO = [
     /* ---------------- 第四幕 ---------------- */
     c4: [
       { id: 'c4', t: 'scene', stage: 'gate', light: 'day', cast: ['zo', 'sou'], fade: 'black', card: true, cp: true, sfx: 'drum', caption: '帳の外で――' },
-      { w: 'zo', x: '君王人と為り忍びず。若入り前みて寿を為せ。寿畢はらば、剣を以つて舞はんことを請ひ、因りて沛公を坐に撃ちて之を殺せ。', at: 'zo' },
+      { w: 'zo', x: '君王人と為り忍びず。若入り前みて寿を為せ。寿畢はらば、剣を以つて舞はんことを請ひ、因りて沛公を坐に撃ちて之を殺せ。――わが君（項王）は、お人柄がやさしくて、むごいことができない。おまえは宴の席に入り、進み出て長寿を祝う杯をすすめよ。それが終わったら剣舞をしたいと願い出て、そのすきに沛公を席で討ち、殺してしまえ。', at: 'zo' },
       { w: 'zo', x: '不者ずんば、若が属皆且に虜とする所と為らんとす。', at: 'zo', b: 'anger' },
       { t: 'ask', k: 'read', w: 'zo', q: '范増の最後の一句の意味は。', stem: '若属皆且^レ為^レ所^レ虜',
         o: [
@@ -2560,9 +2560,10 @@ window.KUHO = [
         ],
         hint: '「且」は再読文字（且に〜んとす）。「為所B」は「Bする所と為る」――誰かにBされる、という形です。',
         exp: '「且に〜んとす」は「今にも〜しようとする」。「為A所B」は受身で「AにBされる」（ここではAの沛公を省略）。「虜とする所と為る」＝捕虜にされる。范増は、今日沛公を逃せば楚が滅ぶと見ていました。', kuho: 'uk03' },
-      { t: 'scene', stage: 'feast', light: 'day', cast: ['u', 'haku', 'hai', 'ryo', 'sou'], fade: 'black', set: { meters: true } },
-      { w: 'sou', x: '君王沛公と飲す。軍中以つて楽を為す無し。請ふ剣を以つて舞はん。', at: 'sou' },
-      { w: 'u', x: '諾。', at: 'u' },
+      // 項荘は、項王が「諾」と許すまでは舞わない（舞い始めは次の「項荘剣を抜き起ちて舞ふ」）
+      { t: 'scene', stage: 'feast', light: 'day', cast: ['u', 'haku', 'hai', 'ryo', 'sou'], pose: { sou: 'stand' }, fade: 'black', set: { meters: true } },
+      { w: 'sou', x: '君王沛公と飲す。軍中以つて楽を為す無し。請ふ剣を以つて舞はん。――わが君は沛公と酒を酌み交わしておられますが、陣中のこととて、宴を楽しませるものがありません。どうか、剣舞をお見せいたしましょう。', at: 'sou' },
+      { w: 'u', x: '諾。――よかろう。', at: 'u' },
       { x: '項荘剣を抜き起ちて舞ふ（項荘は剣を抜き、立ち上がって舞った）。刃が灯りを照り返し、あなたの席をねらっている。', at: 'sou', pose: { sou: 'dance' }, sfx: 'clang', fx: 'flash' },
       { id: 'c4-dance', t: 'ask', k: 'judge', w: 'you', q: '刃が迫る。あなたは――', cp: true, timer: 15,
         o: [
@@ -10461,7 +10462,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     // 途中の場面へ戻るときは、その章の舞台を描き直してから続ける
     var sc = lastScene(st.node);
     cancelScene(); var epoch = sceneEpoch;
-    if (sc && sc.n !== n.n) applyScene(sc.n, true).then(function () { if (epoch === sceneEpoch && st) go(st.node, true); });
+    if (sc && sc.n !== n.n) applyScene(sc.n, true, st.node).then(function () { if (epoch === sceneEpoch && st) go(st.node, true); });
     else go(st.node, true);
   }
   function lastScene(id) {
@@ -10579,11 +10580,19 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   }
 
   /* ---------- 舞台 ---------- */
-  function applyScene(n, quiet) {
+  /** 場面の始まりから、途中の台詞 until の手前までに変わった姿勢（途中から再開するとき用） */
+  function posesSince(scene, until) {
+    var a = NODES[scene.id], b = NODES[until], out = {};
+    if (!a || !b || a.ch !== b.ch) return out;
+    var arr = K.script[a.ch];
+    for (var i = a.i + 1; i < b.i; i++) if (arr[i].pose && arr[i].t !== 'scene') Object.assign(out, arr[i].pose);
+    return out;
+  }
+  function applyScene(n, quiet, until) {
     var epoch = sceneEpoch;
     var indoor = /tent|feast|nangong/.test(n.stage);
     if (meta.sound) ambience(indoor ? 'in' : 'out');
-    var poses = n.pose || {};
+    var poses = until ? Object.assign({}, n.pose || {}, posesSince(n, until)) : (n.pose || {});
     // 途中の台詞へ復帰するとき、すでに終えた入場をもう一度始めない。
     if (quiet && poses.kai === 'enter') { poses = Object.assign({}, poses, { kai: 'glare' }); }
     return Promise.resolve(ST.setScene(n.stage, n.light, n.cast || [], poses)).then(function () {
@@ -11252,7 +11261,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     closeModal();
     cancelScene(); var epoch = sceneEpoch;
     var sc = lastScene(cp.node);
-    if (sc && sc.n !== NODES[cp.node].n) applyScene(sc.n, true).then(function () { if (epoch === sceneEpoch && st) go(cp.node, true); });
+    if (sc && sc.n !== NODES[cp.node].n) applyScene(sc.n, true, cp.node).then(function () { if (epoch === sceneEpoch && st) go(cp.node, true); });
     else go(cp.node, true);
   }
 
