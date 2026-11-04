@@ -333,3 +333,18 @@ test('本文の窓：台詞・問いは同じ高さの窓に出し、文字を�
   const s=await setup(seatId,{classroom:true});
   assert.equal(s.doc.querySelector('#km-panel').classList.contains('km-panel-fixed'),false,'game boards keep their own height');s.close();
 });
+
+test('剣舞：項荘は項王の「諾」のあとで舞い始め、途中から再開しても舞ったまま',async()=>{
+  const calls=[];
+  let h=await setup('c4-5',{classroom:true,start:false});
+  const K=h.w.KOUMON,a=K.script.c4,i5=a.findIndex(n=>n.id==='c4-5'),i6=a.findIndex(n=>n.id==='c4-6'),i7=a.findIndex(n=>n.id==='c4-7');
+  assert.equal(a[i5-1].t,'scene');assert.equal(a[i5-1].pose.sou,'stand','項荘 does not dance while asking');
+  assert.equal(a[i6].x.startsWith('諾。'),true);assert.equal(a[i7].pose.sou,'dance','dance starts after 諾');
+  assert.match(a[i5].x,/――/,'項荘 line has a modern translation');assert.match(a[i5-4].x,/――.*殺してしまえ/,'范増 order has a modern translation');
+  h.w.KoumonStage.setScene=(stage,light,cast,poses)=>{calls.push(poses);return Promise.resolve();};
+  await h.click('[data-km="continue"]');
+  assert.equal(calls[0].sou,'stand');h.close();
+  h=await setup('c4-dance',{classroom:true,start:false});const c2=[];
+  h.w.KoumonStage.setScene=(stage,light,cast,poses)=>{c2.push(poses);return Promise.resolve();};
+  await h.click('[data-km="continue"]');assert.equal(c2[0].sou,'dance','resuming mid-dance keeps 項荘 dancing');h.close();
+});
