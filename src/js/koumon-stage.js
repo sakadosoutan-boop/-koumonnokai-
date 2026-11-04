@@ -271,11 +271,15 @@
     var lean = 0, headY = -.905, shY = -.8, waistY = -.48;
     var ph = t * 2.1;
     if (seated) { headY = -.6; shY = -.505; waistY = -.3; }
-    if (pose === 'kneel') { headY = -.73; shY = -.63; waistY = -.4; }
+    var bowing = pose === 'bow' || pose === 'kneelbow';
+    if (pose === 'kneel' || pose === 'kneelbow') { headY = -.73; shY = -.63; waistY = -.4; }
     if (pose === 'dance') lean = Math.sin(ph + 1) * .05;
     if (pose === 'charge') lean = .12;
     if (pose === 'run') lean = .09;
     if (pose === 'strike') lean = .1;
+    // 礼：上体を前へ傾け、頭を下げる
+    if (pose === 'bow') { lean = .1; headY += .035; }
+    if (pose === 'kneelbow') { lean = .14; headY += .07; shY += .03; }
     if (entry) lean = .1 * (1 - planted);
     var bob = pose === 'run' ? Math.abs(Math.sin(t * 9)) * .025 : (pose === 'stand' || pose === 'glare') ? Math.sin(t * 1.2 + f.x) * .003 : 0;
     if (entry) bob = Math.abs(stride) * .014;
@@ -302,7 +306,7 @@
       g.quadraticCurveTo(-kw * .82, -.06, -sh * 1.25, waistY + .06);
       g.quadraticCurveTo(cx - sh * 1.2, top + .06, cx - sh, top + .015);
       g.closePath();
-    } else if (pose === 'kneel') {
+    } else if (pose === 'kneel' || pose === 'kneelbow') {
       var kk = .25 * b;
       g.moveTo(cx - sh, top + .015);
       g.quadraticCurveTo(cx, top - .035, cx + sh, top + .015);
@@ -398,6 +402,8 @@
     if (seated) { a1 = 1.25; a2 = .7; b1 = 1.5; b2 = .9; len *= .8; }
     if (f.back) { a1 = 1.7; a2 = 1.6; b1 = 1.5; b2 = 1.5; len *= .7; }
     if (pose === 'kneel') { a1 = 1.15; a2 = .5; b1 = 1.6; b2 = .7; }
+    // 両手を胸の前で合わせる（拱手・抱拳）
+    if (bowing) { a1 = .55; a2 = -.55; b1 = .75; b2 = -.35; len *= .85; }
     if (pose === 'raise') { a1 = -1.15; a2 = -1.45; }
     if (pose === 'strike') { a1 = .35; a2 = 1.25; b1 = .5; b2 = 1.3; }
     if (pose === 'dance') { a1 = -1.5 + Math.sin(ph) * .9; a2 = -1.1 + Math.sin(ph + .6) * 1.0; b1 = 2.6 + Math.cos(ph) * .4; b2 = 2.9; }
@@ -998,7 +1004,7 @@
     if (!target || target === 'wide' || !S.cast[target]) to = { x: st.wide.x, y: st.wide.y, z: st.wide.z };
     else {
       var f = S.cast[target];
-      var hh = f.pose === 'sit' || f.pose === 'kneel' ? f.h * .45 : f.h * .58;
+      var hh = f.pose === 'sit' || f.pose === 'kneel' || f.pose === 'kneelbow' ? f.h * .45 : f.h * .58;
       to = { x: f.x, y: f.y - hh, z: z || st.focusZ };
       if (f.back) to = { x: f.x, y: f.y - f.h * .6, z: 1.35 };
     }

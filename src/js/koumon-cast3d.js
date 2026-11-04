@@ -1019,7 +1019,7 @@
       body.rotation.set(0, 0, 0); body.position.set(0, 0, 0);
       pelvis.rotation.set(0,0,0);pelvis.position.x=0;pelvis.position.z=0;
       spine.rotation.set(0, 0, 0); neck.rotation.set(0, 0, 0); headPiv.rotation.set(0, 0, 0);headPiv.position.set(0,0,0);
-      var riding = pose === 'ride', seated = pose === 'sit' || pose === 'raise' || riding, kneel = pose === 'kneel' || pose === 'eat';
+      var riding = pose === 'ride', seated = pose === 'sit' || pose === 'raise' || riding, kneel = pose === 'kneel' || pose === 'eat' || pose === 'kneelbow';
       if (pose === 'stand' || seated || kneel) spine.rotation.x = c.restLean || 0;
       skirtStand.visible = !seated && !kneel;
       skirtStand.scale.y=pose==='run'&&!armored?.8:pose==='dance'&&!armored?.91:1;
@@ -1064,6 +1064,16 @@
       if (pose === 'run') hpz = { L: 'grasp', R: 'grasp' };
       if (riding) { hpz = { L: 'grasp', R: 'grasp' }; spine.rotation.x = .08; }
       if(seated||kneel){arms.R.el.rotation.y=1.25;arms.L.el.rotation.y=-1.25;}
+      // 礼：bow＝立って拱手し一礼（甲冑は抱拳）、kneelbow＝跪いて拝礼。両手を胸の前で合わせ、上体を前へ傾ける
+      if (pose === 'bow' || pose === 'kneelbow') {
+        var kb = pose === 'kneelbow';
+        spine.rotation.x = (c.restLean || 0) + (kb ? .5 : .32); neck.rotation.x = kb ? .12 : .08;
+        setArm('L', kb ? .95 : .78, .08, kb ? 1.05 : 1.32, 1.02); setArm('R', kb ? .93 : .76, .08, kb ? 1.02 : 1.28, 1.0);
+        arms.R.el.rotation.y = 0; arms.L.el.rotation.y = 0;
+        hpz = armored ? { L: 'hold', R: 'grasp' } : { L: 'hidden', R: 'hidden' };
+        // 盾は両手を合わせるあいだ、右の膝もとに立てて置く
+        if (props.shield) { root.add(props.shield); props.shield.position.set(-.46 * s, .34 * s, .18 * s); props.shield.rotation.set(0, PI / 2, -.1); props.shield.visible = true; }
+      }
       ['L', 'R'].forEach(function (k) { if (arms[k].handPose !== hpz[k]) attachHand(k, hpz[k]); alignHeldHandle(k); });
       if(pose==='glare'&&id==='kai'){state.footContacts={};entranceMotion(1);}
       state.base = { L: arms.L.cur.slice(), R: arms.R.cur.slice(), hL: hpz.L, hR: hpz.R };
@@ -1081,7 +1091,7 @@
     function updateCape(t, moving) {
       if (!cape) return;
       var g = cape.geometry, base = g.userData.base, p = g.attributes.position;
-      var seated = state.pose === 'sit' || state.pose === 'kneel' || state.pose === 'raise';
+      var seated = state.pose === 'sit' || state.pose === 'kneel' || state.pose === 'kneelbow' || state.pose === 'raise';
       for (var i = 0; i < p.count; i++) {
         var x = base[i * 3], y = base[i * 3 + 1], u = g.userData.hemU ? g.userData.hemU[i] : -y / (1.22 * s);
         var wave = Math.sin(t * (moving ? 6 : 1.4) + u * 4 + x * 6) * (moving ? .08 : .02) * u;
@@ -1091,7 +1101,7 @@
           // Shorter distance to the floor while seated: the excess cloak pools
           // behind the wearer after reaching the floor, instead of forming a
           // horizontal shelf at knee height.
-          var floorDrop = (state.pose === 'kneel' ? 1.10 : .88) * s;
+          var floorDrop = (state.pose === 'kneel' || state.pose === 'kneelbow' ? 1.10 : .88) * s;
           var excess = Math.max(0, -y - floorDrop), pool = sstep(0, .12 * s, excess);
           yy = Math.max(y, -floorDrop) + .009 * s * Math.sin(x * 34 / s + u * 16) * pool;
           z -= excess * .92;
