@@ -2523,8 +2523,8 @@ window.KUHO = [
       { t: 'gen', g: 'g10' },
       { x: '酒が何度かまわったころ。范増が、しきりに項王へ目くばせを送りはじめた。', at: 'zo' },
       { x: '老人は腰に下げた玉玦（輪の一部が欠けた玉）を持ち上げ、項王に見せた。一度。', at: 'zo', pose: { zo: 'raise' }, sfx: 'chime' },
-      { x: '二度。', at: 'zo', sfx: 'chime' },
-      { x: '三度。', at: 'zo', sfx: 'chime', fx: 'pulse' },
+      { x: '二度。', at: 'zo', sfx: 'chime', pose: { zo: 'raise' } },
+      { x: '三度。', at: 'zo', sfx: 'chime', fx: 'pulse', pose: { zo: 'raise' } },
       { t: 'ask', k: 'read', w: 'zo', q: '范増が玉玦を三度挙げたのは、何の合図か。',
         o: [
           { x: '「玦」は「決」に通じる。沛公を討つ決断を項王にうながした', ok: true },
@@ -2619,7 +2619,8 @@ window.KUHO = [
       { t: 'gen', g: 'g12' },
       { t: 'scene', stage: 'feast', light: 'day', cast: ['u', 'haku', 'hai', 'ryo', 'kai'], pose: { kai: 'enter' }, set: { meters: true } },
       { x: '帷が裂けるように開いた。樊噲、西嚮して立ち、目を瞋らして項王を視る。頭髪上指し、目眥尽く裂く。――西を向いて立ち、目をむいて項王をにらむ。髪は逆立ち、目じりは裂けんばかりだった。', at: 'kai', fx: 'shake' },
-      { w: 'u', x: '客何為る者ぞ。――おまえは何者だ。', at: 'u', pose: { u: 'kneel' }, b: 'anger' },
+      // 項王剣を按じて跽す：膝立ちで剣の柄に手をかける
+      { w: 'u', x: '客何為る者ぞ。――おまえは何者だ。', at: 'u', pose: { u: 'kneelgrip' }, b: 'anger' },
       { t: 'ask', k: 'judge', w: 'you', q: '項王が剣に手をかけた。あなたは？',
         o: [
           { x: '張良に任せる', ok: true, r: '「沛公の参乗、樊噲といふ者なり（沛公の護衛の、樊噲という者です）。」張良の声は、少しも揺れていなかった。', rw: 'ryo' },
@@ -2875,8 +2876,8 @@ window.KUHO = [
         ] },
       { id: 'c8-27', w: 'u', x: '吾公の長者なるを知る。吾此の馬に騎すること五歳、当たる所敵無し。之を殺すに忍びず、以つて公に賜はん。――あなたが徳のある人だとわかっている。わしはこの馬に五年乗ったが、向かうところ敵なしだった。殺すにはしのびないので、あなたにあげよう。', at: 'u' },
       { id: 'c8-28', t: 'scene', stage: 'ukou', light: 'dawn', cast: ['u', 'rba'], pose: { u: 'stand' }, fade: 'black' },
-      { id: 'c8-29', x: '項王は騎兵をみな馬から下ろし、短い武器で漢軍と斬り結んだ。項王ひとりで討った者は数百人。その身にも、十あまりの傷を負った。', at: 'u', sfx: 'clang', fx: 'flash' },
-      { id: 'c8-30', w: 'u', x: '若は吾が故人に非ずや。――おまえは、わしの昔なじみではないか。', at: 'rba' },
+      { id: 'c8-29', x: '項王は騎兵をみな馬から下ろし、短い武器で漢軍と斬り結んだ。項王ひとりで討った者は数百人。その身にも、十あまりの傷を負った。', at: 'u', sfx: 'clang', fx: 'flash' , pose: { u: 'strike' } },
+      { id: 'c8-30', w: 'u', x: '若は吾が故人に非ずや。――おまえは、わしの昔なじみではないか。', at: 'rba', pose: { u: 'stand' } },
       { id: 'c8-31', t: 'gen', g: 'g23' },
       { id: 'c8-32', t: 'ask', k: 'read', w: 'u', q: '項王の最後の言葉「吾為若徳」の意味は。', stem: '吾為^レ若徳',
         o: [
@@ -2887,7 +2888,7 @@ window.KUHO = [
         ],
         hint: '「若」はここでも「なんぢ（おまえ）」。直前で項王は、自分の首に懸けられた賞を語っています。',
         exp: '「吾若の為に徳せん」＝私はおまえのために恩恵を施そう。千金と一万戸の賞が懸かった首を、昔なじみに与えるというのです。' },
-      { id: 'c8-33', x: '乃ち自刎して死す（自ら首をはねて死んだ）。', at: 'wide', fx: 'red' },
+      { id: 'c8-33', x: '乃ち自刎して死す（自ら首をはねて死んだ）。', at: 'wide', fx: 'red', pose: { u: 'down' } },
       { id: 'c8-34', x: '鴻門で、沛公の命を救ったのは、人を殺すに「忍びず」という項王の情だった。烏江で、愛馬を殺すに「忍びず」と言ったのも、同じ項王である。', at: 'wide', b: 'think' },
       { id: 'c8-35', t: 'set', set: { part2a: true } },
       { id: 'c8-36', go: 'c9' },
@@ -6257,6 +6258,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     var state = { pose: 'stand', look: null, lookW: 0, talk: 0, yaw: 0 };
     function setPose(pose) {
       ['L', 'R'].forEach(function (k) { arms[k].heldHandle = null; arms[k].wr.rotation.set(0,0,0); });
+      // 玉玦を挙げる：続けて挙げ直すときは、いったん下ろしてから挙げる（一度・二度・三度）
+      state.raiseAgain = state.pose === 'raise' && pose === 'raise'; state.raiseStart = null;
       state.pose = pose;
       state.motionPhase='';state.motionProgress=0;state.contactErrors={};state.ikDetails={};state.cupRotation=null;state.actionStart=null;
       state.footContacts={};state.entryComplete=false;state.entryRootProgress=0;
@@ -6268,7 +6271,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       body.rotation.set(0, 0, 0); body.position.set(0, 0, 0);
       pelvis.rotation.set(0,0,0);pelvis.position.x=0;pelvis.position.z=0;
       spine.rotation.set(0, 0, 0); neck.rotation.set(0, 0, 0); headPiv.rotation.set(0, 0, 0);headPiv.position.set(0,0,0);
-      var riding = pose === 'ride', seated = pose === 'sit' || pose === 'raise' || riding, kneel = pose === 'kneel' || pose === 'eat' || pose === 'kneelbow';
+      var riding = pose === 'ride', seated = pose === 'sit' || pose === 'raise' || riding, kneel = pose === 'kneel' || pose === 'eat' || pose === 'kneelbow' || pose === 'kneelgrip';
       if (pose === 'stand' || seated || kneel) spine.rotation.x = c.restLean || 0;
       skirtStand.visible = !seated && !kneel;
       skirtStand.scale.y=pose==='run'&&!armored?.8:pose==='dance'&&!armored?.91:1;
@@ -6289,7 +6292,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       if (pose === 'stand' && !armored && !props.halberd) { setArm('L', .36, .1, 1.22, 1.02); setArm('R', .34, .1, 1.18, 1.0); hpz = { L: 'hidden', R: 'hidden' }; }
       if (seated) { setArm('L', .34, .06, .9, .38); setArm('R', .34, .06, .9, .38); hpz = { L: 'lap', R: 'lap' }; }
       if (kneel) { setArm('L', .3, .05, .78, .32); setArm('R', .3, .05, .78, .32); hpz = { L: 'lap', R: 'lap' }; }
-      if (pose === 'raise') { setArm('R', 2.45, .28, .45); hpz.R = 'hold'; if (props.jue) { holdIn('R', props.jue, [0, 0, 0], [0, -.13 * s, .03]); props.jueHang.visible = false; } }
+      if (pose === 'kneelgrip') hpz.R = 'grasp';
+      if (pose === 'raise') { setArm('R', 2.45, .28, .45); hpz.R = 'hold'; if (props.jue) { holdIn('R', props.jue, [0, 0, 1.85], [0, -.21 * s, .03 * s]); /* 下の縁を指でつまみ、輪全体と欠けた口（上）が見えるように */ props.jueHang.visible = false; } }
       if (pose === 'dance' || pose === 'strike' || pose === 'eat') {
         if (props.sword) { holdIn('R', props.sword, [PI, 0, 0], [0, -.08 * s, 0]); if (props.sheath) props.sheath.visible = false; }
         hpz.R = 'grasp';
@@ -6316,14 +6320,22 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       // 礼：bow＝立って拱手し一礼（甲冑は抱拳）、kneelbow＝跪いて拝礼。両手を胸の前で合わせ、上体を前へ傾ける
       if (pose === 'bow' || pose === 'kneelbow') {
         var kb = pose === 'kneelbow';
-        spine.rotation.x = (c.restLean || 0) + (kb ? .5 : .32); neck.rotation.x = kb ? .12 : .08;
+        spine.rotation.x = (c.restLean || 0) + (kb ? .55 : .5); neck.rotation.x = kb ? .16 : .14;
         setArm('L', kb ? .95 : .78, .08, kb ? 1.05 : 1.32, 1.02); setArm('R', kb ? .93 : .76, .08, kb ? 1.02 : 1.28, 1.0);
         arms.R.el.rotation.y = 0; arms.L.el.rotation.y = 0;
-        hpz = armored ? { L: 'hold', R: 'grasp' } : { L: 'hidden', R: 'hidden' };
+        hpz = armored ? { L: 'reach', R: 'fist' } : { L: 'hidden', R: 'hidden' };
         // 盾は両手を合わせるあいだ、右の膝もとに立てて置く
         if (props.shield) { root.add(props.shield); props.shield.position.set(-.46 * s, .34 * s, .18 * s); props.shield.rotation.set(0, PI / 2, -.1); props.shield.visible = true; }
       }
       ['L', 'R'].forEach(function (k) { if (arms[k].handPose !== hpz[k]) attachHand(k, hpz[k]); alignHeldHandle(k); });
+      if ((pose === 'bow' || pose === 'kneelbow') && armored) salutePalms();
+      // 按剣而跽：膝立ちのまま身を起こし、右手を剣の柄にかける
+      if (pose === 'kneelgrip' && props.sheath) {
+        spine.rotation.x = (c.restLean || 0) - .04;
+        root.updateMatrixWorld(true);
+        var hilt = root.worldToLocal(chest.localToWorld(props.sheath.position.clone().add(new V3(0, .05 * s, 0))));
+        solveHandContact('R', hilt, gripOffset('R'), wristBasis(new V3(.85, -.35, .25).normalize(), new V3(0, 1, 0)), new V3(-.5, -.6, .3));
+      }
       if(pose==='glare'&&id==='kai'){state.footContacts={};entranceMotion(1);}
       state.base = { L: arms.L.cur.slice(), R: arms.R.cur.slice(), hL: hpz.L, hR: hpz.R };
     }
@@ -6398,6 +6410,31 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       var solved=A.wr.position.clone().add(offset.clone().applyQuaternion(A.wr.quaternion)).applyQuaternion(A.el.quaternion).add(A.el.position).applyQuaternion(A.sh.quaternion).add(shoulder);
       state.contactErrors[sideKey]=solved.distanceTo(contact);
       state.ikDetails[sideKey]={flex:flex,forearmTwist:twist,wristBend:2*Math.acos(clamp(Math.abs(A.wr.quaternion.w),0,1)),wantedTwist:wantedTwist,elbow:elbow.toArray(),analytic:true};
+    }
+    // 手の模型そのものの向き（指先の向きと掌の向き）を、腕の根元座標の手首の回転に直す
+    function handFacing(k, fingers, palm) {
+      var y = fingers.clone().normalize(), z = palm.clone().negate();
+      z.addScaledVector(y, -z.dot(y)).normalize();
+      var x = new V3().crossVectors(y, z).normalize();
+      var want = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+      var A = arms[k], local = A.hand.quaternion.clone().multiply(A.hand.children[0].quaternion);
+      return want.multiply(local.invert());
+    }
+    // 抱拳：胸の前で、右の拳の前面を左の掌で包む。礼の上体の傾きに合わせ、胸を基準に置く
+    function salutePalms() {
+      root.updateMatrixWorld(true);
+      var o = root.worldToLocal(chest.localToWorld(new V3()));
+      var down = root.worldToLocal(chest.localToWorld(new V3(0, -1, 0))).sub(o).normalize();
+      var fwd = root.worldToLocal(chest.localToWorld(new V3(0, 0, 1))).sub(o).normalize();
+      var mid = arms.L.sh.position.clone().add(arms.R.sh.position).multiplyScalar(.5);
+      var fist = root.worldToLocal(chest.localToWorld(mid.add(new V3(0, -.07 * s, .25 * s))));
+      // 右の拳：指の付け根を前へ、親指を上に（掌は内側＝左へ）
+      var rightQ = handFacing('R', fwd.clone().multiplyScalar(.9).add(new V3(.35, 0, 0)), new V3(1, 0, 0));
+      solveHandContact('R', fist, gripOffset('R'), rightQ, new V3(-.4, -.6, .2));
+      // 左の掌：拳の前に当て、掌は拳（後ろ）へ、指は右上へ斜めに
+      var leftQ = handFacing('L', down.clone().negate().add(new V3(-1.0, 0, 0)), fwd.clone().negate());
+      var palmAt = fist.clone().addScaledVector(fwd, .012 * s).addScaledVector(down, -.035 * s);
+      solveHandContact('L', palmAt, new V3(-.012 * s, -.075 * s, 0), leftQ, new V3(.4, -.6, .2));
     }
     function wristBasis(fingers, thumb) {
       var z=thumb.clone().normalize(),y=fingers.clone().negate();
@@ -6532,44 +6569,49 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
         entranceMotion(u);
         state.motionPhase=u<.18?'盾を先にして天幕へ進む':u<.60?'歩を重ねて宴席へ入る':u<.83?'身を起こして踏み止まる':'両足を据えて項羽を睨む';
       } else if(pose==='eat' && props.sword && window.KM_BANQUET){
-        var lift=sstep(.34,.62,u)*(1-sstep(.85,.99,u));
-        var brace=sstep(.43,.57,u)*(1-sstep(.86,.96,u));
-        var bite=sstep(.61,.67,u)*(1-sstep(.77,.84,u));
-        pelvis.position.y=(.46-.025*sstep(.28,.39,u)*(1-sstep(.48,.62,u))+.015*lift)*s;
-        spine.rotation.set(lerp(.24,.075,lift),0,0);neck.rotation.set(0,0,0);
-        headPiv.rotation.set(lerp(.16,.035,lift)+.018*bite,0,0);headPiv.position.set(0,0,.014*s*bite);
+        // 「剣を抜いて切りて之を啗らふ」：盾に載せた肩肉から大きめの一切れを剣で切り分け、
+        // 剣先に刺したまま口へ運んで豪快にかぶりつく。肩肉の残りは盾の上に置いたまま。
+        var lift=sstep(.34,.56,u)*(1-sstep(.80,.95,u)),bite=sstep(.56,.62,u)*(1-sstep(.74,.80,u)),eaten=sstep(.60,.78,u);
+        pelvis.position.y=(.46+.015*lift)*s;
+        spine.rotation.set(lerp(.24,.06,lift),lerp(0,-.10,lift),0);neck.rotation.set(0,0,0);
+        headPiv.rotation.set(lerp(.16,.02,lift)+.05*bite,lerp(0,-.18,lift),0);headPiv.position.set(0,0,.012*s*bite);
         alignHeldHandle('R');root.updateMatrixWorld(true);
         var mouth=root.worldToLocal(headG.localToWorld(new V3().fromArray(mouthContact)));
-        var meatQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(.045*lift,0,-.055*lift));
+        var faceFwd=root.worldToLocal(headG.localToWorld(new V3(0,0,1))).sub(root.worldToLocal(headG.localToWorld(new V3()))).setY(0).normalize();
         var floorCenter=new V3(0,(.1195-(props.meat.userData.placementBaseY||-.104))*s,.50*s);
-        var biteLocal=new V3().fromArray(props.meat.userData.biteContact||[0,.100,-.126]);
-        var biteTarget=mouth.clone().add(new V3(0,-.001*s,.001*s));
-        var carriedCenter=biteTarget.clone().sub(biteLocal.clone().multiplyScalar(s).applyQuaternion(meatQ));
-        var meatCenter=floorCenter.clone().lerp(carriedCenter,lift);
-        // The same complete shoulder remains visible through cutting, lifting,
-        // biting and lowering; the blade gradually enters more deeply as it rises.
-        props.meat.position.copy(meatCenter);props.meat.quaternion.copy(meatQ);props.meat.scale.setScalar(s);
-        var pierce=new V3().fromArray(props.meat.userData.pierceContact||[-.10,.012,.005]).multiplyScalar(s).applyQuaternion(meatQ).add(meatCenter);
-        var cutLocal=new V3().fromArray(props.meat.userData.cutContact||[-.015,.077,.012]);
+        props.meat.position.copy(floorCenter);props.meat.quaternion.identity();props.meat.scale.setScalar(s);props.meat.visible=true;
+        var cutBase=new V3().fromArray(props.meat.userData.cutContact||[-.015,.077,.012]);
+        var cutLocal=cutBase.clone();
         cutLocal.x+=lerp(-.055,.025,sstep(.08,.24,u)*(1-sstep(.94,1,u)));cutLocal.y+=.055*(1-sstep(.03,.15,u)+sstep(.94,1,u));
         var cut=cutLocal.multiplyScalar(s).add(floorCenter);
-        var target=cut.lerp(pierce,sstep(.25,.34,u)*(1-sstep(.94,1,u)));
-        var direction=new V3(.74,-.60,.30).lerp(new V3(1,-.055,.025),sstep(.02,.68,lift)).normalize();
-        var groundInsertion=lerp(.66,.70,sstep(.25,.34,u)*(1-sstep(.94,1,u)));
-        var insertion=lerp(groundInsertion,.48,sstep(.08,.82,lift));
+        // 切り分けた大きめの一切れ（切り口のそば）と、かぶりつく位置（唇のすぐ前）
+        var piece=cutBase.clone().add(new V3(.07,.02,.02)).multiplyScalar(s).add(floorCenter);
+        var biteAt=mouth.clone().addScaledVector(faceFwd,.055*s).add(new V3(0,-.01*s,0));
+        var pierce=sstep(.24,.34,u)*(1-sstep(.94,1,u));
+        var target=cut.clone().lerp(piece,pierce).lerp(biteAt,lift);
+        target.x-=.16*s*Math.sin(PI*lift);target.y+=.06*s*Math.sin(PI*lift);
+        // 刃の向き：切るときは斜め下、食べるときは右から水平に（剣先は口の左前へ抜ける）
+        var biteDir=new V3(1,.05,0).addScaledVector(faceFwd,.18).normalize();
+        var direction=new V3(.74,-.60,.30).normalize().lerp(biteDir,sstep(.0,1,lift)).normalize();
+        var insertion=lerp(.66,.62,pierce);
         var shoulder=root.worldToLocal(arms.R.sh.getWorldPosition(new V3()));
         var fingers=target.clone().addScaledVector(direction,-insertion*s).sub(shoulder).add(new V3(0,0,.08*s));
         fingers.addScaledVector(direction,-fingers.dot(direction)).normalize();
-        var wristQ=wristBasis(fingers,direction);
         var offset=new V3(0,-insertion,0).multiplyScalar(s).applyQuaternion(props.sword.quaternion).add(props.sword.position);
-        solveHandContact('R',target,offset,wristQ,fingers.clone().add(new V3(-.12,.18,.05)).normalize());
-        var support=new V3().fromArray(props.meat.userData.supportContact||[.065,-.099,0]).multiplyScalar(s).applyQuaternion(meatQ).add(meatCenter);
-        var leftTarget=new V3(.18*s,.46*s,.25*s).lerp(support,brace);
-        var leftQ=restingLeftWrist().slerp(supportWrist(meatQ),brace),palm=new V3(-.012*s,-.075*s,0);
-        solveHandContact('L',leftTarget,palm,leftQ,new V3(-.75,.54,.30));
-        props.meat.userData.contactState={wholeShoulder:true,lift:lift,brace:brace,bite:bite,bladePoint:[0,-insertion,0],pierceTarget:pierce.toArray(),biteTarget:biteTarget.toArray(),supportTarget:support.toArray()};
-        if(props.morsel)props.morsel.visible=false;
-        state.motionPhase=u<.08?'盾に載せた生彘肩へ':u<.25?'剣で肩肉を切る':u<.34?'肩肉の塊へ剣を刺す':u<.58?'重い肩肉を丸ごと持ち上げる':u<.66?'左手を添えて口元へ':u<.79?'肩肉の塊にかぶりつく':u<.85?'塊を支えて口から離す':'肩肉を盾へ戻す';
+        solveHandContact('R',target,offset,wristBasis(fingers,direction),fingers.clone().add(new V3(-.12,.18,.05)).normalize());
+        // 左手は腰に当てて構える
+        solveHandContact('L',new V3(.18*s,.46*s,.25*s),new V3(-.012*s,-.075*s,0),restingLeftWrist(),new V3(-.75,.54,.30));
+        if(props.morsel){
+          if(props.morsel.parent!==props.sword){props.sword.add(props.morsel);}
+          var shown=u>=.24&&u<.80;props.morsel.visible=shown;
+          props.morsel.position.set(0,-insertion,0);props.morsel.quaternion.identity();
+          props.morsel.scale.setScalar(1.9*lerp(1,.32,eaten));
+          // 刺す前は切り口のそばに置かれたまま（剣先が来るまで動かない）
+          if(u<.34){props.sword.updateMatrixWorld(true);var local=props.sword.worldToLocal(root.localToWorld(piece.clone()));props.morsel.position.copy(local);}
+          props.morsel.userData.contactState={pierced:u>=.34&&u<.80,eaten:eaten,piece:piece.toArray(),biteTarget:biteAt.toArray()};
+        }
+        props.meat.userData.contactState={wholeShoulder:false,cutPiece:true,bite:bite,bladePoint:[0,-insertion,0],cutTarget:cut.toArray()};
+        state.motionPhase=u<.08?'盾に載せた生彘肩へ剣を当てる':u<.24?'剣で大きめの一切れを切る':u<.34?'切った肉を剣先に刺す':u<.56?'剣ごと口へ運ぶ':u<.78?'剣に刺したまま、かぶりつく':u<.95?'剣を下ろす':'剣を構え直す';
       } else if(pose==='drink' && window.KM_BANQUET){
         var raised=sstep(.015,.17,u)*(1-sstep(.75,.91,u));
         var tilted=sstep(.23,.43,u)*(1-sstep(.62,.74,u)),finish=sstep(.74,.83,u)*(1-sstep(.92,1,u));
@@ -6621,7 +6663,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       headPiv.rotation.y = state.yaw * .45;
       if (p !== 'drink') headPiv.rotation.x = targetPitch * .6 + (state.talk ? Math.sin(t * 5.3) * .035 : 0);
       // 話している人物は右手で身ぶりをする（拱手や膝の手をほどいて、掌を上に向ける）
-      if (state.base && !props.halberd && (p === 'stand' || p === 'sit' || p === 'kneel' || p === 'glare')) {
+      // 樊噲の睨む構えは毎フレーム到着の姿へ戻すので、話す身ぶりを重ねない（重ねると手が震えて見える）
+      if (state.base && !props.halberd && (p === 'stand' || p === 'sit' || p === 'kneel' || p === 'glare') && !(p === 'glare' && id === 'kai')) {
         var tgt = state.base.R;
         if (state.talk) {
           var g1 = Math.sin(t * 2.1 + id.length) * .08, g2 = Math.sin(t * 1.3 + 1) * .07;
@@ -6632,6 +6675,12 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
         arms.R.el.rotation.y=state.talk?-.9:(p==='sit'||p==='kneel'?1.25:0);
         var want = state.talk ? 'hold' : state.base.hR;
         if (arms.R.handPose !== want) attachHand('R', want);
+      }
+      if (p === 'raise') {
+        if (state.raiseStart == null) state.raiseStart = t;
+        var re = t - state.raiseStart, rk = state.raiseAgain ? (re < .45 ? 1 - sstep(0, .45, re) * .75 : .25 + .75 * sstep(.45, 1.0, re)) : sstep(0, .7, re);
+        setArm('R', lerp(.34, 2.45, rk), lerp(.06, .28, rk), lerp(.9, .45, rk), lerp(.38, 0, rk));
+        arms.R.el.rotation.y = lerp(1.25, 0, rk);
       }
       if (p === 'run') {
         var r = t * 9;
@@ -7826,6 +7875,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     if (S.cast.ei && st === STAGES.gate) {
       var e2 = FIGCACHE.ei2 || (FIGCACHE.ei2 = makeFigure('ei'));
       e2.position.set(.75, 0, -2.1); e2.rotation.y = -.9; e2.userData.setPose(poses.ei || 'stand'); sc.add(e2); S.cast.ei2 = e2;
+      if (poses.ei === 'down') { placeFallen(S.cast.ei); placeFallen(e2); }
     }
     if (st.officials && FIGCACHE.ou) {
       st.officials.forEach(function (o, i) {
@@ -7876,6 +7926,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     if (id === 'kai' && pose === 'enter' && S.stageId === 'feast') beginEntrance(f);
     if (id === 'haku' && S.stageId === 'feast') placeDancer(f,id);
     if (id === 'ei' && S.cast.ei2) S.cast.ei2.userData.setPose(pose);
+    if (id === 'ei' && pose === 'down' && S.stageId === 'gate') { placeFallen(f); placeFallen(S.cast.ei2); }
   }
 
   function rigTransforms(f) {
@@ -7900,19 +7951,32 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       cameraFrom: { pos: S.cam.pos.clone(), tgt: S.cam.tgt.clone() }, impactRequested: false, impactStart: null, impactCallbacks: [], guards: [], guardSources: guardSources };
     S.from = null; S.to = null; updateBreach();
   }
+  /** 倒れた衛士の置き場所。樊噲に押されて門の奥へ仰向けに倒れ、足はもとの立ち位置に残る（二人が重ならない） */
+  function fallenRoot(f) {
+    var left = f === S.cast.ei, sx = left ? -.75 : .75, sz = -2.1, s = (f.userData.rig && f.userData.rig.s) || 1;
+    var fall = new V3(left ? -.32 : .32, 0, -1).normalize(), forward = fall.clone().negate();
+    return { position: new V3(sx - forward.x * .9 * s, 0, sz - forward.z * .9 * s), yaw: Math.atan2(forward.x, forward.z), side: left ? -1 : 1, stand: new V3(sx, 0, sz) };
+  }
+  function placeFallen(f) {
+    if (!f) return;
+    var r = fallenRoot(f); f.position.copy(r.position); f.rotation.y = r.yaw;
+  }
   function beginGuardFall(f, from) {
     var weapon = f.userData.rig && f.userData.rig.props && f.userData.rig.props.halberd, drop = null;
     if (weapon && weapon.parent) {
       var position = weapon.getWorldPosition(new V3()), rotation = weapon.getWorldQuaternion(new THREE.Quaternion()), scale = weapon.getWorldScale(new V3());
       var side = f.position.x < 0 ? -1 : 1;
       var targetQ = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new V3(0, 0, -side), new V3(side, 0, 0), new V3(0, -1, 0)));
+      var lie = fallenRoot(f);
       drop = { object: weapon, from: position, rotation: rotation, scale: scale,
-        to: new V3(position.x + side * .15, .03, f.position.z - (side < 0 ? .65 : .35)), targetQ: targetQ };
+        to: new V3(lie.stand.x + lie.side * .55, .03, lie.stand.z - .55), targetQ: targetQ };
     }
+    var rootTo = fallenRoot(f), rootFrom = { position: f.position.clone(), quaternion: f.quaternion.clone() };
     f.userData.setPose('down');
     if (drop) { S.scene.add(weapon); weapon.position.copy(drop.from); weapon.quaternion.copy(drop.rotation); weapon.scale.copy(drop.scale); weapon.visible = true; }
     var to = rigTransforms(f);
-    return { figure: f, from: from, to: to, weapon: drop };
+    return { figure: f, from: from, to: to, weapon: drop, rootFrom: rootFrom,
+      rootTo: { position: rootTo.position, quaternion: new THREE.Quaternion().setFromAxisAngle(new V3(0, 1, 0), rootTo.yaw) } };
   }
   function placeDroppedWeapon(drop, u) {
     if (!drop) return;
@@ -7955,6 +8019,10 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
         p.node.quaternion.slerpQuaternions(p.quaternion, target.quaternion, u);
       });
       placeDroppedWeapon(guard.weapon, u);
+      if (guard.rootTo) {
+        guard.figure.position.lerpVectors(guard.rootFrom.position, guard.rootTo.position, u);
+        guard.figure.quaternion.slerpQuaternions(guard.rootFrom.quaternion, guard.rootTo.quaternion, u);
+      }
     });
   }
   function finishBreach() {
@@ -7962,7 +8030,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     if (!b || !f) return;
     f.position.copy(b.to); f.rotation.y = b.yaw;
     delete f.userData.state.gateProgress; delete f.userData.state.gateDistance;
-    if (b.impactRequested) ['ei', 'ei2'].forEach(function (id) { if (S.cast[id]) S.cast[id].userData.setPose('down'); });
+    if (b.impactRequested) ['ei', 'ei2'].forEach(function (id) { if (S.cast[id]) { S.cast[id].userData.setPose('down'); placeFallen(S.cast[id]); } });
     b.guards.forEach(function (guard) { placeDroppedWeapon(guard.weapon, 1); });
     S.breach = null;
   }
@@ -8618,7 +8686,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     var ph = t * 2.1;
     if (seated) { headY = -.6; shY = -.505; waistY = -.3; }
     var bowing = pose === 'bow' || pose === 'kneelbow';
-    if (pose === 'kneel' || pose === 'kneelbow') { headY = -.73; shY = -.63; waistY = -.4; }
+    if (pose === 'kneel' || pose === 'kneelbow' || pose === 'kneelgrip') { headY = -.73; shY = -.63; waistY = -.4; }
     if (pose === 'dance') lean = Math.sin(ph + 1) * .05;
     if (pose === 'charge') lean = .12;
     if (pose === 'run') lean = .09;
@@ -8652,7 +8720,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       g.quadraticCurveTo(-kw * .82, -.06, -sh * 1.25, waistY + .06);
       g.quadraticCurveTo(cx - sh * 1.2, top + .06, cx - sh, top + .015);
       g.closePath();
-    } else if (pose === 'kneel' || pose === 'kneelbow') {
+    } else if (pose === 'kneel' || pose === 'kneelbow' || pose === 'kneelgrip') {
       var kk = .25 * b;
       g.moveTo(cx - sh, top + .015);
       g.quadraticCurveTo(cx, top - .035, cx + sh, top + .015);
@@ -8747,7 +8815,9 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     var a1 = 1.45, a2 = 1.25, b1 = 1.62, b2 = 1.8;
     if (seated) { a1 = 1.25; a2 = .7; b1 = 1.5; b2 = .9; len *= .8; }
     if (f.back) { a1 = 1.7; a2 = 1.6; b1 = 1.5; b2 = 1.5; len *= .7; }
-    if (pose === 'kneel') { a1 = 1.15; a2 = .5; b1 = 1.6; b2 = .7; }
+    if (pose === 'kneel' || pose === 'kneelgrip') { a1 = 1.15; a2 = .5; b1 = 1.6; b2 = .7; }
+    // 按剣：前の手を腰の剣の柄へ
+    if (pose === 'kneelgrip') { a1 = 1.9; a2 = 2.6; }
     // 両手を胸の前で合わせる（拱手・抱拳）
     if (bowing) { a1 = .55; a2 = -.55; b1 = .75; b2 = -.35; len *= .85; }
     if (pose === 'raise') { a1 = -1.15; a2 = -1.45; }
@@ -9350,7 +9420,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     if (!target || target === 'wide' || !S.cast[target]) to = { x: st.wide.x, y: st.wide.y, z: st.wide.z };
     else {
       var f = S.cast[target];
-      var hh = f.pose === 'sit' || f.pose === 'kneel' || f.pose === 'kneelbow' ? f.h * .45 : f.h * .58;
+      var hh = f.pose === 'sit' || f.pose === 'kneel' || f.pose === 'kneelbow' || f.pose === 'kneelgrip' ? f.h * .45 : f.h * .58;
       to = { x: f.x, y: f.y - hh, z: z || st.focusZ };
       if (f.back) to = { x: f.x, y: f.y - f.h * .6, z: 1.35 };
     }

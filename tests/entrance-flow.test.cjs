@@ -303,3 +303,16 @@ test('deferred shield impact audio is cancelled on close and a new story',async(
     assert.deepEqual(h.errors,[]);
   }finally{h.close();}
 });
+
+test('the two fallen guards lie apart behind the gate instead of overlapping at the doorway',async()=>{
+  const h=stageHarness(true);await h.scene({},'gate',['kai','ryo','ei']);const T=h.C.THREE,V=T.Vector3;
+  h.stage.setPose('kai','charge');const b=h.S.breach;
+  h.at(b.started+b.duration+.01);
+  h.stage.setPose('ei','down');
+  for(let i=0;i<=40;i++)h.at(b.started+b.duration+.02+i*.7/40);
+  h.stage.setPose('kai','glare');
+  const boxes=['ei','ei2'].map(id=>{const f=h.S.cast[id];f.updateMatrixWorld(true);return new T.Box3().setFromObject(f.userData.rig.body);});
+  const overlap=boxes[0].clone().intersect(boxes[1]);
+  assert.ok(overlap.isEmpty()||overlap.getSize(new V()).x<.02,'the fallen guards do not overlap each other');
+  for(const id of ['ei','ei2']){const f=h.S.cast[id];assert.ok(f.position.z<-2.1,'the guard falls back through the gate, away from the charge');}
+});
