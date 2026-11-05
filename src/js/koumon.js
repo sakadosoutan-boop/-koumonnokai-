@@ -738,10 +738,18 @@
       '<b class="km-cutin-name"><ruby>' + esc(p[0]) + '<rt>' + esc(p[1]) + '</rt></ruby></b>' +
       '<span class="km-cutin-alias">' + esc(p[2]) + '</span>' +
       '<p class="km-cutin-about">' + esc(p[3]) + '</p></div></div>';
+    placeCutIn(); setTimeout(placeCutIn, 0); // 本文の窓を描き直したあとにも測り直す
     void el.cutin.offsetWidth;
     el.cutin.classList.add('on');
     clearTimeout(meet.t);
     meet.t = setTimeout(function () { hideCutIn(); }, reduced() ? 2400 : 3200);
+  }
+  /** 帯は本文の窓のすぐ上に置く。正面から映した顔（窓より上の中央）にかからないように */
+  function placeCutIn() {
+    var band = el.cutin.firstChild, cap = el.panel && el.panel.firstChild ? el.panel.getBoundingClientRect() : null;
+    var top = $root.getBoundingClientRect().top, h = band ? band.getBoundingClientRect().height : 0;
+    if (!cap || !cap.height || !h) { el.cutin.style.top = ''; return; }
+    el.cutin.style.top = Math.max(8, cap.top - top - h - 44) + 'px';
   }
   function hideCutIn(now) {
     clearTimeout(meet.t);

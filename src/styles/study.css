@@ -213,6 +213,10 @@
 }
 @media (max-height:500px) {
   .km-cutin { top: calc(env(safe-area-inset-top) + 56px); }
+  /* 横長で低い画面では、帯を左に寄せて細くし、中央の顔にかけない */
+  .km-cutin-band { width: min(380px, 40vw); padding-right: 30px; }
+  .km-cutin-text { grid-template-columns: 1fr; }
+  .km-cutin-alias { padding-bottom: 0; }
   .km-cutin-band { padding-top: 7px; padding-bottom: 7px; }
   .km-cutin .km-portrait { width: 54px; height: 54px; }
   .km-cutin-seal.km-seal { width: 46px; height: 46px; font-size: 24px; }
