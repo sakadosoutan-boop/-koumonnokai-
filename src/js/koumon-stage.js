@@ -272,7 +272,7 @@
     var ph = t * 2.1;
     if (seated) { headY = -.6; shY = -.505; waistY = -.3; }
     var bowing = pose === 'bow' || pose === 'kneelbow';
-    if (pose === 'kneel' || pose === 'kneelbow') { headY = -.73; shY = -.63; waistY = -.4; }
+    if (pose === 'kneel' || pose === 'kneelbow' || pose === 'kneelgrip') { headY = -.73; shY = -.63; waistY = -.4; }
     if (pose === 'dance') lean = Math.sin(ph + 1) * .05;
     if (pose === 'charge') lean = .12;
     if (pose === 'run') lean = .09;
@@ -306,7 +306,7 @@
       g.quadraticCurveTo(-kw * .82, -.06, -sh * 1.25, waistY + .06);
       g.quadraticCurveTo(cx - sh * 1.2, top + .06, cx - sh, top + .015);
       g.closePath();
-    } else if (pose === 'kneel' || pose === 'kneelbow') {
+    } else if (pose === 'kneel' || pose === 'kneelbow' || pose === 'kneelgrip') {
       var kk = .25 * b;
       g.moveTo(cx - sh, top + .015);
       g.quadraticCurveTo(cx, top - .035, cx + sh, top + .015);
@@ -401,7 +401,9 @@
     var a1 = 1.45, a2 = 1.25, b1 = 1.62, b2 = 1.8;
     if (seated) { a1 = 1.25; a2 = .7; b1 = 1.5; b2 = .9; len *= .8; }
     if (f.back) { a1 = 1.7; a2 = 1.6; b1 = 1.5; b2 = 1.5; len *= .7; }
-    if (pose === 'kneel') { a1 = 1.15; a2 = .5; b1 = 1.6; b2 = .7; }
+    if (pose === 'kneel' || pose === 'kneelgrip') { a1 = 1.15; a2 = .5; b1 = 1.6; b2 = .7; }
+    // 按剣：前の手を腰の剣の柄へ
+    if (pose === 'kneelgrip') { a1 = 1.9; a2 = 2.6; }
     // 両手を胸の前で合わせる（拱手・抱拳）
     if (bowing) { a1 = .55; a2 = -.55; b1 = .75; b2 = -.35; len *= .85; }
     if (pose === 'raise') { a1 = -1.15; a2 = -1.45; }
@@ -1004,7 +1006,7 @@
     if (!target || target === 'wide' || !S.cast[target]) to = { x: st.wide.x, y: st.wide.y, z: st.wide.z };
     else {
       var f = S.cast[target];
-      var hh = f.pose === 'sit' || f.pose === 'kneel' || f.pose === 'kneelbow' ? f.h * .45 : f.h * .58;
+      var hh = f.pose === 'sit' || f.pose === 'kneel' || f.pose === 'kneelbow' || f.pose === 'kneelgrip' ? f.h * .45 : f.h * .58;
       to = { x: f.x, y: f.y - hh, z: z || st.focusZ };
       if (f.back) to = { x: f.x, y: f.y - f.h * .6, z: 1.35 };
     }

@@ -227,25 +227,13 @@ function inspect(f,q,id,pose,u,kind){
   const mouth=actualMouth(r,label),palm=r.arms.L.wr.localToWorld(new V(-.012*r.s,-.075*r.s,0));
   if(pose==='eat'){
    const meat=r.props.meat,contact=meat.userData.contactState;
-   check(contact.wholeShoulder&&meat.visible&&meat.parent===f,label+' must carry the full existing shoulder');
-   check(!r.props.morsel||!r.props.morsel.visible,label+' must not substitute a morsel');
+   // 剣で大きめの一切れを切り分け、剣先に刺したまま口へ運んで食べる。肩肉は盾の上に残る
+   const morsel=r.props.morsel;
+   check(contact.cutPiece&&meat.visible&&meat.parent===f,label+' must keep the shoulder on the shield while cutting a piece');
    check(meat.scale.distanceTo(new V(r.s,r.s,r.s))<1e-10,label+' must not shrink the shoulder');
-   row.lift=contact.lift;row.brace=contact.brace;
-   if(u>=.34&&u<=.94){
-    const blade=prop.localToWorld(new V().fromArray(contact.bladePoint)),pierce=meat.localToWorld(new V().fromArray(meat.userData.pierceContact));
-    row.bladePierceGap=max('bladePierceGap',blade.distanceTo(pierce));check(row.bladePierceGap<.0005,label+' blade detached from the full shoulder');
-    check(new C.THREE.Box3().setFromObject(meat).containsPoint(blade),label+' blade contact outside meat bounds');
-   }
-   if(u>=.67&&u<=.77){
-    row.shoulderBiteGap=max('shoulderBiteGap',meat.localToWorld(new V().fromArray(meat.userData.biteContact)).distanceTo(mouth));
-    check(row.shoulderBiteGap<.003*r.s,label+' full shoulder misses the actual lips by more than three millimetres');
-    const line=new C.THREE.Line3(prop.localToWorld(new V().fromArray(prop.userData.bladeRoot)),prop.localToWorld(new V().fromArray(prop.userData.bladeTip)));
-    row.bladeLipClearance=min('bladeLipClearance',line.closestPointToPoint(mouth,true,new V()).distanceTo(mouth));check(row.bladeLipClearance>.14*r.s,label+' blade reaches the face');
-   }
-   if(u>=.57&&u<=.86){
-    row.shoulderSupportGap=max('shoulderSupportGap',palm.distanceTo(meat.localToWorld(new V().fromArray(meat.userData.supportContact))));
-    check(row.shoulderSupportGap<.0005,label+' left palm misses the full shoulder');
-   }
+   if(u>=.30&&u<.72)check(morsel&&morsel.visible,label+' the cut piece must be visible');
+   if(u>=.81)check(!morsel||!morsel.visible,label+' the eaten piece must disappear');
+   if(u>=.60&&u<=.70){row.pieceBiteGap=max('pieceBiteGap',morsel.getWorldPosition(new V()).distanceTo(mouth));check(row.pieceBiteGap<.08*r.s,label+' the skewered piece misses the actual lips');}
    if(u===0||u===1){
     const box=new C.THREE.Box3().setFromObject(meat),size=box.getSize(new V());
     const center=meat.getWorldPosition(new V()),hits=new C.THREE.Raycaster(new V(center.x,box.max.y+.1,center.z),new V(0,-1,0)).intersectObject(r.props.shield,true);
@@ -295,8 +283,7 @@ for(const q of ['low','high']){
     check(r.props.meat===meat&&meat.children[0].geometry===geometry,label+' replaced the whole shoulder');
     const center=f.worldToLocal(meat.getWorldPosition(new V()));
     if(i===0)firstMeatCenter=center.clone();
-    if(u>=.67&&u<=.77)check(center.y>firstMeatCenter.y+.4*r.s,label+' full shoulder never leaves the shield');
-    if(i===720)check(max('shoulderReturnGap',center.distanceTo(firstMeatCenter))<1e-9,label+' shoulder does not return to its original place');
+    check(max('shoulderStillGap',center.distanceTo(firstMeatCenter))<1e-9,label+' the shoulder must stay on the shield');
    }
    for(const [name,node] of Object.entries(current)){
     check(node.matrix.every(Number.isFinite),label+'/'+name+' nonfinite world matrix');

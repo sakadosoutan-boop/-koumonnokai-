@@ -923,6 +923,7 @@
     if (S.cast.ei && st === STAGES.gate) {
       var e2 = FIGCACHE.ei2 || (FIGCACHE.ei2 = makeFigure('ei'));
       e2.position.set(.75, 0, -2.1); e2.rotation.y = -.9; e2.userData.setPose(poses.ei || 'stand'); sc.add(e2); S.cast.ei2 = e2;
+      if (poses.ei === 'down') { placeFallen(S.cast.ei); placeFallen(e2); }
     }
     if (st.officials && FIGCACHE.ou) {
       st.officials.forEach(function (o, i) {
@@ -973,6 +974,7 @@
     if (id === 'kai' && pose === 'enter' && S.stageId === 'feast') beginEntrance(f);
     if (id === 'haku' && S.stageId === 'feast') placeDancer(f,id);
     if (id === 'ei' && S.cast.ei2) S.cast.ei2.userData.setPose(pose);
+    if (id === 'ei' && pose === 'down' && S.stageId === 'gate') { placeFallen(f); placeFallen(S.cast.ei2); }
   }
 
   function rigTransforms(f) {
@@ -997,19 +999,32 @@
       cameraFrom: { pos: S.cam.pos.clone(), tgt: S.cam.tgt.clone() }, impactRequested: false, impactStart: null, impactCallbacks: [], guards: [], guardSources: guardSources };
     S.from = null; S.to = null; updateBreach();
   }
+  /** 倒れた衛士の置き場所。樊噲に押されて門の奥へ仰向けに倒れ、足はもとの立ち位置に残る（二人が重ならない） */
+  function fallenRoot(f) {
+    var left = f === S.cast.ei, sx = left ? -.75 : .75, sz = -2.1, s = (f.userData.rig && f.userData.rig.s) || 1;
+    var fall = new V3(left ? -.32 : .32, 0, -1).normalize(), forward = fall.clone().negate();
+    return { position: new V3(sx - forward.x * .9 * s, 0, sz - forward.z * .9 * s), yaw: Math.atan2(forward.x, forward.z), side: left ? -1 : 1, stand: new V3(sx, 0, sz) };
+  }
+  function placeFallen(f) {
+    if (!f) return;
+    var r = fallenRoot(f); f.position.copy(r.position); f.rotation.y = r.yaw;
+  }
   function beginGuardFall(f, from) {
     var weapon = f.userData.rig && f.userData.rig.props && f.userData.rig.props.halberd, drop = null;
     if (weapon && weapon.parent) {
       var position = weapon.getWorldPosition(new V3()), rotation = weapon.getWorldQuaternion(new THREE.Quaternion()), scale = weapon.getWorldScale(new V3());
       var side = f.position.x < 0 ? -1 : 1;
       var targetQ = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new V3(0, 0, -side), new V3(side, 0, 0), new V3(0, -1, 0)));
+      var lie = fallenRoot(f);
       drop = { object: weapon, from: position, rotation: rotation, scale: scale,
-        to: new V3(position.x + side * .15, .03, f.position.z - (side < 0 ? .65 : .35)), targetQ: targetQ };
+        to: new V3(lie.stand.x + lie.side * .55, .03, lie.stand.z - .55), targetQ: targetQ };
     }
+    var rootTo = fallenRoot(f), rootFrom = { position: f.position.clone(), quaternion: f.quaternion.clone() };
     f.userData.setPose('down');
     if (drop) { S.scene.add(weapon); weapon.position.copy(drop.from); weapon.quaternion.copy(drop.rotation); weapon.scale.copy(drop.scale); weapon.visible = true; }
     var to = rigTransforms(f);
-    return { figure: f, from: from, to: to, weapon: drop };
+    return { figure: f, from: from, to: to, weapon: drop, rootFrom: rootFrom,
+      rootTo: { position: rootTo.position, quaternion: new THREE.Quaternion().setFromAxisAngle(new V3(0, 1, 0), rootTo.yaw) } };
   }
   function placeDroppedWeapon(drop, u) {
     if (!drop) return;
@@ -1052,6 +1067,10 @@
         p.node.quaternion.slerpQuaternions(p.quaternion, target.quaternion, u);
       });
       placeDroppedWeapon(guard.weapon, u);
+      if (guard.rootTo) {
+        guard.figure.position.lerpVectors(guard.rootFrom.position, guard.rootTo.position, u);
+        guard.figure.quaternion.slerpQuaternions(guard.rootFrom.quaternion, guard.rootTo.quaternion, u);
+      }
     });
   }
   function finishBreach() {
@@ -1059,7 +1078,7 @@
     if (!b || !f) return;
     f.position.copy(b.to); f.rotation.y = b.yaw;
     delete f.userData.state.gateProgress; delete f.userData.state.gateDistance;
-    if (b.impactRequested) ['ei', 'ei2'].forEach(function (id) { if (S.cast[id]) S.cast[id].userData.setPose('down'); });
+    if (b.impactRequested) ['ei', 'ei2'].forEach(function (id) { if (S.cast[id]) { S.cast[id].userData.setPose('down'); placeFallen(S.cast[id]); } });
     b.guards.forEach(function (guard) { placeDroppedWeapon(guard.weapon, 1); });
     S.breach = null;
   }
