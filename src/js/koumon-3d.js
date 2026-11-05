@@ -544,7 +544,7 @@
       }
     },
     gate: {
-      pos: { hai: [-1.5, .9, .5], ryo: [.15, 1.1, -.2], kai: [1.7, .9, -.6], ei: [-.75, -2.1, .9], zo: [-.7, .5, .55], sou: [.7, .6, -.7], chin: [2.7, -.2, -.9] },
+      pos: { hai: [-1.5, .9, .5], ryo: [.15, 1.1, -.2], kai: [1.7, .9, -.6], ei: [-.62, -2.1, .9], zo: [-.7, .5, .55], sou: [.7, .6, -.7], chin: [2.7, -.2, -.9] },
       wide: [[0, 1.75, 6.6], [0, 1.4, -1]], light: 'dawn',
       build: function (sc, S) {
         sc.add(ground(160, 0x4a3e32, .95, 9, 30));
@@ -922,7 +922,7 @@
     // 衛士は二人で門を守る
     if (S.cast.ei && st === STAGES.gate) {
       var e2 = FIGCACHE.ei2 || (FIGCACHE.ei2 = makeFigure('ei'));
-      e2.position.set(.75, 0, -2.1); e2.rotation.y = -.9; e2.userData.setPose(poses.ei || 'stand'); sc.add(e2); S.cast.ei2 = e2;
+      e2.position.set(.62, 0, -2.1); e2.rotation.y = -.9; e2.userData.setPose(poses.ei || 'stand'); sc.add(e2); S.cast.ei2 = e2;
       if (poses.ei === 'down') { placeFallen(S.cast.ei); placeFallen(e2); }
     }
     if (st.officials && FIGCACHE.ou) {
@@ -987,7 +987,8 @@
     return nodes.filter(Boolean).map(function (node) { return { node: node, position: node.position.clone(), quaternion: node.quaternion.clone() }; });
   }
   function beginBreach(f) {
-    var from = f.position.clone(), to = new V3(1.10, 0, -1.65);
+    // 交戟の衛士二人の真ん中へ踏み込み、盾を横にして撞く
+    var from = f.position.clone(), to = new V3(-.08, 0, -1.58);
     var guardSources = [];
     ['ei', 'ei2'].forEach(function (id) {
       var guard = S.cast[id]; if (!guard) return;
@@ -1001,7 +1002,7 @@
   }
   /** 倒れた衛士の置き場所。樊噲に押されて門の奥へ仰向けに倒れ、足はもとの立ち位置に残る（二人が重ならない） */
   function fallenRoot(f) {
-    var left = f === S.cast.ei, sx = left ? -.75 : .75, sz = -2.1, s = (f.userData.rig && f.userData.rig.s) || 1;
+    var left = f === S.cast.ei, sx = left ? -.62 : .62, sz = -2.1, s = (f.userData.rig && f.userData.rig.s) || 1;
     var fall = new V3(left ? -.32 : .32, 0, -1).normalize(), forward = fall.clone().negate();
     return { position: new V3(sx - forward.x * .9 * s, 0, sz - forward.z * .9 * s), yaw: Math.atan2(forward.x, forward.z), side: left ? -1 : 1, stand: new V3(sx, 0, sz) };
   }
@@ -1043,7 +1044,10 @@
     u = Math.max(0, Math.min(1, u));
     b.progress = u; b.active = u < 1;
     var travel = entranceTravel(u); b.travel = travel;
-    f.position.lerpVectors(b.from, b.to, travel); f.rotation.y = b.yaw;
+    // 斜めに駆け寄り、最後は門へまっすぐ向き直って撞く
+    var turn = ease(Math.max(0, Math.min(1, (u - .55) / .4))), dy = Math.PI - b.yaw;
+    while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
+    f.position.lerpVectors(b.from, b.to, travel); f.rotation.y = b.yaw + dy * turn;
     f.userData.state.gateProgress = u; f.userData.state.gateDistance = b.from.distanceTo(b.to);
     if (b.impactRequested && u >= 1 && b.impactStart == null) {
       b.impactStart = Math.max(b.started + b.duration, b.requestedAt);
@@ -1076,7 +1080,7 @@
   function finishBreach() {
     var b = S.breach, f = S.cast.kai;
     if (!b || !f) return;
-    f.position.copy(b.to); f.rotation.y = b.yaw;
+    f.position.copy(b.to); f.rotation.y = Math.PI;
     delete f.userData.state.gateProgress; delete f.userData.state.gateDistance;
     if (b.impactRequested) ['ei', 'ei2'].forEach(function (id) { if (S.cast[id]) { S.cast[id].userData.setPose('down'); placeFallen(S.cast[id]); } });
     b.guards.forEach(function (guard) { placeDroppedWeapon(guard.weapon, 1); });
@@ -1266,6 +1270,17 @@
         pos.x = Math.min(3.45, pos.x); tgt = danceTarget;
       } else {
       var yaw = f.rotation.y, dist = (z ? 2.2 / z : 1.25) * (S.cw / S.ch < 1 ? 1.35 : 1);
+      if (options && options.front) {
+        // 正面のカット：顔（または手元）の真正面から。lift で上下、dist で寄り引きを変える
+        var ff = new V3(Math.sin(yaw), 0, Math.cos(yaw)), fd = (options.dist || 1.15) * (S.cw / S.ch < 1 ? 1.3 : 1);
+        tgt = h.clone(); tgt.y += (options.lift || 0) - .04;
+        pos = tgt.clone().addScaledVector(ff, fd); pos.y += .06;
+        if (st === STAGES.feast) { pos.x = Math.max(-3.4, Math.min(3.45, pos.x)); pos.z = Math.min(4.2, pos.z); }
+        S.from = { pos: S.cam.pos.clone(), tgt: S.cam.tgt.clone() };
+        S.to = { pos: pos, tgt: tgt, id: null };
+        S.tStart = S.t; S.tDur = S.reduced ? .001 : 1.1; S.drift = 0;
+        return;
+      }
       // 顔の正面から少し斜めに。引きのカメラ側へ寄せて、壁の向こうへ回り込まないようにする
       var fwd = new V3(Math.sin(yaw), 0, Math.cos(yaw));
       var wideDir = new V3(st.wide[0][0], 0, st.wide[0][2]).sub(new V3(h.x, 0, h.z)).normalize();
