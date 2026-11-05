@@ -254,7 +254,8 @@ test('resuming an arrived story node restores the banquet position without repla
   const h=await storyHarness('drink');
   try{
     const scene=h.events.find(e=>e.kind==='scene'&&e.stage==='feast');assert.ok(scene,'the resumed scene is restored');
-    assert.equal(scene.poses.kai,'glare','quiet scene restoration starts from the arrived pose');
+    // 到着後の姿勢から描き直す（直前の「之に卮酒を賜へ」で拝礼しているので kneelbow）
+    assert.equal(scene.poses.kai,'kneelbow','quiet scene restoration starts from the arrived pose');
     assert.ok(!h.events.some(e=>e.kind==='scene'&&e.poses.kai==='enter'),'a saved mid-scene node does not replay the doorway entrance');
     assert.ok(h.events.some(e=>e.kind==='pose'&&e.id==='kai'&&e.pose==='drink'),'the saved wine action resumes after stage restoration');
     assert.deepEqual(h.errors,[]);
@@ -301,4 +302,17 @@ test('deferred shield impact audio is cancelled on close and a new story',async(
     h.app.open({standalone:true});await h.flush();await h.click('[data-km="menu"]');await h.click('[data-km="chap"][data-c="c0"]');count=starts.length;queued();assert.equal(starts.length,count,'old impact cannot play during the new chapter fade');
     assert.deepEqual(h.errors,[]);
   }finally{h.close();}
+});
+
+test('the two fallen guards lie apart behind the gate instead of overlapping at the doorway',async()=>{
+  const h=stageHarness(true);await h.scene({},'gate',['kai','ryo','ei']);const T=h.C.THREE,V=T.Vector3;
+  h.stage.setPose('kai','charge');const b=h.S.breach;
+  h.at(b.started+b.duration+.01);
+  h.stage.setPose('ei','down');
+  for(let i=0;i<=40;i++)h.at(b.started+b.duration+.02+i*.7/40);
+  h.stage.setPose('kai','glare');
+  const boxes=['ei','ei2'].map(id=>{const f=h.S.cast[id];f.updateMatrixWorld(true);return new T.Box3().setFromObject(f.userData.rig.body);});
+  const overlap=boxes[0].clone().intersect(boxes[1]);
+  assert.ok(overlap.isEmpty()||overlap.getSize(new V()).x<.02,'the fallen guards do not overlap each other');
+  for(const id of ['ei','ei2']){const f=h.S.cast[id];assert.ok(f.position.z<-2.1,'the guard falls back through the gate, away from the charge');}
 });

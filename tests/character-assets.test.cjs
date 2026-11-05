@@ -240,7 +240,7 @@ function quickCutBursts(speeds,steps){
   if(burst&&burst.frames>=steps*.006)bursts.push(burst);return bursts;
 }
 
-for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder and drinks with continuous, deterministic joints ('+quality+')',()=>{
+for(const quality of ['low','high'])test('Fan Kuai cuts a piece, eats it from the sword, and drinks, with continuous, deterministic joints ('+quality+')',()=>{
   const V=C.THREE.Vector3,Q=C.THREE.Quaternion;C.KM_CAST3D.setQuality(quality);
   const f=C.KM_CAST3D.makeFigure('kai'),r=f.userData.rig,meat=r.props.meat,geometry=meat.children[0].geometry;
   // A stage translation and yaw exercise the world-space contacts as well as the isolated rig.
@@ -269,38 +269,34 @@ for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder an
       assert.ok(declared.distanceTo(mouth)<.001*r.s,label+' declared mouth contact lies on the actual lip surface');
       const palm=r.arms.L.wr.localToWorld(new V(-.012*r.s,-.075*r.s,0));
       if(pose==='eat'){
-        const contact=meat.userData.contactState;
-        assert.equal(r.props.meat,meat,label+' retains the original full shoulder');
+        // 剣で大きめの一切れを切り分け、剣先に刺したまま口へ運んでかぶりつく。肩肉の残りは盾の上に置いたまま
+        const contact=meat.userData.contactState,morsel=r.props.morsel;
+        assert.equal(r.props.meat,meat,label+' retains the original shoulder');
         assert.equal(meat.children[0].geometry,geometry,label+' keeps the complete mesh');
-        assert.equal(meat.parent,f,label+' shoulder stays in the rig coordinate frame');
-        assert.ok(meat.visible&&(!r.props.morsel||!r.props.morsel.visible),label+' displays the whole shoulder without a substitute morsel');
+        assert.ok(meat.visible&&contact.cutPiece,label+' the shoulder stays on the shield while a piece is cut from it');
         assert.ok(meat.scale.distanceTo(new V(r.s,r.s,r.s))<1e-10,label+' does not shrink the meat');
-        assert.ok(contact.wholeShoulder,label+' marks the carried load as a whole shoulder');
         const center=f.worldToLocal(meat.getWorldPosition(new V()));
-        if(i===0||i===720){
-          endpoints.push(center.clone());
-          const box=new C.THREE.Box3().setFromObject(meat),size=box.getSize(new V());
-          const meatCenter=meat.getWorldPosition(new V());
+        if(i===0)endpoints.push(center.clone());
+        assert.ok(center.distanceTo(endpoints[0])<1e-9,label+' the shoulder does not move while a piece is eaten');
+        if(i===0){
+          const box=new C.THREE.Box3().setFromObject(meat),meatCenter=meat.getWorldPosition(new V());
           const hits=new C.THREE.Raycaster(new V(meatCenter.x,box.max.y+.1,meatCenter.z),new V(0,-1,0)).intersectObject(r.props.shield,true);
-          assert.ok(hits.length>0,label+' shoulder rests over the shield');
-          assert.ok(Math.abs(box.min.y-hits[0].point.y)<.003*r.s,label+' rests the shoulder on the actual shield surface');
-          assert.ok(size.x>.30*r.s&&size.z>.25*r.s,label+' retains the large shoulder silhouette');
+          assert.ok(hits.length>0&&Math.abs(box.min.y-hits[0].point.y)<.003*r.s,label+' rests the shoulder on the actual shield surface');
         }
-        if(u>=.34&&u<=.94){
-          const blade=prop.localToWorld(new V().fromArray(contact.bladePoint)),pierce=meat.localToWorld(new V().fromArray(meat.userData.pierceContact));
-          assert.ok(blade.distanceTo(pierce)<.0005,label+' blade remains embedded in the same full shoulder');
-          assert.ok(new C.THREE.Box3().setFromObject(meat).containsPoint(blade),label+' blade contact is inside the actual meat bounds');
+        if(u<.23)assert.ok(!morsel.visible,label+' no piece exists before the cut');
+        if(u>=.26&&u<.78)assert.ok(morsel.visible,label+' the cut piece is visible');
+        if(u>=.81)assert.ok(!morsel.visible,label+' the eaten piece is gone');
+        if(u>=.34&&u<.78){
+          const point=prop.localToWorld(new V().fromArray(contact.bladePoint));
+          assert.ok(point.distanceTo(morsel.getWorldPosition(new V()))<.0005,label+' the piece stays skewered on the blade');
         }
-        if(u>=.67&&u<=.77){
-          const bite=meat.localToWorld(new V().fromArray(meat.userData.biteContact));
-          assert.ok(bite.distanceTo(mouth)<.003*r.s,label+' the whole shoulder cut face reaches the actual lips within three millimetres');
-          assert.ok(center.y>endpoints[0].y+.4*r.s,label+' lifts the full shoulder from the shield');
-          const line=new C.THREE.Line3(prop.localToWorld(new V().fromArray(prop.userData.bladeRoot)),prop.localToWorld(new V().fromArray(prop.userData.bladeTip)));
-          assert.ok(line.closestPointToPoint(mouth,true,new V()).distanceTo(mouth)>.14*r.s,label+' the blade clears the face during the bite');
+        if(u>=.60&&u<=.74){
+          assert.ok(morsel.getWorldPosition(new V()).distanceTo(mouth)<.08*r.s,label+' the skewered piece is at the actual lips');
+          assert.ok(new C.THREE.Box3().setFromObject(morsel).getSize(new V()).x>.04*r.s,label+' a substantial piece is eaten');
         }
-        if(u>=.57&&u<=.86){
-          const support=meat.localToWorld(new V().fromArray(meat.userData.supportContact));
-          assert.ok(palm.distanceTo(support)<.0005,label+' left palm supports the actual shoulder');
+        if(u<=.24||i===720){
+          const blade=prop.localToWorld(new V().fromArray(contact.bladePoint));
+          assert.ok(blade.distanceTo(f.localToWorld(new V().fromArray(contact.cutTarget)))<.0005,label+' the blade edge stays on the cut');
         }
       }else{
         const cup=r.props.cup,bottom=cup.localToWorld(new V().fromArray(cup.userData.baseSupport));
@@ -331,8 +327,7 @@ for(const quality of ['low','high'])test('Fan Kuai carries the whole shoulder an
       }
       previous=current;
     }
-    if(pose==='eat')assert.ok(endpoints[0].distanceTo(endpoints[1])<1e-9,'the whole shoulder returns to its original place');
-    else{
+    if(pose!=='eat'){
       assert.ok(drinking.peakTilt>1.39&&drinking.peakTilt<1.50,'the cup reaches roughly 80–85 degrees during the emphatic drink');
       assert.ok(drinking.lipFrames>720*.4&&drinking.guzzleFrames>720*.15,'the deep drink maintains sustained actual lip contact');
     }

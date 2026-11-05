@@ -333,3 +333,38 @@ test('本文の窓：台詞・問いは同じ高さの窓に出し、文字を�
   const s=await setup(seatId,{classroom:true});
   assert.equal(s.doc.querySelector('#km-panel').classList.contains('km-panel-fixed'),false,'game boards keep their own height');s.close();
 });
+
+test('剣舞：項荘は項王の「諾」のあとで舞い始め、途中から再開しても舞ったまま',async()=>{
+  const calls=[];
+  let h=await setup('c4-5',{classroom:true,start:false});
+  const K=h.w.KOUMON,a=K.script.c4,i5=a.findIndex(n=>n.id==='c4-5'),i6=a.findIndex(n=>n.id==='c4-6'),i7=a.findIndex(n=>n.id==='c4-7');
+  assert.equal(a[i5-1].t,'scene');assert.equal(a[i5-1].pose.sou,'stand','項荘 does not dance while asking');
+  assert.equal(a[i6].x.startsWith('諾。'),true);assert.equal(a[i7].pose.sou,'dance','dance starts after 諾');
+  assert.match(a[i5].x,/――/,'項荘 line has a modern translation');assert.match(a[i5-4].x,/――.*殺してしまえ/,'范増 order has a modern translation');
+  h.w.KoumonStage.setScene=(stage,light,cast,poses)=>{calls.push(poses);return Promise.resolve();};
+  await h.click('[data-km="continue"]');
+  assert.equal(calls[0].sou,'stand');h.close();
+  h=await setup('c4-dance',{classroom:true,start:false});const c2=[];
+  h.w.KoumonStage.setScene=(stage,light,cast,poses)=>{c2.push(poses);return Promise.resolve();};
+  await h.click('[data-km="continue"]');assert.equal(c2[0].sou,'dance','resuming mid-dance keeps 項荘 dancing');h.close();
+});
+
+test('礼の姿勢：項荘は申し出で拱手礼、沛公は謝罪で拝礼、樊噲は賜り物を拝して受ける',async()=>{
+  const h=await setup('c4-5',{classroom:true,start:false});const K=h.w.KOUMON,find=id=>Object.values(K.script).flat().find(n=>n.id===id);
+  assert.equal(find('c4-5').pose.sou,'bow');assert.equal(find('c4-6').pose.sou,'stand');assert.equal(find('c4-7').pose.sou,'dance');
+  assert.equal(find('c2-6').pose.hai,'kneelbow');['c2-7','c2-8','c2-9'].forEach(id=>assert.equal(find(id).at,'hai',id+' shows 沛公 bowing'));
+  assert.equal(find('c2-reply').pose.hai,'sit');assert.equal(find('c2-rage').pose.hai,'sit');
+  assert.equal(find('c5-13').pose.kai,'kneelbow');assert.equal(find('c5-14').pose.kai,'drink');assert.equal(find('c5-15').pose.kai,'kneelbow');assert.equal(find('c5-16').pose.kai,'eat');
+  h.close();
+});
+test('書き下し文の台詞には現代語訳がある（読み解けで意味を問う台詞を除く）',async()=>{
+  const h=await setup('c0-1',{classroom:true,start:false});const K=h.w.KOUMON;
+  const classical=/(ず。|ずや|なり。|ん。|んや|べし|べからず|を以つて|せよ|ぞ。|賜へ|に非ず|如かず)/,modern=/(です|ます|だ。|ない|しよう|ござる|だな)/;
+  const missing=[];
+  K.chapters.forEach(c=>{const a=K.script[c.id]||[];a.forEach((n,i)=>{
+    if(!(n.x&&(n.t==='say'||!n.t)))return;
+    if(!classical.test(n.x)||modern.test(n.x)||/――|（[^）]{6,}）/.test(n.x))return;
+    const asked=a.slice(i+1,i+4).some(m=>m.t==='ask'&&m.k==='read');if(asked)return;
+    missing.push(n.id);});});
+  assert.deepEqual(missing,[]);h.close();
+});

@@ -77,7 +77,7 @@
       {stage:'koumon', light:'night', cast:['u'], at:'u', w:'u', kind:'shiki', src:'項羽本紀：会稽で、始皇帝の巡行を見て', x:'彼取りて代はるべきなり。（あいつに取って代わってやる。）'} ],
     [ {stage:'bashang', light:'dusk', cast:['hai','kai'], at:'wide', kind:'retold', src:'高祖本紀', x:'沛の町。人々は秦の役人を倒し、村の役人だった劉邦（劉季）を長に迎えた。'},
       {stage:'intro-field', light:'day', cast:['u'], at:'u', w:'u', kind:'shiki', src:'項羽本紀：少年のころ、叔父の項梁に', x:'書は以て名姓を記するに足るのみ。剣は一人の敵、学ぶに足らず。万人の敵を学ばん。（字は名前が書ければ十分。剣は一人を相手にするだけ。一万人を相手にできる兵法を学びたい。）'} ],
-    [ {stage:'intro-court', light:'palace', cast:['hai','u'], at:'wide', kind:'retold', src:'高祖本紀', x:'楚の懐王は、将軍たちと約束した。「先に入りて関中を定むる者は、之を王とせん。」'},
+    [ {stage:'intro-court', light:'palace', cast:['hai','u'], at:'wide', kind:'retold', src:'高祖本紀', x:'楚の懐王は、将軍たちと約束した。「先に入りて関中を定むる者は、之を王とせん。」（最初に関中に入って平定した者を、関中の王にしよう。）'},
       {at:'u', kind:'retold', src:'高祖本紀', x:'項羽も西へ行くことを望んだ。だが懐王に仕えるベテランの将軍たちは「項羽は荒々しい。心が広く人がらのよい人を西へ送るべきだ」と言い、劉邦を選んだ。'} ],
     [ {stage:'intro-field', light:'dawn', cast:['u'], at:'u', kind:'retold', src:'項羽本紀', x:'鉅鹿。項羽は河を渡ると、船を沈め、釜を壊し、陣小屋を焼いた。持たせたのは三日分の糧だけ。'},
       {stage:'road', light:'moon', cast:['hai','kai'], at:'wide', kind:'retold', src:'高祖本紀', sfx:'hoof', x:'そのころ劉邦は、西へ急いでいた。城を力で落とすより、降伏を受け入れて道を開いた。'} ],
