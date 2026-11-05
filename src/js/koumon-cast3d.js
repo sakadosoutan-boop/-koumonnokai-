@@ -185,7 +185,7 @@
     u:    { h: 1.9, build: 1.2, robe: 0x944d40, trim: 0xb08a2e, armor: 'lacq', lace: 0xa4533f, gold: 1, cap: 'bawang', cape: 0x8a1410, sword: 1, legs: 0x1a1414,
             head: headP({ seed: 304, age: 27, thin: .05, smile: -.06, cran: [1.05, 1, 1.03], jaw: 1.17, neckR: 1.12, browK: 1.32, nose: 1.06, eyeTilt: -.015, browDrop: .006, beard: 'long', beardLen: .05, hairC: 0x0a0808,
               doublePupil: true, irisR: .2, iris: [34, 22, 16], beardW: 1.3, whiskers3: 1.5, wrinkles: .2, eyeOpenU: .0062, rough: .64, skin: 0xbf9272 }) },
-    zo:   { h: 1.64, build: .94, restLean: .055, robe: 0x8d7954, trim: 0x3e3424, inner: 0xe0d6c0, belt: 0x241c14, pei: 0, jue: 1, cap: 'jinxian',
+    zo:   { h: 1.64, build: .94, restLean: .055, sword: 1, robe: 0x8d7954, trim: 0x3e3424, inner: 0xe0d6c0, belt: 0x241c14, pei: 0, jue: 1, cap: 'jinxian',
             head: headP({ seed: 305, age: 74, thin: .88, smile: -.08, cran: [.96, 1.08, .97], jaw: .94, neckR: .94, hairC: 0xdcd6cc, beard: 'long', beardLen: .19, beardW: .88, wrinkles: 1.4, spots: 10, browDrop: .011, nose: 1.08, iris: [62, 44, 32], hood: 1.25, eyeOpenU: .0044, hairThick: .005, topknot: .026, hairGloss: .22, rough: .78 }) },
     haku: { h: 1.73, robe: 0x6c627e, trim: 0x302a40, inner: 0xe0d6c0, belt: 0x10141e, pei: 1, cap: 'jinxian', sword: 1,
             head: headP({ seed: 306, age: 50, thin: .4, smile: .15, beard: 'long', beardLen: .12, hairC: 0x1e1a16, hairGrey: .2, wrinkles: .7, nose: 1.03 }) },
@@ -609,8 +609,38 @@
     g.computeVertexNormals();
     return mesh(g, std(0x8a4a3a, .55));
   }
+  /** 玉斗：玉の酒器（柄の付いた小さな斗）。割れたときの四つの破片も用意する */
+  function yudouMesh() {
+    var jade = std(0xb7d3bd, .28, .04), g = new THREE.Group(), whole = new THREE.Group(), shards = [];
+    var prof = [new THREE.Vector2(.0, .0), new THREE.Vector2(.034, .002), new THREE.Vector2(.046, .016), new THREE.Vector2(.052, .046), new THREE.Vector2(.049, .052), new THREE.Vector2(.043, .046), new THREE.Vector2(.040, .014), new THREE.Vector2(.0, .009)];
+    whole.add(mesh(new THREE.LatheGeometry(prof, 28), jade, false));
+    var handle = mesh(new THREE.BoxGeometry(.012, .010, .085), jade, false); handle.position.set(0, .040, -.085); handle.rotation.x = -.25; whole.add(handle);
+    g.add(whole);
+    for (var i = 0; i < 4; i++) {
+      var sh = mesh(new THREE.LatheGeometry(prof, 8, i * PI / 2 + .08, PI / 2 - .16), jade, false);
+      var holder = new THREE.Group(); holder.add(sh); holder.visible = false; g.add(holder); shards.push(holder);
+    }
+    var hs = handle.clone(); var hh = new THREE.Group(); hh.add(hs); hh.visible = false; g.add(hh); shards.push(hh);
+    g.userData = { prop: 'jade-dou', whole: whole, shards: shards };
+    return g;
+  }
+  /** 玉玦：平たい玉の環に、細い切れ目が一つ入った形（直径約7cm・穴は約4割・厚さ約5mm）。切れ目は +x 側 */
   function jueMesh() {
-    return mesh(new THREE.TorusGeometry(.04, .012, 12, 32, PI * 1.82), std(0x789681, .48, .04), false);
+    var R = .036, r = .015, gap = .07, sh = new THREE.Shape();
+    sh.absarc(0, 0, R, gap, PI * 2 - gap, false);
+    sh.lineTo(r * Math.cos(-gap * 1.9), r * Math.sin(-gap * 1.9));
+    sh.absarc(0, 0, r, -gap * 1.9, gap * 1.9 - PI * 2, true);
+    sh.closePath();
+    var geo = new THREE.ExtrudeGeometry(sh, { depth: .004, bevelEnabled: true, bevelThickness: .0009, bevelSize: .0011, bevelSegments: 2, curveSegments: 40 });
+    geo.translate(0, 0, -.002);
+    var g = new THREE.Group(), jade = std(0x9fc3a4, .32, .02);
+    g.add(mesh(geo, jade, false));
+    // 面に彫った細い溝（穀紋の名残のような一本の環）
+    var groove = mesh(new THREE.TorusGeometry((R + r) / 2, .0007, 4, 48, PI * 2 - gap * 2.6), std(0x6f927a, .5, .02), false);
+    groove.rotation.z = gap * 1.3; groove.position.z = .0031; g.add(groove);
+    var groove2 = groove.clone(); groove2.position.z = -.0031; g.add(groove2);
+    g.userData = { prop: 'jade-jue', diameter: R * 2, slit: 'x+' };
+    return g;
   }
   /** 佩玉：大帯から下げる玉の連なり */
   function peiMesh() {
@@ -941,7 +971,7 @@
 
     // 持ち物
     var props = {};
-    if (c.sword) { props.sheath = swordMesh(false); props.sheath.scale.setScalar(s); props.sheath.position.set(.17 * s * b, -.27 * s, .02); props.sheath.rotation.set(.35, 0, .3); chest.add(props.sheath); props.sword = swordMesh(true); props.sword.scale.setScalar(s); props.sword.visible = false; }
+    if (c.sword) { props.sheath = swordMesh(false); props.sheath.scale.setScalar(s); props.sheath.position.set(.17 * s * b, -.27 * s, .02); props.sheath.rotation.set(.35, 0, .3); chest.add(props.sheath); props.sheathHome = { p: props.sheath.position.clone(), q: props.sheath.quaternion.clone() }; props.sword = swordMesh(true); props.sword.scale.setScalar(s); props.sword.visible = false; }
     if (c.shield) { props.shield = shieldMesh(); props.shield.scale.setScalar(s); }
     if (c.halberd) props.halberd = halberdMesh();
     if (c.jue) {
@@ -1021,7 +1051,7 @@
       body.rotation.set(0, 0, 0); body.position.set(0, 0, 0);
       pelvis.rotation.set(0,0,0);pelvis.position.x=0;pelvis.position.z=0;
       spine.rotation.set(0, 0, 0); neck.rotation.set(0, 0, 0); headPiv.rotation.set(0, 0, 0);headPiv.position.set(0,0,0);
-      var riding = pose === 'ride', seated = pose === 'sit' || pose === 'raise' || riding, kneel = pose === 'kneel' || pose === 'eat' || pose === 'kneelbow' || pose === 'kneelgrip';
+      var riding = pose === 'ride', seated = pose === 'sit' || pose === 'raise' || riding, kneel = pose === 'kneel' || pose === 'eat' || pose === 'kneelbow' || pose === 'kneelgrip' || pose === 'smash';
       if (pose === 'stand' || seated || kneel) spine.rotation.x = c.restLean || 0;
       skirtStand.visible = !seated && !kneel;
       skirtStand.scale.y=pose==='run'&&!armored?.8:pose==='dance'&&!armored?.91:1;
@@ -1034,7 +1064,9 @@
       pelvis.position.y = seated ? .4 * s : pose === 'eat' ? .46*s : kneel ? .62 * s : .95 * s;
       ['L', 'R'].forEach(function (k) { legs[k].hip.visible = riding || (armored || pose==='dance' || pose==='enter' || pose==='run') && !seated && !kneel; legs[k].hip.rotation.set(0, 0, 0); legs[k].knee.rotation.set(0, 0, 0);legs[k].shoe.quaternion.identity(); });
       if (props.sword) { props.sword.visible = false; if (props.sword.parent) props.sword.parent.remove(props.sword); if (props.sheath) props.sheath.visible = true; }
-      ['shield', 'halberd', 'jue', 'cup', 'meat', 'morsel'].forEach(function (k) { if (props[k] && props[k].parent) props[k].parent.remove(props[k]); });
+      if (props.sheathHome) { props.sheath.position.copy(props.sheathHome.p); props.sheath.quaternion.copy(props.sheathHome.q); }
+      ['shield', 'halberd', 'jue', 'cup', 'meat', 'morsel', 'yudou'].forEach(function (k) { if (props[k] && props[k].parent) props[k].parent.remove(props[k]); });
+      state.smashStart = null; state.jiwenStart = null; state.jiwenDone = false;
       if (props.jueHang) props.jueHang.visible = true;
       var hpz = { L: 'relax', R: 'relax' };
       setArm('L', .1, .12, .18); setArm('R', .1, .12, .18);
@@ -1042,9 +1074,15 @@
       if (pose === 'stand' && !armored && !props.halberd) { setArm('L', .36, .1, 1.22, 1.02); setArm('R', .34, .1, 1.18, 1.0); hpz = { L: 'hidden', R: 'hidden' }; }
       if (seated) { setArm('L', .34, .06, .9, .38); setArm('R', .34, .06, .9, .38); hpz = { L: 'lap', R: 'lap' }; }
       if (kneel) { setArm('L', .3, .05, .78, .32); setArm('R', .3, .05, .78, .32); hpz = { L: 'lap', R: 'lap' }; }
-      if (pose === 'kneelgrip') hpz.R = 'grasp';
-      if (pose === 'raise') { setArm('R', 2.45, .28, .45); hpz.R = 'hold'; if (props.jue) { holdIn('R', props.jue, [0, 0, 1.85], [0, -.21 * s, .03 * s]); /* 下の縁を指でつまみ、輪全体と欠けた口（上）が見えるように */ props.jueHang.visible = false; } }
-      if (pose === 'dance' || pose === 'strike' || pose === 'eat') {
+      if (pose === 'kneelgrip') { hpz.R = 'grasp'; hpz.L = 'grasp'; }
+      // 亜父は玉斗を受け、之を地に置き、剣を抜きて撞きて之を破る
+      if (pose === 'smash') {
+        if (!props.yudou) props.yudou = yudouMesh();
+        root.add(props.yudou); props.yudou.scale.setScalar(s); props.yudou.position.set(.02 * s, 0, .40 * s); props.yudou.rotation.set(0, .5, 0);
+        props.yudou.userData.whole.visible = true; props.yudou.userData.shards.forEach(function (h) { h.visible = false; h.position.set(0, 0, 0); h.rotation.set(0, 0, 0); });
+      }
+      if (pose === 'raise') { setArm('R', 2.45, .28, .45); hpz.R = 'hold'; if (props.jue) { holdIn('R', props.jue, [0, 0, -PI / 2], [0, -.19 * s, .03 * s]); /* 下の縁を指でつまみ、輪全体と欠けた口（上）が見えるように */ props.jueHang.visible = false; } }
+      if (pose === 'dance' || pose === 'strike' || pose === 'eat' || pose === 'smash' || pose === 'jiwen') {
         if (props.sword) { holdIn('R', props.sword, [PI, 0, 0], [0, -.08 * s, 0]); if (props.sheath) props.sheath.visible = false; }
         hpz.R = 'grasp';
       }
@@ -1079,12 +1117,22 @@
       }
       ['L', 'R'].forEach(function (k) { if (arms[k].handPose !== hpz[k]) attachHand(k, hpz[k]); alignHeldHandle(k); });
       if ((pose === 'bow' || pose === 'kneelbow') && armored) salutePalms();
+      if (pose === 'smash' && props.sword) smashKeys();
+      if (pose === 'jiwen' && props.sword) jiwenKeys();
       // 按剣而跽：膝立ちのまま身を起こし、右手を剣の柄にかける
       if (pose === 'kneelgrip' && props.sheath) {
         spine.rotation.x = (c.restLean || 0) - .04;
         root.updateMatrixWorld(true);
-        var hilt = root.worldToLocal(chest.localToWorld(props.sheath.position.clone().add(new V3(0, .05 * s, 0))));
-        solveHandContact('R', hilt, gripOffset('R'), wristBasis(new V3(.85, -.35, .25).normalize(), new V3(0, 1, 0)), new V3(-.5, -.6, .3));
+        // 柄を前上へ向けて左腰に寄せ、右手で柄を握り、左手で鞘の口を押さえる（いつでも抜ける構え）
+        var hiltDir = new V3(-.25, .55, .80).normalize();
+        props.sheath.position.set(.19 * s, -.32 * s, .18 * s);
+        props.sheath.quaternion.setFromUnitVectors(new V3(0, 1, 0), hiltDir);
+        root.updateMatrixWorld(true);
+        var hilt = root.worldToLocal(props.sheath.localToWorld(new V3(0, .07, 0)));
+        var mouthOf = root.worldToLocal(props.sheath.localToWorld(new V3(0, -.09, 0)));
+        var axis = hilt.clone().sub(mouthOf).normalize();
+        solveHandContact('R', hilt, gripOffset('R'), gripFacing('R', axis, new V3(1, -1, 0)), new V3(-.5, -.6, .3));
+        solveHandContact('L', mouthOf, gripOffset('L'), gripFacing('L', axis, new V3(-1, -1, 0)), new V3(.6, -.6, .2));
       }
       if(pose==='glare'&&id==='kai'){state.footContacts={};entranceMotion(1);}
       state.base = { L: arms.L.cur.slice(), R: arms.R.cur.slice(), hL: hpz.L, hR: hpz.R };
@@ -1160,6 +1208,63 @@
       var solved=A.wr.position.clone().add(offset.clone().applyQuaternion(A.wr.quaternion)).applyQuaternion(A.el.quaternion).add(A.el.position).applyQuaternion(A.sh.quaternion).add(shoulder);
       state.contactErrors[sideKey]=solved.distanceTo(contact);
       state.ikDetails[sideKey]={flex:flex,forearmTwist:twist,wristBend:2*Math.acos(clamp(Math.abs(A.wr.quaternion.w),0,1)),wantedTwist:wantedTwist,elbow:elbow.toArray(),analytic:true};
+    }
+    function bladePoint(at) { root.updateMatrixWorld(true); return root.worldToLocal(props.sword.localToWorld(new V3(0, -at, 0))); }
+    function applyArmKey(k) { setArm('R', k[0], k[1], k[2], k[3]); arms.R.wr.rotation.set(k[4] || 0, 0, k[5] || 0); alignHeldHandle('R'); }
+    /** 腕の角度（肩・肘・前腕・手首）を、決まった乱数で広く試してから近くを詰めて探す。cost が小さいほどよい */
+    function searchArm(lo, hi, cost, seed) {
+      var R = rng(seed), best = null, i, k, c2;
+      for (i = 0; i < 700; i++) {
+        k = lo.map(function (a, j) { return a + (hi[j] - a) * R(); });
+        applyArmKey(k); c2 = cost(k);
+        if (!best || c2 < best.c) best = { c: c2, k: k };
+      }
+      var step = hi.map(function (h, j) { return (h - lo[j]) * .08; });
+      for (i = 0; i < 260; i++) {
+        k = best.k.map(function (a, j) { return clamp(a + (R() * 2 - 1) * step[j], lo[j], hi[j]); });
+        applyArmKey(k); c2 = cost(k);
+        if (c2 < best.c) best = { c: c2, k: k };
+        if (i % 60 === 59) step = step.map(function (x) { return x * .5; });
+      }
+      return best;
+    }
+    function wristPenalty() { return 2 * Math.acos(clamp(Math.abs(arms.R.wr.quaternion.w), 0, 1)); }
+    /** 玉斗を砕く：振り下ろした剣先が前の床に届く腕の角度を探し、その下に玉斗を置く */
+    function smashKeys() {
+      var lean = .36;
+      spine.rotation.x = (c.restLean || 0) + lean;
+      var hit = searchArm([.2, -.2, 0, -.4, -1.3, -.4], [1.6, .4, 1.2, .8, 1.0, .4], function (k) {
+        var tipAt = bladePoint(.73), mid = bladePoint(.36);
+        // 前の机を避け、右前の床（机の外）を突く
+        return Math.abs(tipAt.y - .03 * s) * 4 + Math.abs(tipAt.x + .55 * s) * 2 + Math.max(0, .15 * s - tipAt.z) * 3 + Math.max(0, tipAt.z - .45 * s) * 3 +
+          Math.max(0, .25 * s - (mid.y - tipAt.y)) * 2 + wristPenalty() * .25;
+      }, 41);
+      applyArmKey(hit.k); var tip = bladePoint(.73);
+      props.yudou.position.set(tip.x, 0, tip.z);
+      var high = hit.k.slice(); high[0] = 2.75; high[2] = .55; high[4] = -.2;
+      state.smashKeys = { rest: [.95, .10, .55, .1, -.3, 0], high: high, hit: hit.k, lean: lean };
+      spine.rotation.x = (c.restLean || 0) + .08; applyArmKey(state.smashKeys.rest);
+    }
+    /** 自刎：刃を水平にして喉の前を通す腕の角度を探す */
+    function jiwenKeys() {
+      root.updateMatrixWorld(true);
+      var throat = root.worldToLocal(neck.getWorldPosition(new V3())).add(new V3(0, .03 * s, .07 * s));
+      var best = searchArm([.6, -.3, .4, -.6, -1.2, -.6], [2.4, .8, 2.3, 1.4, 1.2, .6], function (k) {
+        var a0 = bladePoint(.08), a1 = bladePoint(.55), d = a1.clone().sub(a0).normalize();
+        var cl = new THREE.Line3(a0, a1).closestPointToPoint(throat, true, new V3()).distanceTo(throat);
+        return cl / s * 6 + Math.abs(d.y) * .8 + Math.max(0, .6 - d.x) * 2 + wristPenalty() * .3 + Math.max(0, k[2] - 1.9);
+      }, 57);
+      state.jiwenKeys = { rest: [.35, .12, .35, 0, 0, 0], neck: best.k };
+      applyArmKey(state.jiwenKeys.rest);
+    }
+    // 握った手で棒（柄や鞘）を持つ向き：手の握り軸を棒の軸に合わせ、指はおおむね fingersHint の側へ
+    function gripFacing(k, axis, fingersHint) {
+      var x = axis.clone().normalize(); if (k === 'L') x.negate();
+      var y = fingersHint.clone().addScaledVector(x, -fingersHint.dot(x)).normalize();
+      var z = new V3().crossVectors(x, y).normalize();
+      var want = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+      var A = arms[k], local = A.hand.quaternion.clone().multiply(A.hand.children[0].quaternion);
+      return want.multiply(local.invert());
     }
     // 手の模型そのものの向き（指先の向きと掌の向き）を、腕の根元座標の手首の回転に直す
     function handFacing(k, fingers, palm) {
@@ -1243,13 +1348,15 @@
       // the arrival height remains .935, so the planted finish is unchanged.
       pelvis.position.y=((charging?.80:.76)+(charging?.10:.175)*sstep(.83,.99,u)-.015*stride*stride)*s;pelvis.rotation.set(0,.045*stride,0);
       spine.rotation.set(charging?.20*gait+.16*settled:.11*gait+.025*settled,-.035*stride,0);neck.rotation.set(0,.03*stride,0);headPiv.rotation.set((charging?-.015:.035)*gait,-.035*stride,0);
-      setArm('L',lerp(charging?.82:.70,charging?.68:.28,settled)+.025*stride,.38,lerp(1.0,charging?.95:.58,settled),-.08*(1-settled));
+      var sideways=charging?sstep(.55,.88,u):0;
+      // 盾を横にするときは左腕を胸の前へ回し、盾の中央を体の正面に置く
+      setArm('L',lerp(lerp(charging?.82:.70,charging?.68:.28,settled)+.025*stride,1.1,sideways),lerp(.38,.05,sideways),lerp(lerp(1.0,charging?.95:.58,settled),1.6,sideways),lerp(-.08*(1-settled),.9,sideways));
       setArm('R',lerp(charging?.20:.15,charging?.24:.20,settled)-.22*stride,.38,lerp(charging?.75:.60,charging?.65:.32,settled));
       var distance=charging?(typeof state.gateDistance==='number'?state.gateDistance:2.65):(typeof state.entryDistance==='number'?state.entryDistance:2.65);
       plantFoot('R',entranceFoot('R',u,distance),-.08);plantFoot('L',entranceFoot('L',u,distance),.08);
       if(charging){state.gateRootProgress=enterTravel(u);state.gateComplete=u>=1;}else{state.entryRootProgress=enterTravel(u);state.entryComplete=u>=1;}
       if(props.shield){
-        root.updateMatrixWorld(true);var shieldRootQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(charging?.10:.04*gait,.035*stride,-.07*gait));
+        root.updateMatrixWorld(true);/* 其の盾を側てて：撞く直前に盾を横に倒す */var side=sideways;var shieldRootQ=new THREE.Quaternion().setFromEuler(new THREE.Euler(charging?.10:.04*gait,.035*stride,lerp(-.07*gait,-PI/2,side)));
         var shieldWorldQ=root.getWorldQuaternion(new THREE.Quaternion()).multiply(shieldRootQ),wrWorld=arms.L.wr.getWorldQuaternion(new THREE.Quaternion());
         props.shield.quaternion.copy(wrWorld.invert().multiply(shieldWorldQ));
         props.shield.position.copy(gripOffset('L')).sub(new V3(0,0,-.035*s).applyQuaternion(props.shield.quaternion));
@@ -1426,6 +1533,35 @@
         var want = state.talk ? 'hold' : state.base.hR;
         if (arms.R.handPose !== want) attachHand('R', want);
       }
+      if (p === 'smash' && props.sword && props.yudou && state.smashKeys) {
+        // 剣を構え、振りかぶり、地に置いた玉斗へ振り下ろす。一度だけ（約2.4秒）
+        if (state.smashStart == null) state.smashStart = t;
+        var su = clamp((t - state.smashStart) / 2.4, 0, 1), up = sstep(.10, .42, su) * (1 - sstep(.50, .58, su)), hit = sstep(.50, .58, su);
+        var K0 = state.smashKeys.rest, K1 = state.smashKeys.high, K2 = state.smashKeys.hit;
+        var kk;
+        spine.rotation.x = (c.restLean || 0) + lerp(lerp(.08, -.05, up), state.smashKeys.lean, hit);
+        kk = [0, 1, 2, 3, 4, 5].map(function (i) { return lerp(lerp(K0[i] || 0, K1[i] || 0, up), K2[i] || 0, hit); });
+        applyArmKey(kk);
+        var broke = su >= .58, since = Math.max(0, (t - state.smashStart) - 2.4 * .58);
+        props.yudou.userData.whole.visible = !broke;
+        props.yudou.userData.shards.forEach(function (h, i) {
+          h.visible = broke;
+          var a = i * PI / 2 + .6 + (i === 4 ? 1.2 : 0), fly = sstep(0, .45, since), hop = Math.sin(PI * clamp(since / .45, 0, 1));
+          h.position.set(Math.cos(a) * (.03 + .16 * fly), .05 * hop, Math.sin(a) * (.03 + .16 * fly));
+          h.rotation.set(.9 * fly * (i % 2 ? 1 : -1), a, (i === 4 ? 1.4 : .6) * fly);
+        });
+        state.motionPhase = su < .10 ? '剣を抜いて構える' : su < .50 ? '振りかぶる' : su < .58 ? '玉斗へ振り下ろす' : '玉斗が砕ける';
+      }
+      if (p === 'jiwen' && props.sword && state.jiwenKeys) {
+        // 乃ち自刎して死す：剣を水平にして喉もとへ当て、しばらくして崩れ落ちる
+        if (state.jiwenStart == null) state.jiwenStart = t;
+        var je = t - state.jiwenStart, ju = clamp(je / 2.2, 0, 1), lift = sstep(.05, .45, ju);
+        var J0 = state.jiwenKeys.rest, J1 = state.jiwenKeys.neck;
+        applyArmKey([0, 1, 2, 3, 4, 5].map(function (i) { return lerp(J0[i] || 0, J1[i] || 0, lift); }));
+        spine.rotation.x = (c.restLean || 0) + .06 * sstep(.6, 1, ju); headPiv.rotation.x = .08 * sstep(.6, 1, ju);
+        state.motionPhase = ju < .45 ? '剣を喉もとへ上げる' : '自ら首をはねる';
+        if (je > 2.9 && !state.jiwenDone) { state.jiwenDone = true; setPose('down'); return; }
+      }
       if (p === 'raise') {
         if (state.raiseStart == null) state.raiseStart = t;
         var re = t - state.raiseStart, rk = state.raiseAgain ? (re < .45 ? 1 - sstep(0, .45, re) * .75 : .25 + .75 * sstep(.45, 1.0, re)) : sstep(0, .7, re);
@@ -1443,7 +1579,9 @@
           var foot=u<.4?new V3(side*.16*s,0,front-speed*cycle*u):steppingFoot(new V3(side*.16*s,0,back),new V3(side*.16*s,0,front),.4,1,u,.12);
           plantFoot(k,foot,side*.08);
         });
-        setArm('R', .2+Math.cos(r)*.55, .15, .9);setArm('L', .2-Math.cos(r)*.55, .15, .9);
+        // 走る腕：肘を直角近くに曲げたまま、脇で前後に振る（脚と逆、上体も少しひねる）
+        setArm('R', .08+Math.cos(r)*.48, .10, 1.45-.18*Math.cos(r));setArm('L', .08-Math.cos(r)*.48, .10, 1.45+.18*Math.cos(r));
+        spine.rotation.y=-.07*Math.cos(r);
         if (props.shield) {
           // Carry the weight close to the left shoulder; do not swing the
           // shield like the free running arm or rotate it with the wrist.

@@ -344,3 +344,10 @@
   .km-panel.km-panel-fixed.km-panel-gen { height: 64dvh; max-height: 64dvh; }
   .km-panel-gen .km-paper { height: 118px; }
 }
+
+/* 座次図：ドラッグ＆ドロップ */
+.km-seat-how { margin: -4px 0 10px; font: 12.5px/1.6 var(--gothic); color: #cfdcd4; }
+.km-m-seat .km-draggable { touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; }
+.km-m-seat .km-seat .km-draggable { cursor: grab; }
+.km-m-seat .km-seat.km-drop-over { outline: 3px solid #e6cc8b; outline-offset: 2px; background: #2a4a4e; }
+.km-drag-ghost { position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px 6px 6px; border-radius: 6px; background: rgba(12,30,34,.95); border: 1px solid #e6cc8b; color: #f3e7c6; font: 14px var(--gothic); box-shadow: 0 8px 24px rgba(0,0,0,.5); }

@@ -315,6 +315,10 @@
     el.sound = $root.querySelector('#km-sound');
     mountStage();
     $root.addEventListener('click', onClick);
+    $root.addEventListener('pointerdown', seatPointerDown);
+    window.addEventListener('pointermove', seatPointerMove, { passive: false });
+    window.addEventListener('pointerup', seatPointerUp);
+    window.addEventListener('pointercancel', seatPointerUp);
     $root.addEventListener('change', function (e) {
       if (e.target.matches('[data-activity-answer]')) activityAction('answer', { question: e.target.getAttribute('data-activity-answer'), value: e.target.value }, e.target);
     });
@@ -679,7 +683,10 @@
     mode = 'say';
     fixedPanel(true);
     if (n.pose) Object.keys(n.pose).forEach(function (k) { ST.setPose(k, n.pose[k]); });
-    if (n.at) ST.focus(n.at);
+    // 初登場の人物は、顔が見えるよう正面から映す。台本の cam でも正面のカットを指定できる
+    var first = st && meetId(n, st.ch), cam = camOf(n);
+    if (first && !st.met[first] && !cam && (n.at === first || n.w === first)) cam = { front: true };
+    if (n.at || cam) ST.focus(cam && !n.at ? first : n.at, null, cam || undefined);
     if (ST.speaker) ST.speaker(n.w && n.w !== 'you' ? n.w : null);
     if (typeof n.fx === 'string') ST.effect(n.fx);
     var impactSession = st;
@@ -699,6 +706,11 @@
   }
   /* ---------- 人物の初登場（カットイン） ---------- */
   // 台詞の主、または視点が向いた人物が、この通しで初めて出たときに名前と人となりを短く見せる。
+  /** 台本の cam：'front'＝顔の正面、'front-hand'＝挙げた手元まで、'front-waist'＝腰の剣まで、'front-floor'＝足もとの床まで */
+  function camOf(n) {
+    return n.cam === 'front' ? { front: true } : n.cam === 'front-hand' ? { front: true, lift: .32, dist: 1.6 } :
+      n.cam === 'front-waist' ? { front: true, lift: -.42, dist: 1.5 } : n.cam === 'front-floor' ? { front: true, lift: -.32, dist: 3.2 } : null;
+  }
   function meetId(n, ch) {
     var id = n.w === 'you' ? (ch === 'c8' ? 'u' : ch === 'c9' ? 'ko' : 'hai') : n.w;
     if (!id && n.at && n.at !== 'wide') id = n.at;
@@ -816,7 +828,7 @@
     mode = 'ask';
     fixedPanel(true);
     ST.hideBubble();
-    if (n.at) ST.focus(n.at); else if (n.w && n.w !== 'you') ST.focus(n.w);
+    if (n.at) ST.focus(n.at, null, camOf(n) || undefined); else if (n.w && n.w !== 'you') ST.focus(n.w);
     if (!restoring) meet(n);
     var opts = n.o.map(function (o, i) { return { o: o, i: i }; });
     opts = shuffle(opts, n.id);
@@ -1093,23 +1105,62 @@
       var here = Object.keys(seatS.place).filter(function (p) { return seatS.place[p] === s.id; });
       return '<button class="km-seat km-seat-' + s.id + '" data-km="seat" data-s="' + s.id + '"' + (done ? ' disabled' : '') + ' aria-label="' + esc(s.label) + '">' +
         '<span class="km-seat-l">' + esc(s.label) + '<small>' + esc(s.dir) + '・' + esc(s.rank) + '</small></span>' +
-        '<span class="km-seat-p">' + here.map(function (p) { return '<span class="km-seal km-' + K.chars[p].side + '">' + esc(K.chars[p].seal) + '</span>'; }).join('') + '</span></button>';
+        '<span class="km-seat-p">' + here.map(function (p) { return '<span class="km-seal km-' + K.chars[p].side + (done ? '' : ' km-draggable') + '" data-seat-p="' + p + '" title="' + esc(K.chars[p].name) + '（ドラッグで動かす）">' + esc(K.chars[p].seal) + '</span>'; }).join('') + '</span></button>';
     }
     var people = G.people.filter(function (p) { return !seatS.place[p]; });
     modal('<h3>' + esc(G.title) + '</h3><p class="km-m-lead">' + esc(G.lead) + '</p>' +
+      (done ? '' : '<p class="km-seat-how">人物を席へドラッグして置く（タップで選んでから席を押しても置ける）。席の印は別の席へ動かしたり、下へ戻したりできる。</p>') +
       '<div class="km-seatmap">' +
         '<div class="km-compass n">北</div><div class="km-compass s">南（入口）</div><div class="km-compass w">西</div><div class="km-compass e">東</div>' +
         G.seats.map(seatHTML).join('') +
         '<div class="km-seat-center">帳の中</div>' +
       '</div>' +
       '<div class="km-people">' + (people.length ? people.map(function (p) {
-        return '<button class="km-person' + (seatS.sel === p ? ' on' : '') + '" data-km="person" data-p="' + p + '"><span class="km-seal km-' + K.chars[p].side + '">' + esc(K.chars[p].seal) + '</span>' + esc(K.chars[p].full) + '</button>';
+        return '<button class="km-person km-draggable' + (seatS.sel === p ? ' on' : '') + '" data-km="person" data-p="' + p + '"><span class="km-seal km-' + K.chars[p].side + '">' + esc(K.chars[p].seal) + '</span>' + esc(K.chars[p].full) + '</button>';
       }).join('') : '<span class="km-m-lead">全員を席に着けた。</span>') + '</div>' +
       (msg ? '<div class="km-m-msg">' + msg + '</div>' : '') +
       '<div class="km-nav">' +
         (done ? '<span></span>' : '<button class="km-btn" data-km="seatreset">置き直す</button>') +
         (done ? '<button class="km-btn gold" data-km="seatdone">宴へ ▶</button>' : '<button class="km-btn gold" data-km="seatcheck"' + (people.length ? ' disabled' : '') + '>史記と照らす</button>') +
       '</div>', 'km-m-seat');
+  }
+  /* 座次図のドラッグ＆ドロップ（マウス・タッチ共通）。タップで選んで置く操作もそのまま使える */
+  var seatDrag = null, suppressClickUntil = 0;
+  function seatPointerDown(e) {
+    if (!seatS || seatS.done || (e.button !== undefined && e.button > 0)) return;
+    var t = e.target.closest && e.target.closest('.km-m-seat [data-p], .km-m-seat [data-seat-p]');
+    if (!t || t.disabled) return;
+    seatDrag = { p: t.getAttribute('data-p') || t.getAttribute('data-seat-p'), x: e.clientX, y: e.clientY, moved: false, ghost: null, over: null, id: e.pointerId };
+  }
+  function seatPointerMove(e) {
+    var d = seatDrag; if (!d) return;
+    var dx = e.clientX - d.x, dy = e.clientY - d.y;
+    if (!d.moved) {
+      if (dx * dx + dy * dy < 49) return;
+      d.moved = true;
+      var c = K.chars[d.p], g = document.createElement('div');
+      g.className = 'km-drag-ghost'; g.setAttribute('aria-hidden', 'true');
+      g.innerHTML = '<span class="km-seal km-' + c.side + '">' + esc(c.seal) + '</span>' + esc(c.name);
+      document.body.appendChild(g); d.ghost = g;
+    }
+    if (e.cancelable) e.preventDefault();
+    d.ghost.style.transform = 'translate(' + (e.clientX - 20) + 'px,' + (e.clientY - 18) + 'px)';
+    var under = document.elementFromPoint(e.clientX, e.clientY), seat = under && under.closest && under.closest('.km-m-seat .km-seat');
+    if (d.over && d.over !== seat) d.over.classList.remove('km-drop-over');
+    if (seat && !seat.disabled) seat.classList.add('km-drop-over');
+    d.over = seat;
+  }
+  function seatPointerUp(e) {
+    var d = seatDrag; seatDrag = null;
+    if (!d || !d.moved) return;
+    if (d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+    suppressClickUntil = Date.now() + 400;
+    if (e.type === 'pointercancel' || !seatS) { if (seatS) renderSeat(seatS.message); return; }
+    var under = document.elementFromPoint(e.clientX, e.clientY);
+    var seat = under && under.closest && under.closest('.km-m-seat .km-seat');
+    if (seat && !seat.disabled) seatS.place[d.p] = seat.getAttribute('data-s');
+    else if (under && under.closest && under.closest('.km-m-seat .km-people')) delete seatS.place[d.p];
+    seatS.sel = null; renderSeat(seatS.message);
   }
   function seatCheck() {
     if (!seatS || seatS.done) return;
@@ -1618,6 +1669,7 @@
 
   /* ============================ 入力 ============================ */
   function onClick(e) {
+    if (Date.now() < suppressClickUntil && e.target.closest && e.target.closest('.km-m-seat')) { e.stopPropagation(); return; }
     var t = e.target.closest('[data-km]');
     if (!t) {
       // 舞台やパネルの空いたところを押したら進む

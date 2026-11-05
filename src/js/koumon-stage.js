@@ -960,6 +960,9 @@
   function setPose(id, pose) {
     var f = S.cast[id];
     if (!f) return;
+    // 影絵では、玉斗を砕く動きは打ち下ろし、自刎は倒れた姿で表す
+    if (pose === 'smash') pose = 'strike';
+    if (pose === 'jiwen') pose = 'down';
     if (S.stageId === 'gate' && id === 'ei' && pose === 'down' && S.breach) {
       S.breach.impactRequested = true; S.breach.requestedAt = S.t; updateBreach(); return;
     }

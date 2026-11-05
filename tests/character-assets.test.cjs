@@ -494,23 +494,30 @@ test('the entrance stride plants actual feet in world space and holds its final 
   }
 });
 
-test('the gate shield reaches the guard torso while the two bodies remain separated',()=>{
+test('Fan Kuai rams between the two crossed guards with the shield turned sideways, bodies kept apart',()=>{
   const V=C.THREE.Vector3;
   function points(object){const out=[];object.traverse(node=>{if(node.isMesh&&node.visible){const p=node.geometry.attributes.position;for(let i=0;i<p.count;i++)out.push(new V().fromBufferAttribute(p,i).applyMatrix4(node.matrixWorld));}});return out;}
   function gap(a,b){let distance=Infinity;for(const p of a)for(const q of b)distance=Math.min(distance,p.distanceTo(q));return distance;}
   for(const quality of ['low','high']){
     C.KM_CAST3D.setQuality(quality);vm.runInContext(fs.readFileSync(path.join(root,'src/js/koumon-3d.js'),'utf8'),C);
-    const stage=C.KoumonStage3D,kai=C.KM_CAST3D.makeFigure('kai'),home=stage.STAGES.gate.pos.kai,guard=C.KM_CAST3D.makeFigure('ei');
-    kai.position.set(home[0],0,home[1]);kai.userData.home={x:home[0],z:home[1],yaw:home[2]};guard.position.set(.75,0,-2.1);guard.rotation.y=-.9;guard.userData.setPose('stand');
-    stage.S.cast={kai,ei2:guard};stage.S.stageId='gate';stage.setPose('kai','charge');const breach=stage.S.breach;
-    kai.position.copy(breach.to);kai.rotation.y=breach.yaw;kai.userData.state.gateProgress=1;kai.userData.state.gateDistance=breach.from.distanceTo(breach.to);
-    kai.userData.update(0,0);guard.userData.update(0,0);kai.updateMatrixWorld(true);guard.updateMatrixWorld(true);
-    const kr=kai.userData.rig,gr=guard.userData.rig,shield=points(kr.props.shield),torso=points(gr.chest.children.find(node=>node.isMesh)),kaiTorso=points(kr.chest.children.find(node=>node.isMesh));
-    assert.ok(gap(shield,torso)<.03,quality+' actual shield geometry makes contact with the guard torso');
-    const axis=gr.chest.getWorldPosition(new V()).sub(kr.chest.getWorldPosition(new V()));axis.y=0;axis.normalize();
-    assert.ok(Math.min(...torso.map(p=>p.dot(axis)))-Math.max(...kaiTorso.map(p=>p.dot(axis)))>.08,quality+' a separating plane keeps the actual torso bodies apart');
-    const head=gr.head.localToWorld(new V(0,.015,.01));assert.ok(Math.min(...shield.map(p=>p.distanceTo(head)))>.14,quality+' shield contact clears the guard head');
-    assert.ok(gap(shield,points(gr.props.halberd))>.07,quality+' the shield does not pass through the halberd');
+    const stage=C.KoumonStage3D,kai=C.KM_CAST3D.makeFigure('kai'),home=stage.STAGES.gate.pos.kai,left=C.KM_CAST3D.makeFigure('ei'),right=C.KM_CAST3D.makeFigure('ei');
+    kai.position.set(home[0],0,home[1]);kai.userData.home={x:home[0],z:home[1],yaw:home[2]};
+    const ei=stage.STAGES.gate.pos.ei;left.position.set(ei[0],0,ei[1]);left.rotation.y=ei[2];right.position.set(-ei[0],0,ei[1]);right.rotation.y=-ei[2];
+    for(const g of [left,right])g.userData.setPose('stand');
+    stage.S.cast={kai,ei:left,ei2:right};stage.S.stageId='gate';stage.setPose('kai','charge');const breach=stage.S.breach;
+    kai.position.copy(breach.to);kai.rotation.y=Math.PI;kai.userData.state.gateProgress=1;kai.userData.state.gateDistance=breach.from.distanceTo(breach.to);
+    for(const f of [kai,left,right]){f.userData.update(0,0);f.updateMatrixWorld(true);}
+    const kr=kai.userData.rig,shield=points(kr.props.shield),kaiTorso=points(kr.chest.children.find(node=>node.isMesh));
+    const up=new V(0,1,0).applyQuaternion(kr.props.shield.getWorldQuaternion(new C.THREE.Quaternion()));
+    assert.ok(Math.abs(up.y)<.2,quality+' the shield is turned on its side');
+    const box=new C.THREE.Box3().setFromObject(kr.props.shield),center=box.getCenter(new V());
+    assert.ok(Math.abs(center.x-(left.position.x+right.position.x)/2)<.12,quality+' the sideways shield is centred between the two guards');
+    for(const g of [left,right]){
+      const gr=g.userData.rig,torso=points(gr.chest.children.find(node=>node.isMesh));
+      assert.ok(gap(shield,torso)<.10,quality+' the shield reaches each guard');
+      assert.ok(gap(kaiTorso,torso)>.08,quality+' the torso bodies stay apart');
+      const head=gr.head.localToWorld(new V(0,.015,.01));assert.ok(Math.min(...shield.map(p=>p.distanceTo(head)))>.12,quality+' shield contact clears the guard head');
+    }
   }
 });
 
@@ -518,4 +525,30 @@ test('immutable anatomical head buffers are shared between instances without sha
  const a=C.KM_HEADS.build('ryo',C.KM_CAST3D.CAST.ryo.head,'high'),b=C.KM_HEADS.build('ryo',C.KM_CAST3D.CAST.ryo.head,'high');
  assert.equal(a.surface.geometry,b.surface.geometry);assert.equal(a.surface.userData.shared,true);
  a.group.position.x=3;assert.equal(b.group.position.x,0);
+});
+
+test('story actions: Fan Zeng smashes the jade dou, Xiang Yu grips his sword, Xiang Zhuang salutes, and the final self-cut',()=>{
+  const V=C.THREE.Vector3;C.KM_CAST3D.setQuality('low');
+  // 亜父：剣を振り下ろして地の玉斗を砕く
+  const zo=C.KM_CAST3D.makeFigure('zo'),zr=zo.userData.rig;zo.userData.setPose('smash');zo.userData.update(.016,10);
+  zo.userData.update(.016,10+2.4*.585);zo.updateMatrixWorld(true);
+  const tip=zr.props.sword.localToWorld(new V(0,-.73,0)),dou=zr.props.yudou.getWorldPosition(new V());
+  assert.ok(tip.distanceTo(dou)<.06*zr.s,'the sword tip strikes the jade dou on the floor');
+  zo.userData.update(.016,10+2.3);
+  assert.ok(!zr.props.yudou.userData.whole.visible&&zr.props.yudou.userData.shards.every(h=>h.visible),'the dou is broken into shards');
+  // 項王：剣を按じて跽す（両手が柄と鞘に）
+  const u=C.KM_CAST3D.makeFigure('u');u.userData.setPose('kneelgrip');
+  for(const e of Object.values(u.userData.state.contactErrors))assert.ok(e<.0005,'both hands reach the sword');
+  assert.equal(Object.keys(u.userData.state.contactErrors).length,2);
+  // 項荘：抱拳礼（拳を掌で包む）
+  const sou=C.KM_CAST3D.makeFigure('sou'),sr=sou.userData.rig;sou.userData.setPose('bow');sou.updateMatrixWorld(true);
+  for(const e of Object.values(sou.userData.state.contactErrors))assert.ok(e<.0005,'the salute hands are placed exactly');
+  const lc=new C.THREE.Box3().setFromObject(sr.arms.L.hand).getCenter(new V()),rc=new C.THREE.Box3().setFromObject(sr.arms.R.hand).getCenter(new V());
+  assert.ok(lc.distanceTo(rc)<.10*sr.s,'the left palm covers the right fist');
+  assert.equal(sr.arms.R.handPose,'fist');assert.equal(sr.arms.L.handPose,'reach');
+  // 自刎：刃を喉もとへ当て、のちに倒れる
+  const x=C.KM_CAST3D.makeFigure('u'),xr=x.userData.rig;x.userData.setPose('jiwen');x.userData.update(.016,20);x.userData.update(.016,21.6);x.updateMatrixWorld(true);
+  const throat=xr.neck.getWorldPosition(new V()),a=xr.props.sword.localToWorld(new V(0,-.08,0)),b=xr.props.sword.localToWorld(new V(0,-.55,0));
+  assert.ok(new C.THREE.Line3(a,b).closestPointToPoint(throat,true,new V()).distanceTo(throat)<.12*xr.s,'the blade is held at the throat');
+  x.userData.update(.016,23.2);assert.equal(x.userData.state.pose,'down','he then falls');
 });
