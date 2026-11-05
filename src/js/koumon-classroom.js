@@ -110,7 +110,8 @@
       '<div class="km-home-actions"><button class="km-btn gold" data-km="intro"><span>01</span> 鴻門への道 <small>物語の前段：宴の前の流れを七つの場面で</small><b>→</b></button>' +
       '<button class="km-btn km-home-tutorial" data-km="' + (save.tutorial?'continue':'tutorial') + '"><span>02</span> ' + (save.tutorial?'チュートリアルの続きから':'チュートリアル：霸上の夜') + ' <small>その夜を体験しながら、操作と読み方を覚える（約15分）</small><b>→</b></button>' +
       '<button class="km-btn" data-km="' + (save.main?'continue':'new') + '"><span>03</span> ' + (save.main?'本編の続きから':'本編で復習する') + ' <small>授業のあとに：鴻門に謝す から 垓下・烏江 まで</small><b>→</b></button>' +
-      '<button class="km-btn" data-km="ai"><span>04</span> 范増として考える <small>原文をもとにAIと話す</small><b>→</b></button></div>' +
+      '<button class="km-btn" data-km="ai"><span>04</span> 范増として考える <small>原文をもとにAIと話す</small><b>→</b></button>' +
+      '<button class="km-btn" data-km="activities"><span>05</span> プリント演習 <small>人物・剣舞・弁論を、札と言葉で整理する</small><b>→</b></button></div>' +
       '<div class="km-home-links"><button data-km="menu">章を選ぶ</button><button data-km="book">原文帳</button><button data-km="characters">人物相関</button><button data-km="reflection">振り返り</button><button data-km="endings">結末帳</button>' +
       '<button data-km="review">読み直し帳' + (meta.missed && Object.keys(meta.missed).length ? '<small>' + Object.keys(meta.missed).length + '</small>' : '') + '</button><button data-km="record">学習記録</button></div>' +
       '<div class="km-home-footer"><span>' + (meta.classroom?'授業モード · 時間制限なし':'挑戦モード · 命と決断') + '</span><button data-km="settings">表示・授業設定</button><span>' + (is3D?'3Dの舞台':'影絵の舞台') + '</span></div>' +

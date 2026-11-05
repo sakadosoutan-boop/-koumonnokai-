@@ -108,7 +108,7 @@ test('URL hash opens a chapter in classroom mode and leaves locked chapters clos
   assert.equal(h.app._mode(),'title');h.close();
   h=await setup('c0-1',{start:false,classroom:true,url:'http://localhost/#review'});assert.ok(h.doc.querySelector('.km-m-review'));h.close();
   h=await setup('c0-1',{classroom:true});await h.click('.km-top [data-km="menu"]');
-  const select=h.doc.querySelector('[data-chaplink]');assert.ok(select);assert.equal(select.querySelectorAll('option').length,14);h.close();
+  const select=h.doc.querySelector('[data-chaplink]');assert.ok(select);assert.equal(select.querySelectorAll('option').length,15);assert.ok(select.querySelector('option[value="activities"]'));h.close();
 });
 test('learning record gathers progress, routes, review items and reflection',async()=>{
   const h=await setup('c0-11',{meta:{reflection:{quote:'[g10] 項王黙然不応'}}});

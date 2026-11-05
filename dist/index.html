@@ -1117,6 +1117,71 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 }
 
 </style>
+<style>
+/* 独立したプリント活動。物語と同じ墨・青磁・金の配色。 */
+.km-act { color: #f1e7d2; font-family: var(--gothic); line-height: 1.7; }
+.km-act h3 { font-family: var(--mincho); overflow-wrap: anywhere; }
+.km-act-kicker, .km-act-source, .km-act-help, .km-act-progress { color: #b8cdc5; font-size: 13px; }
+.km-act-source { border-left: 3px solid #be9c61; padding-left: 12px; }
+.km-act-menu { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.km-act-menu-card { display: grid; grid-template-columns: 32px minmax(0,1fr); gap: 6px 10px; text-align: left; align-content: start; white-space: normal; }
+.km-act-menu-card strong { font-family: var(--mincho); font-size: 19px; }
+.km-act-menu-card > span:not(.km-act-number), .km-act-menu-card > small { grid-column: 2; }
+.km-act-menu-card small { color: #b9d1c8; }
+.km-act-number, .km-act-item-number { display: inline-flex; justify-content: center; align-items: center; border: 1px solid #b89a60; color: #e5c68a; border-radius: 50%; width: 29px; height: 29px; font-size: 14px; flex-shrink: 0; }
+.km-act-match-board { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 18px 0; }
+.km-act-question { background: #132c30; border: 1px solid #637c7166; border-top: 3px solid #88b7a9; border-radius: 7px; padding: 18px; min-width: 0; }
+.km-act-quote { color: #1c3638; background: #f0e6d1; border-left: 3px solid #bd9b65; padding: 12px 14px; margin: 10px 0 14px; font-family: var(--mincho); font-size: 19px; line-height: 1.8; overflow-wrap: anywhere; }
+.km-act-choice { display: grid; gap: 8px; }
+.km-act select, .km-act textarea { width: 100%; min-width: 0; box-sizing: border-box; background: #f9f2e4; color: #193337; border: 1px solid #bba474; border-radius: 5px; padding: 11px; font: 16px/1.6 var(--gothic); }
+.km-act select { min-height: 48px; }
+.km-act-feedback { margin-top: 14px; padding: 12px; background: #233d3a; border-left: 3px solid #93c2ad; border-radius: 4px; }
+.km-act-feedback b, .km-act-feedback > span { display: block; }
+.km-act-feedback p { margin: 6px 0 0; font-size: 14px; }
+.km-act-feedback.is-retry { border-color: #e2b77b; background: #463e2d; }
+.km-act-order { list-style: none; padding: 0; display: grid; gap: 12px; }
+.km-act-order-card { display: flex; align-items: flex-start; gap: 13px; border: 1px solid #78918488; border-radius: 7px; padding: 16px; background: #142d31; }
+.km-act-order-card.is-correct { border-left: 4px solid #9ccfb8; }
+.km-act-order-card.is-retry { border-left: 4px solid #e2b77b; }
+.km-act-card-copy { flex: 1; min-width: 0; }
+.km-act-card-copy > p { margin: 0; }
+.km-act-card-copy .km-act-quote { margin-bottom: 0; font-size: 17px; }
+.km-act-position-result { display: block; font-size: 13px; margin-top: 8px; }
+.km-act-move { display: flex; flex-direction: column; gap: 8px; }
+.km-act-move .km-btn { min-height: 44px; padding: 8px 12px; white-space: nowrap; }
+.km-act-formation { border: 1px solid #7f9d8e88; border-radius: 7px; margin: 20px 0; padding: 18px; min-width: 0; }
+.km-act-formation legend { padding: 0 8px; }
+.km-act-compass { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-rows: auto repeat(3,auto); gap: 12px; max-width: 590px; margin: 20px auto; }
+.km-act-north { grid-column: 2; grid-row: 1; text-align: center; color: #dcc387; }
+.km-act-center { grid-column: 2; grid-row: 3; display: flex; align-items: center; justify-content: center; text-align: center; border: 1px dashed #a5b2a666; border-radius: 50%; min-height: 84px; font-family: var(--mincho); color: #ced7c4; }
+.km-act-position { display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; padding: 12px 6px; min-height: 76px; }
+.km-act-position b { font-size: 12px; font-weight: normal; }
+.km-act-position[aria-pressed="true"] { background: #d6ba7d; color: #182d31; border: 2px solid #f2ddb0; }
+.km-act-pos-north { grid-column: 2; grid-row: 2; }
+.km-act-pos-west { grid-column: 1; grid-row: 3; }
+.km-act-pos-east { grid-column: 3; grid-row: 3; }
+.km-act-pos-south { grid-column: 2; grid-row: 4; }
+.km-act-reflection { display: grid; gap: 10px; margin-top: 22px; }
+.km-act-reflection > span { font-size: 13px; color: #c4d3c8; }
+.km-act-reflection textarea { resize: vertical; }
+.km-act-status { padding: 12px 16px; margin-top: 20px; background: #253e3c; border-radius: 5px; }
+.km-act-nav { align-items: stretch; }
+.km-act-nav .km-btn { min-height: 48px; }
+.km-projection .km-act { font-size: 20px; }
+.km-projection .km-act-quote { font-size: 25px; }
+.km-projection .km-act select, .km-projection .km-act textarea { font-size: 21px; }
+@media (max-width: 650px) {
+  .km-act-menu, .km-act-match-board { grid-template-columns: minmax(0,1fr); }
+  .km-act-order-card { flex-wrap: wrap; gap: 10px; padding: 12px; }
+  .km-act-card-copy { flex-basis: calc(100% - 42px); }
+  .km-act-move { flex-direction: row; width: 100%; justify-content: flex-end; }
+  .km-act-compass { gap: 7px; }
+  .km-act-formation { padding: 12px; }
+  .km-act-position { font-size: 13px; }
+  .km-act-nav .km-btn { flex: 1 1 110px; padding: 10px; }
+}
+
+</style>
 </head>
 <body class="soukan">
 <noscript><p class="soukan-noscript">このページを遊ぶには JavaScript を有効にしてください。</p></noscript>
@@ -9812,7 +9877,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       '<div class="km-home-actions"><button class="km-btn gold" data-km="intro"><span>01</span> 鴻門への道 <small>物語の前段：宴の前の流れを七つの場面で</small><b>→</b></button>' +
       '<button class="km-btn km-home-tutorial" data-km="' + (save.tutorial?'continue':'tutorial') + '"><span>02</span> ' + (save.tutorial?'チュートリアルの続きから':'チュートリアル：霸上の夜') + ' <small>その夜を体験しながら、操作と読み方を覚える（約15分）</small><b>→</b></button>' +
       '<button class="km-btn" data-km="' + (save.main?'continue':'new') + '"><span>03</span> ' + (save.main?'本編の続きから':'本編で復習する') + ' <small>授業のあとに：鴻門に謝す から 垓下・烏江 まで</small><b>→</b></button>' +
-      '<button class="km-btn" data-km="ai"><span>04</span> 范増として考える <small>原文をもとにAIと話す</small><b>→</b></button></div>' +
+      '<button class="km-btn" data-km="ai"><span>04</span> 范増として考える <small>原文をもとにAIと話す</small><b>→</b></button>' +
+      '<button class="km-btn" data-km="activities"><span>05</span> プリント演習 <small>人物・剣舞・弁論を、札と言葉で整理する</small><b>→</b></button></div>' +
       '<div class="km-home-links"><button data-km="menu">章を選ぶ</button><button data-km="book">原文帳</button><button data-km="characters">人物相関</button><button data-km="reflection">振り返り</button><button data-km="endings">結末帳</button>' +
       '<button data-km="review">読み直し帳' + (meta.missed && Object.keys(meta.missed).length ? '<small>' + Object.keys(meta.missed).length + '</small>' : '') + '</button><button data-km="record">学習記録</button></div>' +
       '<div class="km-home-footer"><span>' + (meta.classroom?'授業モード · 時間制限なし':'挑戦モード · 命と決断') + '</span><button data-km="settings">表示・授業設定</button><span>' + (is3D?'3Dの舞台':'影絵の舞台') + '</span></div>' +
@@ -9981,6 +10047,243 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
 
 </script>
 <script>
+/* 授業プリントに対応する練習。設問・説明は独自作成。引用は『史記』本文。 */
+(function () {
+  'use strict';
+  var people = [
+    { id: 'u', label: '項王（項羽）' },
+    { id: 'hai', label: '沛公（劉邦）' },
+    { id: 'haku', label: '項伯' },
+    { id: 'sou', label: '項荘' },
+    { id: 'ryo', label: '張良' },
+    { id: 'kai', label: '樊噲' },
+    { id: 'zo', label: '范増' }
+  ];
+  var camps = [{ id: 'so', label: '項王側' }, { id: 'han', label: '沛公側' }];
+  var roles = [
+    { id: 'precedent', label: '秦が滅んだ前例を示す' },
+    { id: 'promise', label: '王となる条件を示す' },
+    { id: 'defense', label: '沛公の行動を弁護する' },
+    { id: 'criticism', label: '項王の対応を批判する' }
+  ];
+  var evidenceKinds = [
+    { id: 'text', label: '本文に記された言動' },
+    { id: 'reading', label: '言動から考えた人物像・心情' }
+  ];
+  window.KOUMON_ACTIVITIES = [
+    {
+      id: 'relationships', title: '所属と行動をつなぐ', type: 'match', minutes: 4,
+      lead: '誰の陣営にいるかと、誰に働きかけたかを分けて考えよう。',
+      source: '授業プリント PDF内2・6・7・12ページ',
+      questions: [
+        { id: 'haku-camp', prompt: '項伯が所属するのは、どちらの陣営？', quote: '楚左尹項伯者、項羽季父也。', options: camps, answer: 'so', why: '項伯は項羽の叔父で、楚の左尹。沛公を助けても、ここでの所属は項王側。' },
+        { id: 'mushou-camp', prompt: '曹無傷が仕えているのは、どちらの陣営？', quote: '此沛公左司馬曹無傷言之。', options: camps, answer: 'han', why: '「沛公左司馬」とある。項王に内通した人物だが、所属は沛公側。' },
+        { id: 'mushou-target', prompt: '曹無傷の密告が伝えられた相手は？', quote: '沛公左司馬曹無傷使人言於項羽曰', options: people, answer: 'u', why: '曹無傷は人を遣わして項羽に知らせた。所属と密告先は異なる。' },
+        { id: 'zo-target', prompt: '范増が宴席の外へ呼び、暗殺を命じた相手は？', quote: '范増起、出召項荘。', options: people, answer: 'sou', why: '范増が呼び出すのは項荘。その後、剣舞を利用して沛公を殺すよう命じる。' },
+        { id: 'haku-target', prompt: '項伯が剣舞の中でかばった相手は？', quote: '常以身翼蔽沛公。', options: people, answer: 'hai', why: '「翼蔽沛公」とあり、身をもって沛公を守っている。' },
+        { id: 'ryo-target', prompt: '張良が軍門で危機を知らせた相手は？', quote: '張良至軍門、見樊噲。', options: people, answer: 'kai', why: '張良は軍門で樊噲に会い、項荘が沛公を狙っていると説明する。' },
+        { id: 'haku-debt', prompt: '昔、項伯の命を助けたのは誰？', quote: '張良曰、秦時与臣游。項伯殺人、臣活之。', options: people, answer: 'ryo', why: 'この発言の「臣」は話し手の張良。「臣活之」は、張良が項伯を助けたということ。' },
+        { id: 'chin-command', prompt: '陳平に、沛公を呼ぶよう命じたのは誰？', quote: '項王使都尉陳平召沛公。', options: people, answer: 'u', why: '「項王使…」なので、命令する人は項王、実際に呼ぶ人は陳平。' },
+        { id: 'kai-defense', prompt: '樊噲が項王の前で功績を述べ、弁護したのは誰？', quote: '今沛公、先破秦入咸陽。', options: people, answer: 'hai', why: '樊噲は沛公の功績を挙げ、功労者を殺そうとする項王の対応を批判する。' }
+      ]
+    },
+    {
+      id: 'sword-order', title: '剣舞の危機を組み立てる', type: 'order', minutes: 3,
+      lead: '合図から暗殺の失敗まで、本文に沿ってカードを並べよう。',
+      source: '授業プリント PDF内5〜6ページ',
+      cards: [
+        { id: 'signal', text: '范増が玉玦を挙げて合図する', quote: '挙所佩玉玦以示之者三。' },
+        { id: 'silence', text: '項王は黙ったまま応じない', quote: '項王黙然不応。' },
+        { id: 'command', text: '范増が項荘を呼んで暗殺を指示する', quote: '范増起、出召項荘。' },
+        { id: 'dance', text: '項荘が剣舞を始める', quote: '項荘抜剣起舞。' },
+        { id: 'protect', text: '項伯も舞い、沛公をかばう', quote: '項伯亦抜剣起舞、常以身翼蔽沛公。' },
+        { id: 'failure', text: '項荘は沛公を撃てない', quote: '荘不得撃。' }
+      ],
+      answer: ['signal', 'silence', 'command', 'dance', 'protect', 'failure'],
+      initial: ['failure', 'protect', 'dance', 'command', 'silence', 'signal'],
+      why: '項王が動かないため、范増は項荘に実行を命じる。項荘は剣舞で狙うが、項伯がかばったため、沛公を撃つ機会を得られない。'
+    },
+    {
+      id: 'omitted-people', title: '省略された人物を補う', type: 'match', minutes: 4,
+      lead: '直前の文や話し手を確かめ、誰が誰に働きかけるのかを読み取ろう。',
+      source: '授業プリント PDF内5・7・9・12ページ',
+      questions: [
+        { id: 'signal-actor', prompt: '玉玦を挙げて合図しているのは誰？', quote: '范増数目項王、挙所佩玉玦以示之者三。', options: people, answer: 'zo', why: '直前から主語は范増。玉玦を挙げる動作も范増のもの。' },
+        { id: 'signal-object', prompt: '「示之」の「之」が指す相手は？', quote: '范増数目項王、挙所佩玉玦以示之者三。', options: people, answer: 'u', why: '范増が目くばせしている相手は項王。その項王に玉玦を示す。' },
+        { id: 'sword-object', prompt: '項荘が撃てなかった相手を補おう。', quote: '常以身翼蔽沛公。荘不得撃。', options: people, answer: 'hai', why: '項伯がかばう対象は沛公。後の「撃」にも、その沛公が目的語として補われる。' },
+        { id: 'shield-object', prompt: '樊噲が盾で突き飛ばした相手を補おう。', quote: '樊噲側其盾以撞。衛士仆地。', options: [{ id: 'ei', label: '門を守る衛士' }, { id: 'u', label: '項王' }, { id: 'sou', label: '項荘' }], answer: 'ei', why: '続く「衛士仆地」で衛士が倒れる。盾で突いた相手は、入場を止める衛士。' },
+        { id: 'wine-object', prompt: '「賜之卮酒」の「之」が指す人は？', quote: '項王曰、壮士。賜之卮酒。', options: people, answer: 'kai', why: '項王が「壮士」と呼んだ樊噲に、酒を与えるよう命じている。' },
+        { id: 'summon-actor', prompt: '命令を受けて、沛公を呼ぶ人は誰？', quote: '項王使都尉陳平召沛公。', options: [{ id: 'u', label: '項王' }, { id: 'chin', label: '陳平' }, { id: 'kai', label: '樊噲' }], answer: 'chin', why: '「使」は使役。「項王が、陳平に、沛公を呼ばせる」という関係になる。' },
+        { id: 'metaphor-other', prompt: '刀俎にたとえられる「人」は、どちら側？', quote: '如今人方為刀俎、我為魚肉。', options: camps, answer: 'so', why: '「人」は相手側である項王側。沛公側の生死を左右できる立場を、包丁とまな板にたとえる。' },
+        { id: 'metaphor-us', prompt: '魚肉にたとえられる「我」は、どちら側？', quote: '如今人方為刀俎、我為魚肉。', options: camps, answer: 'han', why: 'ここでの「我」は樊噲一人だけでなく沛公側。命を握られている側を指す。' }
+      ]
+    },
+    {
+      id: 'argument', title: '樊噲の弁論を整理する', type: 'match', minutes: 4,
+      lead: '樊噲は、どんな順序と役割で言葉を重ねるのか。発言の働きを選ぼう。ここでは樊噲の主張を整理する。',
+      source: '授業プリント PDF内10〜11ページ',
+      questions: [
+        { id: 'qin', prompt: '秦の残忍な支配と、人々の離反を挙げる働きは？', quote: '夫秦王有虎狼之心。天下皆叛之。', options: roles, answer: 'precedent', why: '暴政によって支持を失った秦を前例に置く。最後の「亡秦之続」という警告につながる。' },
+        { id: 'promise', prompt: '懐王の約束を持ち出す働きは？', quote: '先破秦入咸陽者、王之。', options: roles, answer: 'promise', why: '先に秦を破って咸陽に入った者を王とする、という条件を示す。' },
+        { id: 'palace', prompt: '宮室を閉じて覇上へ戻り、項王を待ったと語る働きは？', quote: '封閉宮室、還軍覇上、以待大王来。', options: roles, answer: 'defense', why: '樊噲はこれらを、沛公に敵意がないという説明に用いる。動機まで中立な事実として述べられているわけではない。' },
+        { id: 'gate', prompt: '関所の守備を、盗賊や非常事態への備えと説明する働きは？', quote: '備他盗之出入与非常也。', options: roles, answer: 'defense', why: '項王を締め出すためではない、と関所守備の意味を説明して沛公を弁護する。これは樊噲側の説明。' },
+        { id: 'reward', prompt: '功績があるのに賞がなく、殺されようとしていると述べる働きは？', quote: '未有封侯之賞。而聴細説、欲誅有功之人。', options: roles, answer: 'criticism', why: '功績と処遇の食い違いを示し、項王の対応を批判する。' },
+        { id: 'warning', prompt: '功労者を殺すことは秦の繰り返しだ、と結ぶ働きは？', quote: '此亡秦之続耳。', options: roles, answer: 'criticism', why: '冒頭の秦の前例へ戻り、同じ道を進むべきではないと項王に警告する。' }
+      ]
+    },
+    {
+      id: 'formation', title: '樊噲はどこに立つ？', type: 'formation', minutes: 2,
+      lead: '項王は東を向いて座っている。樊噲の立つ位置と、顔の向きを分けて考えよう。細かな侵入経路は本文では確定できない。',
+      source: '授業プリント PDF内7〜8ページ',
+      questions: [
+        { id: 'position', prompt: '西を向いて項王を見る樊噲は、項王から見てどちら側に立つ？', quote: '披帷西嚮立、瞋目視項王。', options: [{ id: 'east', label: '項王の東側' }, { id: 'west', label: '項王の西側' }, { id: 'north', label: '項王の北側' }, { id: 'south', label: '項王の南側' }], answer: 'east', why: '東向きの項王と向き合う位置は、その東側。「西嚮」は立つ場所が西側という意味ではない。' },
+        { id: 'direction', prompt: 'その位置で、樊噲の顔はどちらを向く？', quote: '西嚮立', options: [{ id: 'east', label: '東を向く' }, { id: 'west', label: '西を向く' }, { id: 'north', label: '北を向く' }, { id: 'south', label: '南を向く' }], answer: 'west', why: '「西嚮立」は西を向いて立つこと。東側に立ち、西側にいる項王をにらむ。' }
+      ]
+    },
+    {
+      id: 'evidence', title: '本文と人物像を分ける', type: 'match', minutes: 4,
+      lead: '本文に書かれた言動と、そこから考えた解釈を分けよう。人物像には、根拠に支えられた複数の読みがありうる。',
+      source: '授業プリント PDF内4・6・12ページ',
+      questions: [
+        { id: 'u-action', prompt: '「項王は范増の合図に応じなかった」は、どちら？', quote: '項王黙然不応。', options: evidenceKinds, answer: 'text', why: '応じなかったという行動は明記されている。なぜ応じなかったかという心理は、この一句だけでは決まらない。' },
+        { id: 'u-reading', prompt: '「項王は沛公を脅威と思っていなかった」は、どちら？', quote: '項王黙然不応。', options: evidenceKinds, answer: 'reading', why: '沈黙の理由を考えた解釈。約束を守ろうとした、暗殺を避けたかった、など別の読みも検討できる。' },
+        { id: 'hai-action', prompt: '「沛公は別れの挨拶をどうするか尋ねた」は、どちら？', quote: '今者出、未辞也。為之奈何。', options: evidenceKinds, answer: 'text', why: '挨拶をまだしていないと言い、どうするか尋ねる発言が本文にある。' },
+        { id: 'hai-reading', prompt: '「沛公は部下の知恵を引き出すのが上手い」は、どちら？', quote: '為之奈何。', options: evidenceKinds, answer: 'reading', why: '問いかけから評価した人物像。同じ言動を、慎重さや迷いの表れと読むこともできる。' }
+      ],
+      reflection: {
+        prompt: '項王と沛公をどう捉えた？ 本文の言動を一つずつ挙げて比べよう。',
+        hint: '「この言動から、私はこう考える」の形で書こう。意見の違いは誤答ではない。この記述は採点しない。'
+      }
+    }
+  ];
+}());
+
+</script>
+<script>
+/* 授業プリントの独立した練習。物語の状態・保存・モーダル操作は呼び出し元が管理する。 */
+(function () {
+  'use strict';
+  var own = Object.prototype.hasOwnProperty;
+  function list() { return Array.isArray(window.KOUMON_ACTIVITIES) ? window.KOUMON_ACTIVITIES : []; }
+  function find(id) { return list().filter(function (a) { return a.id === id; })[0]; }
+  function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function plain(value) { return !!value && typeof value === 'object' && !Array.isArray(value); }
+  function count(a) { return a.type === 'order' ? a.cards.length : a.questions.length; }
+  function integer(value, max, fallback) { return Number.isInteger(value) && value >= 0 ? Math.min(value, max) : fallback; }
+  function permutation(value, ids) { return Array.isArray(value) && value.length === ids.length && value.every(function (id, i) { return ids.indexOf(id) >= 0 && value.indexOf(id) === i; }); }
+  function fresh(a) {
+    var ids = a.type === 'order' ? a.cards.map(function (c) { return c.id; }) : [];
+    return { answers: {}, order: permutation(a.initial, ids) ? a.initial.slice() : ids, checked: false, tries: 0, best: 0, firstScore: null, reflection: '' };
+  }
+  function complete(a, s) {
+    return a.type === 'order' || a.questions.every(function (q) { return own.call(s.answers, q.id); });
+  }
+  function score(a, s) {
+    if (a.type === 'order') return a.answer.reduce(function (n, id, i) { return n + (s.order[i] === id ? 1 : 0); }, 0);
+    return a.questions.reduce(function (n, q) { return n + (s.answers[q.id] === q.answer ? 1 : 0); }, 0);
+  }
+  function clean(a, value) {
+    var s = fresh(a);
+    if (!plain(value)) return s;
+    if (a.type === 'order') {
+      if (permutation(value.order, a.cards.map(function (c) { return c.id; }))) s.order = value.order.slice();
+    } else if (plain(value.answers)) a.questions.forEach(function (q) {
+      if (own.call(value.answers, q.id) && q.options.some(function (o) { return o.id === value.answers[q.id]; })) s.answers[q.id] = value.answers[q.id];
+    });
+    s.tries = integer(value.tries, 9999, 0);
+    s.best = integer(value.best, count(a), 0);
+    s.firstScore = integer(value.firstScore, count(a), null);
+    s.checked = value.checked === true && s.tries > 0 && complete(a, s);
+    s.reflection = a.reflection && typeof value.reflection === 'string' ? value.reflection.slice(0, 1200) : '';
+    if (!s.tries) { s.best = 0; s.firstScore = null; }
+    if (s.checked) s.best = Math.max(s.best, score(a, s));
+    return s;
+  }
+  function restore(saved) {
+    var out = {};
+    if (plain(saved)) list().forEach(function (a) { if (own.call(saved, a.id)) out[a.id] = clean(a, saved[a.id]); });
+    return out;
+  }
+  function initial(id) { var a = find(id); return a ? fresh(a) : null; }
+  function act(id, state, action, payload) {
+    var a = find(id); if (!a) return null;
+    var s = clean(a, state), p = plain(payload) ? payload : {};
+    if (action === 'answer' && a.type !== 'order') {
+      var q = a.questions.filter(function (x) { return x.id === p.question; })[0];
+      if (q && q.options.some(function (o) { return o.id === p.value; }) && s.answers[q.id] !== p.value) { s.answers[q.id] = p.value; s.checked = false; }
+      else if (q && p.value === '' && own.call(s.answers, q.id)) { delete s.answers[q.id]; s.checked = false; }
+    } else if ((action === 'up' || action === 'down') && a.type === 'order') {
+      var i = s.order.indexOf(p.card), j = i + (action === 'up' ? -1 : 1);
+      if (i >= 0 && j >= 0 && j < s.order.length) { var old = s.order[i]; s.order[i] = s.order[j]; s.order[j] = old; s.checked = false; }
+    } else if (action === 'check' && !s.checked && complete(a, s)) {
+      var n = score(a, s); s.checked = true; s.tries = Math.min(s.tries + 1, 9999); s.best = Math.max(s.best, n);
+      if (s.firstScore === null) s.firstScore = n;
+    } else if (action === 'reset') {
+      var reset = fresh(a); s.answers = reset.answers; s.order = reset.order; s.checked = false;
+    } else if (action === 'reflect' && a.reflection && typeof p.value === 'string') s.reflection = p.value.slice(0, 1200);
+    return s;
+  }
+  function actionButton(action, text, extra, disabled) {
+    return '<button type="button" class="km-btn" data-km="activity-action" data-action="' + action + '"' + (extra || '') + (disabled ? ' disabled' : '') + '>' + text + '</button>';
+  }
+  function renderMenu(saved) {
+    var states = restore(saved);
+    return '<section class="km-act"><h3>プリントで練習する</h3><p class="km-m-lead">読みたいところを選び、札や言葉を動かして本文を確かめよう。途中の回答もこの端末に保存されます。</p><div class="km-act-menu">' + list().map(function (a, i) {
+      var s = states[a.id], progress = s && s.tries ? '最高 ' + s.best + ' / ' + count(a) + '・確認 ' + s.tries + ' 回' : s && (Object.keys(s.answers).length || s.reflection || (a.type === 'order' && s.order.join('|') !== fresh(a).order.join('|'))) ? '練習中' : 'これから';
+      return '<button type="button" class="km-btn km-act-menu-card" data-km="activity-open" data-id="' + esc(a.id) + '"><span class="km-act-number">' + (i + 1) + '</span><strong>' + esc(a.title) + '</strong><span>' + esc(a.lead) + '</span><small>約' + esc(a.minutes) + '分 · ' + esc(progress) + '</small></button>';
+    }).join('') + '</div><div class="km-nav"><span></span><button type="button" class="km-btn" data-km="closemodal">閉じる</button></div></section>';
+  }
+  function quote(text) { return text ? '<blockquote class="km-act-quote">' + esc(text) + '</blockquote>' : ''; }
+  function feedback(q, s) {
+    if (!s.checked) return '';
+    var correct = s.answers[q.id] === q.answer, answer = q.options.filter(function (o) { return o.id === q.answer; })[0];
+    return '<div class="km-act-feedback ' + (correct ? 'is-correct' : 'is-retry') + '"><b>' + (correct ? '○ 本文と一致' : '△ 本文を確認') + '</b>' + (!correct && answer ? '<span>答え：' + esc(answer.label) + '</span>' : '') + '<p>' + esc(q.why) + '</p></div>';
+  }
+  function select(q, s) {
+    return '<label class="km-act-choice"><span>' + esc(q.prompt) + '</span><select data-activity-answer="' + esc(q.id) + '"><option value="">選んでください</option>' + q.options.map(function (o) { return '<option value="' + esc(o.id) + '"' + (s.answers[q.id] === o.id ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join('') + '</select></label>';
+  }
+  function formation(a, s) {
+    var pos = a.questions.filter(function (q) { return q.id === 'position'; })[0];
+    if (!pos) return matches(a, s);
+    var directions = { north: '北側', east: '東側', south: '南側', west: '西側' };
+    return '<fieldset class="km-act-formation"><legend>' + esc(pos.prompt) + '</legend>' + quote(pos.quote) + '<p class="km-act-help">項王との位置関係を表す模式図です（上が北）。樊噲を置き、顔の向きを選びます。</p><div class="km-act-compass"><span class="km-act-north">北 ↑</span><div class="km-act-center">項王 →<br>東向き</div>' + pos.options.map(function (o) {
+      return '<button type="button" class="km-btn km-act-position km-act-pos-' + esc(o.id) + '" data-km="activity-action" data-action="answer" data-question="position" data-value="' + esc(o.id) + '" aria-pressed="' + (s.answers.position === o.id) + '"><span>' + esc(directions[o.id] || o.label) + '</span><b>' + (s.answers.position === o.id ? '樊噲 ' + ({north:'↑',east:'→',south:'↓',west:'←'}[s.answers.direction] || '（向きを選ぶ）') : 'ここに置く') + '</b></button>';
+    }).join('') + '</div>' + feedback(pos, s) + '</fieldset><div class="km-act-match-board">' + a.questions.filter(function (q) { return q !== pos; }).map(function (q) { return '<article class="km-act-question">' + quote(q.quote) + select(q, s) + feedback(q, s) + '</article>'; }).join('') + '</div>';
+  }
+  function matches(a, s) {
+    return '<div class="km-act-match-board">' + a.questions.map(function (q, i) {
+      return '<article class="km-act-question"><span class="km-act-item-number">' + (i + 1) + '</span>' + quote(q.quote) + select(q, s) + feedback(q, s) + '</article>';
+    }).join('') + '</div>';
+  }
+  function ordering(a, s) {
+    return '<p class="km-act-help">上から順に出来事が進みます。「上へ」「下へ」で札を動かそう。</p><ol class="km-act-order">' + s.order.map(function (id, i) {
+      var c = a.cards.filter(function (x) { return x.id === id; })[0], correct = s.checked && a.answer[i] === id;
+      return '<li class="km-act-order-card' + (s.checked ? correct ? ' is-correct' : ' is-retry' : '') + '"><span class="km-act-item-number">' + (i + 1) + '</span><div class="km-act-card-copy"><p>' + esc(c.text) + '</p>' + quote(c.quote) + (s.checked ? '<b class="km-act-position-result">' + (correct ? '○ 順序が一致' : '△ 順序を確認') + '</b>' : '') + '</div><div class="km-act-move">' + actionButton('up', '↑ 上へ', ' data-card="' + esc(id) + '" aria-label="' + esc(c.text) + 'を上へ"', i === 0) + actionButton('down', '↓ 下へ', ' data-card="' + esc(id) + '" aria-label="' + esc(c.text) + 'を下へ"', i === s.order.length - 1) + '</div></li>';
+    }).join('') + '</ol>' + (s.checked ? '<div class="km-act-feedback"><b>本文の流れ</b><p>' + esc(a.why) + '</p><ol>' + a.answer.map(function (id) { return '<li>' + esc(a.cards.filter(function (c) { return c.id === id; })[0].text) + '</li>'; }).join('') + '</ol></div>' : '');
+  }
+  function render(id, state) {
+    var a = find(id);
+    if (!a) return '<h3>活動が見つかりません</h3><button class="km-btn" data-km="activities">活動一覧へ</button>';
+    var s = clean(a, state), n = score(a, s), status = s.checked ? n + ' / ' + count(a) + ' が本文と一致しました。解説を読んで、回答を直すこともできます。' : complete(a, s) ? '準備ができたら「本文と照らす」で確かめよう。' : 'すべての欄を選んでから、本文と照らそう。';
+    return '<section class="km-act"><div class="km-act-kicker">プリントで練習 · 約' + esc(a.minutes) + '分</div><h3>' + esc(a.title) + '</h3><p class="km-m-lead">' + esc(a.lead) + '</p><p class="km-act-source">資料：' + esc(a.source) + '</p>' + (a.type === 'order' ? ordering(a, s) : a.type === 'formation' ? formation(a, s) : matches(a, s)) +
+      (a.reflection ? '<label class="km-act-reflection"><b>' + esc(a.reflection.prompt) + '</b><span id="km-act-reflection-hint">' + esc(a.reflection.hint) + '（自由記述は自動採点しません・1200字まで）</span><textarea rows="4" maxlength="1200" data-activity-reflection aria-describedby="km-act-reflection-hint">' + esc(s.reflection) + '</textarea></label>' : '') +
+      '<p class="km-act-status" role="status">' + status + '</p>' + (s.tries ? '<p class="km-act-progress">確認 ' + s.tries + ' 回 · 初回 ' + (s.firstScore === null ? '―' : s.firstScore) + ' / ' + count(a) + ' · 最高 ' + s.best + ' / ' + count(a) + '</p>' : '') + '<div class="km-nav km-act-nav"><button type="button" class="km-btn" data-km="activities">活動一覧へ</button>' + actionButton('reset', '札を戻す', '') + '<button type="button" class="km-btn gold" data-km="activity-action" data-action="check"' + (!complete(a, s) || s.checked ? ' disabled' : '') + '>本文と照らす</button></div></section>';
+  }
+  function summary(saved) {
+    var states = restore(saved), lines = [];
+    list().forEach(function (a) {
+      var s = states[a.id]; if (!s) return;
+      lines.push('・' + a.title + '：' + (s.tries ? '初回 ' + (s.firstScore === null ? '―' : s.firstScore) + '/' + count(a) + '、最高 ' + s.best + '/' + count(a) + '、確認 ' + s.tries + ' 回' : '練習中'));
+      if (s.checked) lines.push('　今回：' + score(a, s) + '/' + count(a) + ' が本文と一致');
+      if (s.reflection) lines.push('　考えたこと（自動採点なし）：' + s.reflection);
+    });
+    return lines;
+  }
+  window.KoumonActivities = { restore: restore, initial: initial, renderMenu: renderMenu, render: render, act: act, summary: summary };
+})();
+
+</script>
+<script>
 /* 楚漢の章 —— 物語の進行・画面・保存・小さな遊び・音
  *
  * 画面の作りは寝殿造り3D探訪の再現モード「徒然草」にならう。
@@ -10007,7 +10310,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   /* ============================ 記録 ============================ */
   function blankMeta() {
     return { v: 2, save: null, endings: {}, gen: {}, cleared: {}, sound: false, plays: 0, best: null, view: '',
-      classroom: true, projection: false, instant: true, meters: true, reflection: {}, missed: {}, introStep: 0 };
+      classroom: true, projection: false, instant: true, meters: true, reflection: {}, missed: {}, activities: {}, introStep: 0 };
   }
   function loadMeta() {
     meta = blankMeta();
@@ -10026,6 +10329,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     Object.keys(meta.missed).forEach(function (id) { if (!NODES[id] || NODES[id].n.k !== 'read') delete meta.missed[id]; });
     meta.v = 2;
     if (!meta.reflection || typeof meta.reflection !== 'object' || Array.isArray(meta.reflection)) meta.reflection = {};
+    meta.activities = window.KoumonActivities ? window.KoumonActivities.restore(meta.activities) : {};
     if (meta.save) meta.save = hydrateState(meta.save);
   }
   function saveMeta() {
@@ -10297,6 +10601,12 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     el.sound = $root.querySelector('#km-sound');
     mountStage();
     $root.addEventListener('click', onClick);
+    $root.addEventListener('change', function (e) {
+      if (e.target.matches('[data-activity-answer]')) activityAction('answer', { question: e.target.getAttribute('data-activity-answer'), value: e.target.value }, e.target);
+    });
+    $root.addEventListener('input', function (e) {
+      if (e.target.matches('[data-activity-reflection]')) activityAction('reflect', { value: e.target.value }, e.target);
+    });
     document.addEventListener('keydown', onKey, true);
     window.addEventListener('resize', onResize);
     document.addEventListener('visibilitychange', function () { if (document.hidden) pauseTimer(); else resumeTimer(); });
@@ -11027,7 +11337,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     el.modal.hidden = false;
     el.modal.setAttribute('role', 'dialog'); el.modal.setAttribute('aria-modal', 'true');
     el.panel.inert = true; $root.querySelector('.km-top').inert = true;
-    var f = el.modal.querySelector('button:not([disabled]),input,textarea,summary'); if (f) f.focus({ preventScroll: true });
+    var f = el.modal.querySelector('button:not([disabled]),input,select,textarea,summary'); if (f) f.focus({ preventScroll: true });
   }
   function closeModal(resume) {
     el.modal.hidden = true; el.modal.innerHTML = ''; modalStack = [];
@@ -11257,6 +11567,38 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
   }
 
   /* ============================ 目次・原文帳・結末帳・履歴 ============================ */
+  function activitiesMenu() {
+    if (!window.KoumonActivities) return;
+    modal(window.KoumonActivities.renderMenu(meta.activities), 'km-m-activities');
+    el.modal.scrollTop = 0;
+  }
+  function activityScreen(id) {
+    var A = window.KoumonActivities;
+    if (!A || !A.initial(id)) return activitiesMenu();
+    modal('<div data-activity-id="' + esc(id) + '">' + A.render(id, meta.activities[id]) + '</div>', 'km-m-activities');
+  }
+  function activityAction(action, payload, trigger) {
+    var panel = el.modal.querySelector('[data-activity-id]'), A = window.KoumonActivities;
+    if (!panel || !A) return;
+    var id = panel.getAttribute('data-activity-id'), next = A.act(id, meta.activities[id], action, payload);
+    if (!next) return;
+    meta.activities[id] = next; saveMeta();
+    // Typing saves without replacing the field or moving its caret.
+    if (action === 'reflect') return;
+    var scroll = el.modal.scrollTop;
+    activityScreen(id);
+    var focus;
+    if (trigger && trigger.hasAttribute('data-activity-answer')) {
+      focus = Array.prototype.find.call(el.modal.querySelectorAll('[data-activity-answer]'), function (input) { return input.getAttribute('data-activity-answer') === payload.question; });
+    } else if (trigger) {
+      focus = Array.prototype.find.call(el.modal.querySelectorAll('[data-km="activity-action"]'), function (button) {
+        return !button.disabled && button.getAttribute('data-action') === action && (button.getAttribute('data-card') || '') === (payload.card || '') && (button.getAttribute('data-value') || '') === (payload.value || '');
+      });
+    }
+    if (focus) focus.focus({ preventScroll: true });
+    else if (action === 'check') { var result = el.modal.querySelector('.km-act-status'); if (result) { result.tabIndex = -1; result.focus({ preventScroll: true }); result.scrollIntoView({ block: 'nearest' }); } }
+    if (action !== 'check') el.modal.scrollTop = scroll;
+  }
   function chapterMenu() {
     var html = '<h3>目次</h3><p class="km-m-lead">読み終えた章から、もう一度始められます。途中の章から始めるときは、それまでを史記どおりに選んだものとします。</p><div class="km-chaps">';
     // 本編を先に、教科書にない前段（補）をあとに並べる
@@ -11269,9 +11611,9 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
         '<span class="km-chap-no">' + esc(c.no) + '</span><b>' + (open ? esc(c.title) : '？？？') + '</b><small>' + (open ? esc(c.sub) : 'まだ開いていない') + '</small>' +
         (meta.cleared[c.id] ? '<span class="km-chap-done">読了</span>' : '') + '</button>';
     });
-    html += '</div>';
+    html += '</div><button class="km-btn" data-km="activities">プリント演習を選ぶ</button>';
     if (meta.classroom) html += '<div class="km-chaplink"><b>授業で場面を指定する</b><p class="km-m-small">ページのURLの末尾に「#c3」のように付けて開くと、その場面から始まります。生徒と同じ場所（学校のWebページや共有フォルダ）に置いたファイルで使ってください。</p>' +
-      '<label>はじめる場面 <select data-chaplink>' + [['intro', '鴻門への道（導入）'], ['tutorial', 'チュートリアル：霸上の夜']].concat(K.chapters.map(function (c) { return [c.id, c.no + '　' + c.title]; }), [['ai', '范増として考える（AI活動）'], ['review', '読み直し帳']]).map(function (o) {
+      '<label>はじめる場面 <select data-chaplink>' + [['intro', '鴻門への道（導入）'], ['tutorial', 'チュートリアル：霸上の夜']].concat(K.chapters.map(function (c) { return [c.id, c.no + '　' + c.title]; }), [['ai', '范増として考える（AI活動）'], ['review', '読み直し帳'], ['activities', 'プリント演習一覧']], (window.KOUMON_ACTIVITIES || []).map(function (a) { return ['activity-' + a.id, a.title]; })).map(function (o) {
         return '<option value="' + o[0] + '">' + esc(o[1]) + '　#' + o[0] + '</option>';
       }).join('') + '</select></label><button class="km-btn" data-km="copychaplink">リンクをコピー</button><span class="km-m-small" role="status" id="km-chaplink-status"></span></div>';
     html += '<div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
@@ -11343,6 +11685,8 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     if (id === 'review') return review();
     if (id === 'tutorial') return startTutorial();
     if (id === 'book') return bookMenu();
+    if (id === 'activities') return activitiesMenu();
+    if (id.indexOf('activity-') === 0) return activityScreen(id.slice(9));
     var i = K.chapters.map(function (c) { return c.id; }).indexOf(id);
     if (i >= 0 && chapterOpen(i)) startNew(id);
   }
@@ -11520,10 +11864,15 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
       L.push('', '■ 振り返り');
       Object.keys(labels).forEach(function (k) { L.push(labels[k] + '：' + (meta.reflection[k] || '（未記入）')); });
     }
+    if (window.KoumonActivities) {
+      var activities = window.KoumonActivities.summary(meta.activities);
+      L.push('', '■ プリント演習');
+      L = L.concat(activities.length ? activities : ['まだ記録がない']);
+    }
     return L.join('\n');
   }
   function recordScreen() {
-    modal('<h3>学習記録を書き出す</h3><p class="km-m-lead">結末・原文帳・読解・史記と違う決断・読み直し帳・振り返りを、テキストにまとめます。コピーして提出フォームに貼るか、ファイルで保存してください。</p>' +
+    modal('<h3>学習記録を書き出す</h3><p class="km-m-lead">物語の記録・プリント演習・振り返りを、テキストにまとめます。コピーして提出フォームに貼るか、ファイルで保存してください。</p>' +
       '<textarea class="km-record" readonly rows="12" aria-label="学習記録">' + esc(recordText()) + '</textarea>' +
       '<p class="km-m-small" role="status" id="km-record-status">記録はこの端末のブラウザーにだけ保存されています。</p>' +
       '<div class="km-nav"><button class="km-btn" data-km="closemodal">閉じる</button><button class="km-btn" data-km="saverecord">ファイルで保存</button><button class="km-btn gold" data-km="copyrecord">コピー</button></div>', 'km-m-record');
@@ -11558,6 +11907,9 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     e.stopPropagation();
     var a = t.getAttribute('data-km');
     switch (a) {
+      case 'activities': activitiesMenu(); break;
+      case 'activity-open': activityScreen(t.getAttribute('data-id')); el.modal.scrollTop = 0; break;
+      case 'activity-action': activityAction(t.getAttribute('data-action'), { card: t.getAttribute('data-card'), question: t.getAttribute('data-question'), value: t.getAttribute('data-value') }, t); break;
       case 'intro': intro(); break;
       case 'settings': settings(); break;
       case 'characters': modal(window.KoumonClassroom.charactersHTML() + '<div class="km-nav"><span></span><button class="km-btn gold" data-km="closemodal">物語へ戻る</button></div>', 'km-m-characters'); break;
@@ -11656,7 +12008,7 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
     if (!$root || $root.hidden) return;
     if (mode === 'intro') return;
     if (!el.modal.hidden && e.key === 'Tab') {
-      var focusable = Array.prototype.filter.call(el.modal.querySelectorAll('button:not([disabled]),input,textarea,summary,a[href]'), function(x){return !x.closest('details') || x.closest('details').open || x.tagName==='SUMMARY';});
+      var focusable = Array.prototype.filter.call(el.modal.querySelectorAll('button:not([disabled]),input,select,textarea,summary,a[href]'), function(x){return !x.closest('details') || x.closest('details').open || x.tagName==='SUMMARY';});
       var first=focusable[0], last=focusable[focusable.length-1];
       if (e.shiftKey && document.activeElement===first) {e.preventDefault();last.focus();}
       else if (!e.shiftKey && document.activeElement===last) {e.preventDefault();first.focus();}
