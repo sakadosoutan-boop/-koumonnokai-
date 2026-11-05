@@ -24,7 +24,7 @@
   /* ============================ 記録 ============================ */
   function blankMeta() {
     return { v: 2, save: null, endings: {}, gen: {}, cleared: {}, sound: false, plays: 0, best: null, view: '',
-      classroom: true, projection: false, instant: true, meters: true, reflection: {}, missed: {}, introStep: 0 };
+      classroom: true, projection: false, instant: true, meters: true, reflection: {}, missed: {}, activities: {}, introStep: 0 };
   }
   function loadMeta() {
     meta = blankMeta();
@@ -43,6 +43,7 @@
     Object.keys(meta.missed).forEach(function (id) { if (!NODES[id] || NODES[id].n.k !== 'read') delete meta.missed[id]; });
     meta.v = 2;
     if (!meta.reflection || typeof meta.reflection !== 'object' || Array.isArray(meta.reflection)) meta.reflection = {};
+    meta.activities = window.KoumonActivities ? window.KoumonActivities.restore(meta.activities) : {};
     if (meta.save) meta.save = hydrateState(meta.save);
   }
   function saveMeta() {
@@ -314,6 +315,12 @@
     el.sound = $root.querySelector('#km-sound');
     mountStage();
     $root.addEventListener('click', onClick);
+    $root.addEventListener('change', function (e) {
+      if (e.target.matches('[data-activity-answer]')) activityAction('answer', { question: e.target.getAttribute('data-activity-answer'), value: e.target.value }, e.target);
+    });
+    $root.addEventListener('input', function (e) {
+      if (e.target.matches('[data-activity-reflection]')) activityAction('reflect', { value: e.target.value }, e.target);
+    });
     document.addEventListener('keydown', onKey, true);
     window.addEventListener('resize', onResize);
     document.addEventListener('visibilitychange', function () { if (document.hidden) pauseTimer(); else resumeTimer(); });
@@ -1052,7 +1059,7 @@
     el.modal.hidden = false;
     el.modal.setAttribute('role', 'dialog'); el.modal.setAttribute('aria-modal', 'true');
     el.panel.inert = true; $root.querySelector('.km-top').inert = true;
-    var f = el.modal.querySelector('button:not([disabled]),input,textarea,summary'); if (f) f.focus({ preventScroll: true });
+    var f = el.modal.querySelector('button:not([disabled]),input,select,textarea,summary'); if (f) f.focus({ preventScroll: true });
   }
   function closeModal(resume) {
     el.modal.hidden = true; el.modal.innerHTML = ''; modalStack = [];
@@ -1282,6 +1289,38 @@
   }
 
   /* ============================ 目次・原文帳・結末帳・履歴 ============================ */
+  function activitiesMenu() {
+    if (!window.KoumonActivities) return;
+    modal(window.KoumonActivities.renderMenu(meta.activities), 'km-m-activities');
+    el.modal.scrollTop = 0;
+  }
+  function activityScreen(id) {
+    var A = window.KoumonActivities;
+    if (!A || !A.initial(id)) return activitiesMenu();
+    modal('<div data-activity-id="' + esc(id) + '">' + A.render(id, meta.activities[id]) + '</div>', 'km-m-activities');
+  }
+  function activityAction(action, payload, trigger) {
+    var panel = el.modal.querySelector('[data-activity-id]'), A = window.KoumonActivities;
+    if (!panel || !A) return;
+    var id = panel.getAttribute('data-activity-id'), next = A.act(id, meta.activities[id], action, payload);
+    if (!next) return;
+    meta.activities[id] = next; saveMeta();
+    // Typing saves without replacing the field or moving its caret.
+    if (action === 'reflect') return;
+    var scroll = el.modal.scrollTop;
+    activityScreen(id);
+    var focus;
+    if (trigger && trigger.hasAttribute('data-activity-answer')) {
+      focus = Array.prototype.find.call(el.modal.querySelectorAll('[data-activity-answer]'), function (input) { return input.getAttribute('data-activity-answer') === payload.question; });
+    } else if (trigger) {
+      focus = Array.prototype.find.call(el.modal.querySelectorAll('[data-km="activity-action"]'), function (button) {
+        return !button.disabled && button.getAttribute('data-action') === action && (button.getAttribute('data-card') || '') === (payload.card || '') && (button.getAttribute('data-value') || '') === (payload.value || '');
+      });
+    }
+    if (focus) focus.focus({ preventScroll: true });
+    else if (action === 'check') { var result = el.modal.querySelector('.km-act-status'); if (result) { result.tabIndex = -1; result.focus({ preventScroll: true }); result.scrollIntoView({ block: 'nearest' }); } }
+    if (action !== 'check') el.modal.scrollTop = scroll;
+  }
   function chapterMenu() {
     var html = '<h3>目次</h3><p class="km-m-lead">読み終えた章から、もう一度始められます。途中の章から始めるときは、それまでを史記どおりに選んだものとします。</p><div class="km-chaps">';
     // 本編を先に、教科書にない前段（補）をあとに並べる
@@ -1294,9 +1333,9 @@
         '<span class="km-chap-no">' + esc(c.no) + '</span><b>' + (open ? esc(c.title) : '？？？') + '</b><small>' + (open ? esc(c.sub) : 'まだ開いていない') + '</small>' +
         (meta.cleared[c.id] ? '<span class="km-chap-done">読了</span>' : '') + '</button>';
     });
-    html += '</div>';
+    html += '</div><button class="km-btn" data-km="activities">プリント演習を選ぶ</button>';
     if (meta.classroom) html += '<div class="km-chaplink"><b>授業で場面を指定する</b><p class="km-m-small">ページのURLの末尾に「#c3」のように付けて開くと、その場面から始まります。生徒と同じ場所（学校のWebページや共有フォルダ）に置いたファイルで使ってください。</p>' +
-      '<label>はじめる場面 <select data-chaplink>' + [['intro', '鴻門への道（導入）'], ['tutorial', 'チュートリアル：霸上の夜']].concat(K.chapters.map(function (c) { return [c.id, c.no + '　' + c.title]; }), [['ai', '范増として考える（AI活動）'], ['review', '読み直し帳']]).map(function (o) {
+      '<label>はじめる場面 <select data-chaplink>' + [['intro', '鴻門への道（導入）'], ['tutorial', 'チュートリアル：霸上の夜']].concat(K.chapters.map(function (c) { return [c.id, c.no + '　' + c.title]; }), [['ai', '范増として考える（AI活動）'], ['review', '読み直し帳'], ['activities', 'プリント演習一覧']], (window.KOUMON_ACTIVITIES || []).map(function (a) { return ['activity-' + a.id, a.title]; })).map(function (o) {
         return '<option value="' + o[0] + '">' + esc(o[1]) + '　#' + o[0] + '</option>';
       }).join('') + '</select></label><button class="km-btn" data-km="copychaplink">リンクをコピー</button><span class="km-m-small" role="status" id="km-chaplink-status"></span></div>';
     html += '<div class="km-nav"><span></span><button class="km-btn" data-km="closemodal">閉じる</button></div>';
@@ -1368,6 +1407,8 @@
     if (id === 'review') return review();
     if (id === 'tutorial') return startTutorial();
     if (id === 'book') return bookMenu();
+    if (id === 'activities') return activitiesMenu();
+    if (id.indexOf('activity-') === 0) return activityScreen(id.slice(9));
     var i = K.chapters.map(function (c) { return c.id; }).indexOf(id);
     if (i >= 0 && chapterOpen(i)) startNew(id);
   }
@@ -1545,10 +1586,15 @@
       L.push('', '■ 振り返り');
       Object.keys(labels).forEach(function (k) { L.push(labels[k] + '：' + (meta.reflection[k] || '（未記入）')); });
     }
+    if (window.KoumonActivities) {
+      var activities = window.KoumonActivities.summary(meta.activities);
+      L.push('', '■ プリント演習');
+      L = L.concat(activities.length ? activities : ['まだ記録がない']);
+    }
     return L.join('\n');
   }
   function recordScreen() {
-    modal('<h3>学習記録を書き出す</h3><p class="km-m-lead">結末・原文帳・読解・史記と違う決断・読み直し帳・振り返りを、テキストにまとめます。コピーして提出フォームに貼るか、ファイルで保存してください。</p>' +
+    modal('<h3>学習記録を書き出す</h3><p class="km-m-lead">物語の記録・プリント演習・振り返りを、テキストにまとめます。コピーして提出フォームに貼るか、ファイルで保存してください。</p>' +
       '<textarea class="km-record" readonly rows="12" aria-label="学習記録">' + esc(recordText()) + '</textarea>' +
       '<p class="km-m-small" role="status" id="km-record-status">記録はこの端末のブラウザーにだけ保存されています。</p>' +
       '<div class="km-nav"><button class="km-btn" data-km="closemodal">閉じる</button><button class="km-btn" data-km="saverecord">ファイルで保存</button><button class="km-btn gold" data-km="copyrecord">コピー</button></div>', 'km-m-record');
@@ -1583,6 +1629,9 @@
     e.stopPropagation();
     var a = t.getAttribute('data-km');
     switch (a) {
+      case 'activities': activitiesMenu(); break;
+      case 'activity-open': activityScreen(t.getAttribute('data-id')); el.modal.scrollTop = 0; break;
+      case 'activity-action': activityAction(t.getAttribute('data-action'), { card: t.getAttribute('data-card'), question: t.getAttribute('data-question'), value: t.getAttribute('data-value') }, t); break;
       case 'intro': intro(); break;
       case 'settings': settings(); break;
       case 'characters': modal(window.KoumonClassroom.charactersHTML() + '<div class="km-nav"><span></span><button class="km-btn gold" data-km="closemodal">物語へ戻る</button></div>', 'km-m-characters'); break;
@@ -1681,7 +1730,7 @@
     if (!$root || $root.hidden) return;
     if (mode === 'intro') return;
     if (!el.modal.hidden && e.key === 'Tab') {
-      var focusable = Array.prototype.filter.call(el.modal.querySelectorAll('button:not([disabled]),input,textarea,summary,a[href]'), function(x){return !x.closest('details') || x.closest('details').open || x.tagName==='SUMMARY';});
+      var focusable = Array.prototype.filter.call(el.modal.querySelectorAll('button:not([disabled]),input,select,textarea,summary,a[href]'), function(x){return !x.closest('details') || x.closest('details').open || x.tagName==='SUMMARY';});
       var first=focusable[0], last=focusable[focusable.length-1];
       if (e.shiftKey && document.activeElement===first) {e.preventDefault();last.focus();}
       else if (!e.shiftKey && document.activeElement===last) {e.preventDefault();first.focus();}
