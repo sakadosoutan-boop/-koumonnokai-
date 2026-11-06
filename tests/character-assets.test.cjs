@@ -9,7 +9,7 @@ function canvas(){
 }
 const C={console,performance,document:{createElement:canvas},atob:s=>Buffer.from(s,'base64').toString('binary'),setTimeout,clearTimeout};C.window=C;vm.createContext(C);
 for(const file of ['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/koumon-head-assets.js','src/js/koumon-heads.js','src/js/koumon-hand-assets.js','src/js/koumon-hands.js','src/js/koumon-costume.js','src/js/koumon-banquet-props.js','src/js/koumon-cast3d.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),C,{filename:file});
-const ids=['hai','u','ryo','zo','haku','kai','sou','chin'];
+const ids=['hai','u','ryo','zo','haku','kai','sou','chin','gu'];
 test('a running shield stays upright and attached instead of swinging with the wrist',()=>{
   C.KM_CAST3D.setQuality('low');const f=C.KM_CAST3D.makeFigure('kai'),r=f.userData.rig,V=C.THREE.Vector3;
   f.userData.setPose('run');f.rotation.y=1.2;
@@ -21,13 +21,18 @@ test('a running shield stays upright and attached instead of swinging with the w
     assert.ok(grip.distanceTo(handle)<.0005,'the handle stays in the left fist');
   }
 });
-test('all four standing horse hooves meet the ground',()=>{
-  C.KM_CAST3D.setQuality('low');const horse=C.KM_CAST3D.makeHorse('zhui');
-  assert.equal(horse.userData.hooves.length,4);
-  for(const time of [0,.5,1,2,5,10]){
-    horse.userData.update(0,time,false);horse.updateMatrixWorld(true);
-    for(const hoof of horse.userData.hooves)assert.ok(Math.abs(new C.THREE.Box3().setFromObject(hoof).min.y)<.008,'each standing hoof contacts the floor');
+test('all four standing horse hooves meet the ground at both asset LODs',()=>{
+  const counts=[];
+  for(const quality of ['low','high']){
+    C.KM_CAST3D.setQuality(quality);const horse=C.KM_CAST3D.makeHorse('zhui');
+    assert.equal(horse.userData.hooves.length,4);healthy(horse,'horse/'+quality);
+    counts.push(horse.children[0].children[0].geometry.attributes.position.count);
+    for(const time of [0,.5,1,2,5,10]){
+      horse.userData.update(0,time,false);horse.updateMatrixWorld(true);
+      for(const hoof of horse.userData.hooves)assert.ok(Math.abs(new C.THREE.Box3().setFromObject(hoof).min.y)<.008,'each standing hoof contacts the floor at '+quality);
+    }
   }
+  assert.ok(counts[1]>counts[0]*1.3,'high quality keeps a distinct sculpt LOD after low quality was cached');
 });
 test('running feet hold their world contact while the body advances',()=>{
   C.KM_CAST3D.setQuality('low');const f=C.KM_CAST3D.makeFigure('kai'),r=f.userData.rig,V=C.THREE.Vector3,anchors={};

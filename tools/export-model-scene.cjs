@@ -20,9 +20,10 @@ for(const file of ['src/vendor/three.min.js','src/js/koumon-figkit.js','src/js/k
 }
 const T=context.THREE;context.KM_CAST3D.setQuality(quality);
 if(portraitAsset&&!context.KM_HEAD_ASSETS.cast[id])throw Error('Prototype does not include requested character: '+id);
-const figure=context.KM_CAST3D.makeFigure(id);figure.userData.setPose(pose);
-const phaseArg=process.argv.find(a=>a.startsWith('--phase='));if(phaseArg)figure.userData.state.actionProgress=Number(phaseArg.slice(8));
-figure.userData.update(0,0);figure.updateMatrixWorld(true);
+const isHorse=id==='zhui'||id==='horse';
+const figure=isHorse?context.KM_CAST3D.makeHorse(id):context.KM_CAST3D.makeFigure(id);if(!isHorse)figure.userData.setPose(pose);
+const phaseArg=process.argv.find(a=>a.startsWith('--phase='));if(phaseArg)figure.userData.state&&(figure.userData.state.actionProgress=Number(phaseArg.slice(8)));
+figure.userData.update(0,0,isHorse&&pose==='run');figure.updateMatrixWorld(true);
 const positions=[],colors=[],uv=[],faces=[],materialIndices=[],materials=[],registry=new Map();
 function materialIndex(m){
   if(registry.has(m.uuid))return registry.get(m.uuid);
@@ -64,6 +65,6 @@ figure.traverseVisible(o=>{
     }
   }
 });
-const bounds=new T.Box3().setFromObject(figure),head=figure.userData.rig.headPiv.getWorldPosition(new T.Vector3());head.y+=.08;
+const bounds=new T.Box3().setFromObject(figure),head=isHorse?new T.Vector3(0,1.87,1.12):figure.userData.rig.headPiv.getWorldPosition(new T.Vector3());head.y+=.08;
 const file=path.join(out,id+'-'+pose+'.json');fs.writeFileSync(file,JSON.stringify({id,pose,quality,positions,colors,uv,faces,materialIndices,materials,bounds,head}));
 console.log(JSON.stringify({file,vertices:positions.length/3,triangles:faces.length,materials:materials.length}));

@@ -909,6 +909,7 @@
       S.cast[id] = f;
       if (p[3] === 'ride') {
         var h = S.horse || (S.horse = makeHorse('zhui'));
+        if (h.userData.setRidden) h.userData.setRidden(true);
         h.position.set(p[0], 0, p[1]); h.rotation.y = p[2]; sc.add(h);
         f.position.set(p[0], h.userData.saddleY - .4 * (CAST[id].h / 1.72), p[1]);
         f.userData.mountHeight = f.position.y;
@@ -942,6 +943,7 @@
     }
     if (st.horse) {
       var hz = S.horse || (S.horse = makeHorse('zhui'));
+      if (hz.userData.setRidden) hz.userData.setRidden(false);
       hz.position.set(st.horse[0], 0, st.horse[1]); hz.rotation.y = st.horse[2]; sc.add(hz);
     }
     // 粒子
