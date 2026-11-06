@@ -146,7 +146,13 @@ async function guZhui(browser) {
       });
       assert.ok(layout.width > 250 && layout.visibleHeight > 80 && layout.triangles > 1000, name + ': visible rendered ' + stage);
       assert.equal(layout.horizontalOverflow, false, name + ': no horizontal page overflow');
-      await p.screenshot({ path: path.join(out, name + '-' + stage + '.png') });
+      // Freeze the displayed WebGL frame while the software renderer captures it on CI.
+      await p.evaluate(() => KoumonStage3D.stop());
+      try {
+        await p.screenshot({ path: path.join(out, name + '-' + stage + '.png'), timeout: 180000 });
+      } finally {
+        await p.evaluate(() => KoumonStage3D.start());
+      }
       return layout;
     }
     const tent = await scene('tent', 'gu');
@@ -167,7 +173,7 @@ async function guZhui(browser) {
           const offset = new T.Vector3(Math.sin(angle), .07, Math.cos(angle)).applyQuaternion(f.getWorldQuaternion(new T.Quaternion())).multiplyScalar(.9);
           S.cam.pos.copy(target).add(offset); S.cam.tgt.copy(target); G.renderOnce();
         }, yaw);
-        await p.screenshot({ path: path.join(out, 'pc-tent-gu-' + view + '.png') });
+        await p.screenshot({ path: path.join(out, 'pc-tent-gu-' + view + '.png'), timeout: 180000 });
       }
       await p.evaluate(() => { KoumonStage3D.S.reduced = false; KoumonStage3D.start(); });
     }
