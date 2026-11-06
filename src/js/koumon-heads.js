@@ -153,14 +153,20 @@
   }
   function makeEyes(asset, params, quality) {
     var group = new T.Group(); group.name = 'anatomical-eyes'; group.userData.part = 'eyes';
-    var white = new T.MeshStandardMaterial({color: new T.Color(0xc3b7a6).convertSRGBToLinear(),roughness: .25,metalness: 0});
+    var white = new T.MeshStandardMaterial({color: new T.Color(asset.gender === 'female' ? 0xd9d0c3 : 0xc3b7a6).convertSRGBToLinear(),roughness: .25,metalness: 0});
     var iris = new T.MeshStandardMaterial({map: irisTexture(params.doublePupil),roughness: .19,metalness: 0});
     asset.anchors.eyes.forEach(function (e) {
       var eg = new T.Group(); eg.position.fromArray(e.center); eg.rotation.set(params.gazePitch || 0,params.gazeYaw || 0,0);
       if(e.scale)eg.scale.fromArray(e.scale);
       var globe = new T.Mesh(new T.SphereGeometry(e.radius,quality === 'low' ? 24 : 40,quality === 'low' ? 16 : 24),white);
       globe.userData.part = 'eyes'; eg.add(globe);
-      var im = new T.Mesh(irisGeometry(e.radius,e.radius * .48,quality),iris); im.userData.part = 'eyes'; eg.add(im); group.add(eg);
+      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (asset.gender === 'female' ? .42 : .48),quality),iris); im.userData.part = 'eyes'; eg.add(im);
+      if(asset.gender === 'female') {
+        var glint=new T.Mesh(new T.SphereGeometry(.00048,8,6),new T.MeshBasicMaterial({color:0xe7e2d7}));
+        glint.position.set(-.0022,.0028,Math.sqrt(e.radius*e.radius-.0022*.0022-.0028*.0028)+.00022);
+        glint.userData.part='eyes';eg.add(glint);
+      }
+      group.add(eg);
     });
     return group;
   }
@@ -364,6 +370,14 @@
     return finishHeadwear(group);
   }
   function fittedHeadwear(id, asset) {
+    if(id==='gu') {
+      var g=new T.Group();g.name='gu-bun-anchored-hairpin';
+      var gold=headwearMat(0xa68856,.46,.55);
+      var pin=new T.Mesh(new T.CylinderGeometry(.00115,.00115,.095,10),gold);
+      pin.rotation.z=PI/2;pin.position.set(0,.130,-.058);g.add(pin);
+      var finial=new T.Mesh(new T.SphereGeometry(.0032,12,8),gold);finial.scale.y=.65;finial.position.set(.049,.130,-.058);g.add(finial);
+      return finishHeadwear(g);
+    }
     if(id==='ryo')return scholarFoldCap();
     if(['hai','zo','haku','chin'].indexOf(id)>=0)return foldedCap(id);
     if(id==='u')return compactWarCrown();
@@ -386,8 +400,7 @@
   function build(id, params, quality) {
     params = params || {}; var source = window.KM_HEAD_ASSETS; if (!source) return null;
     var key = source.cast[id] ? id : ALIAS[id];
-    // Keep the established female portrait until an appropriate female source
-    // has been authored; a male face is not used as a silent fallback.
+    // Gu has a dedicated female source asset; aliases only serve secondary cast.
     if (!key || !source.cast[key]) return null;
     var asset = source.cast[key], q = quality === 'low' ? 'low' : 'high', data = Object.assign({}, asset.lod.high, asset.lod[q]);
     var group = new T.Group(); group.name = 'asset-head-' + id; group.userData.asset = true;

@@ -6,7 +6,7 @@
 </style>
 <main><canvas id="view"></canvas><div id="status">人物を準備しています…</div><div class="badge">ドラッグで回転・ホイールで拡大</div></main>
 <aside><h1>楚漢の章　人物モデル</h1><p>顔、衣装、姿勢を自由な角度から確認できます。</p>
-<label>人物<select id="character"><option value="hai">劉邦</option><option value="u">項羽（項王）</option><option value="ryo" selected>張良</option><option value="zo">范増</option><option value="haku">項伯</option><option value="kai">樊噲</option><option value="sou">項荘</option><option value="chin">陳平</option></select></label>
+<label>人物<select id="character"><option value="hai">劉邦</option><option value="u">項羽（項王）</option><option value="ryo" selected>張良</option><option value="zo">范増</option><option value="haku">項伯</option><option value="kai">樊噲</option><option value="sou">項荘</option><option value="chin">陳平</option><option value="gu">虞美人</option></select></label>
 <label for="pose">姿勢<select id="pose"><option value="stand">立つ</option><option value="sit">座る</option><option value="kneel">跪く</option><option value="drink">卮酒を飲む</option><option value="dance">剣舞</option><option value="eat">盾の上で肉を切って食べる</option><option value="run">走る</option><option value="enter">踏み込んで睨む</option><option value="glare">睨む</option></select></label>
 <label>表示<select id="quality"><option value="high">精細</option><option value="low">軽量</option></select></label>
 <div class="buttons"><button data-view="front">正面</button><button data-view="side">横顔</button><button data-view="quarter">斜め</button><button data-view="back">背面</button><button data-view="top">上方</button></div>
@@ -14,7 +14,7 @@
 <div class="buttons"><button id="hands">手元を拡大</button><button id="food">肉と盾を拡大</button><button id="play">一時停止</button></div>
 <label for="timeline">動作を見比べる<input id="timeline" type="range" min="0" max="1000" value="0" step="1" style="width:100%"></label><output id="phase" aria-live="off"></output>
 <div class="portrait" id="portrait"></div><p class="caption">ゲーム内の創作肖像</p><p><a href="../index.html">ゲームへ戻る</a></p></aside>
-<script src="../src/vendor/three.min.js"></script><script src="../src/js/koumon-lighting.js?v=20261026f"></script><script src="../src/js/koumon-figkit.js?v=20261026f"></script><script src="../src/js/koumon-head-assets.js?v=20261102c"></script><script src="../src/js/koumon-heads.js?v=20261102c"></script><script src="../src/js/koumon-hand-assets.js?v=20261026f"></script><script src="../src/js/koumon-hands.js?v=20261026f"></script><script src="../src/js/koumon-costume.js?v=20261102c"></script><script src="../src/js/koumon-banquet-props.js?v=20261027b"></script><script src="../src/js/koumon-cast3d.js?v=20261103f"></script>
+<script src="../src/vendor/three.min.js"></script><script src="../src/js/koumon-lighting.js?v=20261026f"></script><script src="../src/js/koumon-figkit.js?v=20261026f"></script><script src="../src/js/koumon-head-assets.js?v=20261106a"></script><script src="../src/js/koumon-heads.js?v=20261106a"></script><script src="../src/js/koumon-hand-assets.js?v=20261026f"></script><script src="../src/js/koumon-hands.js?v=20261026f"></script><script src="../src/js/koumon-costume.js?v=20261102c"></script><script src="../src/js/koumon-banquet-props.js?v=20261027b"></script><script src="../src/js/koumon-cast3d.js?v=20261106a"></script>
 <script>
 (function(){'use strict';
 const $=id=>document.getElementById(id),canvas=$('view'),scene=new THREE.Scene();scene.background=new THREE.Color(0x343b42);
@@ -32,7 +32,7 @@ function load(){
   $('status').textContent='人物を準備しています…';
   requestAnimationFrame(()=>{try{if(figure)scene.remove(figure);const id=$('character').value,q=$('quality').value,key=id+q;const swordOption=$('pose').querySelector('[value="dance"]'),eatOption=$('pose').querySelector('[value="eat"]'),enterOption=$('pose').querySelector('[value="enter"]');enterOption.disabled=id!=='kai';swordOption.disabled=!KM_CAST3D.CAST[id].sword;eatOption.disabled=id!=='kai';if($('pose').selectedOptions[0].disabled)$('pose').value='stand';KM_CAST3D.setQuality(q);if(!cache.has(key))cache.set(key,KM_CAST3D.makeFigure(id));figure=cache.get(key);scene.add(figure);figure.userData.setPose($('pose').value);figure.userData.update(0,0);figure.updateMatrixWorld(true);
     if(!playing)figure.userData.state.actionProgress=Number($('timeline').value)/1000;
-    const i=ids.indexOf(id);$('portrait').style.backgroundPosition=(i%4/3*100)+'% '+(Math.floor(i/4)*100)+'%';renderer.shadowMap.enabled=q!=='low';$('status').textContent='';
+    const i=ids.indexOf(id);$('portrait').hidden=i<0;document.querySelector('.caption').hidden=i<0;$('portrait').style.backgroundPosition=(i%4/3*100)+'% '+(Math.floor(i/4)*100)+'%';renderer.shadowMap.enabled=q!=='low';$('status').textContent='';
   }catch(e){$('status').textContent='表示できません: '+e.message;console.error(e);}});
 }
 ['character','quality'].forEach(id=>$(id).addEventListener('change',load));$('pose').addEventListener('change',()=>{actionTime=0;$('timeline').value='0';if(mode==='body')distance=bodyDistance();if(figure){figure.userData.setPose($('pose').value);if(!playing)figure.userData.state.actionProgress=0;}});

@@ -39,3 +39,11 @@ jobs:
           npx playwright install --with-deps chromium
       - name: 実ブラウザーでの画面確認（PC・縦長・3D）
         run: npm run test:browser
+      - name: 虞美人・騅の検証画像
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gu-zhui-browser-review
+          path: model-preview-output/issue35-browser/
+          if-no-files-found: warn
+          retention-days: 14

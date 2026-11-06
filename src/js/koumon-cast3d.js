@@ -1638,27 +1638,33 @@
   }
   /** 騅：胴・首・頭は SDF で一続きに彫り、脚は関節ごとの部品にして走らせる。
       蒼白雑毛（青みの白と黒の毛がまじる）は頂点色のまだらで。たてがみと尾は黒 */
-  var HORSE_POLY = null;
+  var HORSE_POLY = {};
   function rotX(a) { var c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, c, -s, 0, s, c]; }
   function horseBody() {
     var K = window.KM_FIGKIT;
-    if (HORSE_POLY) return HORSE_POLY;
+    if (HORSE_POLY[Q]) return HORSE_POLY[Q];
     var E = K.sEll, C = K.sCone, k = K.K;
+    // One sculpted skin: ribcage, scapula, haunch, rising neck and long facial wedge.
+    // Primary masses overlap before polygonization, never decorative muscle balls.
     var parts = [
-      E([0, 1.22, -.02], [.27, .32, .7]),
-      k(E([0, 1.2, .5], [.25, .33, .3]), .14),
-      k(E([0, 1.41, .38], [.12, .12, .26]), .12),
-      k(E([0, 1.29, -.56], [.29, .32, .35]), .16),
-      k(E([0, 1.44, -.5], [.19, .1, .3]), .12),
-      k(E([.15, 1.06, .48], [.09, .24, .14]), .1), k(E([-.15, 1.06, .48], [.09, .24, .14]), .1),
-      k(E([.16, 1.06, -.62], [.11, .28, .19]), .12), k(E([-.16, 1.06, -.62], [.11, .28, .19]), .12),
-      k(E([0, 1.6, .8], [.115, .32, .16], rotX(.72)), .12),
-      k(E([0, 1.73, .74], [.055, .22, .09], rotX(.72)), .06),
-      k(E([0, 1.86, 1.05], [.075, .11, .1]), .07),
-      k(E([0, 1.71, 1.18], [.06, .19, .075], rotX(.62)), .06),
-      k(E([0, 1.57, 1.3], [.064, .075, .08]), .05),
-      k(C([.045, 1.95, 1.0], [.06, 2.07, .96], .024, .006), .02), k(C([-.045, 1.95, 1.0], [-.06, 2.07, .96], .024, .006), .02),
-      k(C([0, 1.42, -.86], [0, 1.27, -1.0], .06, .035), .05)
+      E([0,1.23,-.03],[.285,.305,.64]),
+      k(E([0,1.24,.45],[.265,.345,.29]),.13),
+      k(E([0,1.45,.37],[.14,.125,.28]),.10),
+      k(E([0,1.27,-.55],[.29,.32,.32]),.13),
+      k(E([0,1.46,-.47],[.21,.10,.28]),.10),
+      k(E([.17,1.13,.46],[.095,.24,.17],rotX(-.18)),.08),
+      k(E([-.17,1.13,.46],[.095,.24,.17],rotX(-.18)),.08),
+      k(E([.17,1.09,-.59],[.125,.28,.21],rotX(.24)),.10),
+      k(E([-.17,1.09,-.59],[.125,.28,.21],rotX(.24)),.10),
+      k(E([0,1.51,.68],[.155,.29,.225],rotX(.64)),.13),
+      k(E([0,1.72,.81],[.10,.25,.145],rotX(.55)),.10),
+      k(E([0,1.85,1.035],[.094,.125,.13]),.055),
+      k(E([0,1.735,1.17],[.078,.205,.092],rotX(-.62)),.055),
+      k(E([0,1.59,1.295],[.079,.081,.094]),.035),
+      k(E([0,1.725,1.10],[.082,.105,.095]),.04),
+      k(C([.057,1.95,1.005],[.072,2.10,.97],.029,.006),.018),
+      k(C([-.057,1.95,1.005],[-.072,2.10,.97],.029,.006),.018),
+      k(C([0,1.43,-.80],[0,1.30,-.98],.065,.036),.055)
     ];
     var F = K.U(parts);
     var nz = K.makeNoise(17);
@@ -1670,33 +1676,36 @@
       return d + .002 * nz(x * 20, y * 20, z * 20); }, .015);
     var poly = K.polygonize(F.f, [-.4, .7, -1.12], [.4, 2.16, 1.45], Q === 'high' ? .022 : .032, { levels: 3, lip: 1.3, seedS: 3 });
     var ao = K.bakeAO(poly, F.f, .03, 3, 1.1);
-    var dark = K.lin(0x23262c), light = K.lin(0xb4bcc8), mid = K.lin(0x5a6068);
+    var dark = K.lin(0x34383e), light = K.lin(0xc1c5c8), mid = K.lin(0x848b90);
     K.paint(poly, function (x, y, z) {
       var n1 = K.N2(x * 7 + 3, y * 7, z * 7), n2 = K.N1(x * 40, y * 40, z * 40);
       // 白い毛がまだらに混じる。頭・下腹・脚の付け根は黒っぽく
       var w = Math.max(0, Math.min(1, (n1 * .5 + .5 - .38) * 2.4)) * (.75 + .25 * n2);
-      var c = K.mixc(dark, light, w * .85);
+      var c = K.mixc(dark, light, w * .94);
       c = K.mixc(c, mid, .25);
       var low = Math.max(0, Math.min(1, (1.1 - y) / .25)), head = Math.max(0, Math.min(1, (z - 1.12) / .15));
       c = K.mixc(c, dark, Math.max(low * .7, head * .6));
       return c;
     }, ao, .45);
-    HORSE_POLY = poly;
+    HORSE_POLY[Q] = poly;
     return poly;
   }
+  // Elliptical anatomical loft, y/radius/depth/fore-aft center at each station.
+  // Shared closed surfaces replace uniform tubes while retaining the joint origins.
+  function horseLoft(stations, material) {
+    var p=[],ix=[],N=Q==='high'?20:12;
+    stations.forEach(function(s,j){for(var i=0;i<N;i++){var a=i/N*PI*2;p.push(Math.cos(a)*s[1],s[0],s[3]+Math.sin(a)*s[2]);if(j&&i<N){var v=j*N+i,w=j*N+(i+1)%N;ix.push(v,w,v-N,w,w-N,v-N);}}});
+    var geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geo.setIndex(ix);geo.computeVertexNormals();return mesh(geo,material);
+  }
   function horseLeg(front, M, D) {
-    var hip = new THREE.Group();
-    var up = new THREE.LatheGeometry([[0, 0], [.07, -.02], [.075, -.12], [.058, -.3], [.045, -.42]].map(function (p) { return new THREE.Vector2(p[0], p[1]); }), 14);
-    var u = mesh(up, M); u.scale.z = front ? 1.15 : 1.3; hip.add(u);
-    var knee = new THREE.Group(); knee.position.y = -.42; hip.add(knee);
-    var kj = mesh(new THREE.SphereGeometry(.047, 12, 10), M); kj.scale.set(.9, 1, 1.15); knee.add(kj);
-    var can = mesh(new THREE.CylinderGeometry(.034, .036, .34, 12), D); can.position.y = -.17; can.scale.z = 1.2; knee.add(can);
-    var fet = new THREE.Group(); fet.position.y = -.34; knee.add(fet);
-    var fj = mesh(new THREE.SphereGeometry(.044, 12, 10), D); fj.scale.set(.9, 1, 1.15); fet.add(fj);
-    var feath = mesh(new THREE.ConeGeometry(.05, .09, 10, 1, true), D); feath.position.set(0, -.04, -.02); feath.rotation.x = -.3; fet.add(feath);
-    var past = mesh(new THREE.CylinderGeometry(.03, .036, .1, 10), D); past.position.set(0, -.06, .025); past.rotation.x = .45; fet.add(past);
-    var hoof = mesh(new THREE.CylinderGeometry(.042, .056, .075, 14), std(0x14100e, .5)); hoof.position.set(0, -.13, .05); fet.add(hoof);
-    return { hip: hip, kn: knee, fet: fet, hoof: hoof };
+    var hip=new THREE.Group();
+    hip.add(horseLoft(front?[[.055,0,0,0],[.02,.075,.105,0],[-.09,.077,.105,-.018],[-.22,.055,.073,-.025],[-.34,.036,.047,-.005],[-.42,.038,.046,0],[-.46,0,0,0]]:[[.055,0,0,0],[.02,.105,.14,0],[-.10,.10,.13,.035],[-.22,.075,.09,.065],[-.34,.042,.057,.035],[-.42,.041,.053,0],[-.46,0,0,0]],M));
+    var knee=new THREE.Group();knee.position.y=-.42;hip.add(knee);
+    knee.add(horseLoft([[.05,0,0,0],[.025,.039,.047,0],[-.045,.034,.043,-.009],[-.17,.025,.035,-.012],[-.285,.027,.036,-.004],[-.34,.04,.047,0],[-.365,0,0,0]],D));
+    var fet=new THREE.Group();fet.position.y=-.34;knee.add(fet);
+    fet.add(horseLoft([[.025,0,0,0],[.005,.042,.05,0],[-.035,.036,.043,.005],[-.075,.027,.032,.025],[-.11,.034,.043,.039],[-.125,0,0,.04]],D));
+    var hoof=horseLoft([[-.088,0,0,.042],[-.09,.039,.047,.042],[-.12,.047,.058,.047],[-.1675,.054,.068,.05],[-.1675,0,0,.05]],std(0x292723,.68));fet.add(hoof);
+    return {hip:hip,kn:knee,fet:fet,hoof:hoof};
   }
   function makeHorseSDF() {
     var K = window.KM_FIGKIT;
@@ -1704,38 +1713,43 @@
     var body = new THREE.Mesh(K.toGeom(poly), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .6, metalness: 0 }));
     body.castShadow = body.receiveShadow = true;
     var trunk = new THREE.Group(); g.add(trunk); trunk.add(body);
-    var M = std(0x3a3e46, .6), D = std(0x16161a, .6), hairM = std(0x0c0b0b, .7);
-    // たてがみ：首の上の線に沿って片側へ垂れる房
-    var lockG = new THREE.ConeGeometry(.03, .2, 6, 3); lockG.rotateZ(PI); lockG.translate(0, -.1, 0);
+    var M = std(0x697078, .8), D = std(0x4b5159, .87), hairM = std(0x080909, 1);
     body.updateMatrixWorld(true);
-    var hairRay = new THREE.Raycaster(new V3(), new V3(0,-1,0), 0, 4);
+    function skinSide(sd,y,z){var ray=new THREE.Raycaster(new V3(sd*.4,y,z),new V3(-sd,0,0),0,1),hit=ray.intersectObject(body,false);return hit.length?hit[0].point.x:sd*.07;}
+    [-1,1].forEach(function(sd){var eye=mesh(new THREE.SphereGeometry(.018,16,12),std(0x100d0a,.2));eye.position.set(skinSide(sd,1.875,1.093)-sd*.006,1.875,1.093);eye.scale.set(.55,.8,1);trunk.add(eye);});
+    [-1,1].forEach(function(sd){var nostril=mesh(new THREE.SphereGeometry(.015,12,8),std(0x252527,.95));nostril.scale.set(.28,.8,1.2);nostril.position.set(skinSide(sd,1.615,1.328)-sd*.002,1.615,1.328);nostril.rotation.x=-.5;trunk.add(nostril);});
+    // たてがみ：首の上の線に沿って片側へ垂れる房
+    body.updateMatrixWorld(true);
+    var hairRay=new THREE.Raycaster(new V3(),new V3(0,-1,0),0,4);
     function crestHeight(x,z,fallback){hairRay.ray.origin.set(x,3,z);var hits=hairRay.intersectObject(body,false);return hits.length?hits[0].point.y:fallback;}
-    var NL = 26, locks = new THREE.InstancedMesh(lockG, hairM, NL), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), R = rng(23);
-    for (var i = 0; i < NL; i++) {
-      var t = i / (NL - 1), y = lerp(1.98, 1.46, t), z = lerp(1.0, .42, t) - Math.sin(t * PI) * .05;
-      e.set(-.25 - R() * .2, 0, -.55 - R() * .3); q.setFromEuler(e);
-      m4.compose(new V3(.02, crestHeight(.02,z,y)-.01, z), q, new V3(1, .8 + R() * .5, 1)); locks.setMatrixAt(i, m4);
-    }
-    locks.castShadow = true; trunk.add(locks);
-    var fore = mesh(new THREE.SphereGeometry(.05, 8, 6), hairM); fore.position.set(0, crestHeight(0,1.05,1.95)-.005, 1.05); fore.scale.set(.8, .6, 1.4); trunk.add(fore);
-    // 尾：根元から房になって垂れる
-    var tailG = new THREE.Group(); tailG.position.set(0, 1.36, -.96); trunk.add(tailG);
-    for (i = 0; i < 9; i++) { var tl = mesh(new THREE.ConeGeometry(.045, .85, 6, 4), hairM); var tp = tl.geometry.attributes.position; for (var j = 0; j < tp.count; j++) { var yy = tp.getY(j); tp.setZ(j, tp.getZ(j) - (yy + .42) * (yy + .42) * .12); } tl.geometry.computeVertexNormals(); tl.position.set((i - 4) * .012, -.44, -.08); tl.rotation.set(PI + .18, 0, (i - 4) * .035); tailG.add(tl); }
+    function strand(points,r,flat){var c=new THREE.CatmullRomCurve3(points),geo=new THREE.TubeGeometry(c,18,r,7),p=geo.attributes.position;for(var j=0;j<=18;j++){var t=j/18,center=c.getPointAt(t),scale=(1-t)*.8+.03;for(var i=0;i<=7;i++){var v=j*8+i;p.setXYZ(v,center.x+(p.getX(v)-center.x)*scale*(flat?.4:1),center.y+(p.getY(v)-center.y)*scale,center.z+(p.getZ(v)-center.z)*scale*(flat?1.35:1));}}geo.computeVertexNormals();return mesh(geo,hairM);}
+    var maneCount=Q==='high'?24:16;
+    for(var i=0;i<maneCount;i++){var t=i/(maneCount-1),z=lerp(.96,.38,t)+Math.sin(i*2.31)*.004,y=crestHeight(.005,z,lerp(1.97,1.53,t));trunk.add(strand([new V3(0,y-.008,z),new V3(.045,y+.018,z-.018),new V3(.09,y-.075,z-.05),new V3(.105,y-.16-Math.sin(i*2.3)*.035,z-.08)],.032,true));}
+    trunk.add(strand([new V3(0,1.965,1.025),new V3(.015,1.97,1.08),new V3(.02,1.90,1.15)],.045));
+    var tailG=new THREE.Group();tailG.position.set(0,1.36,-.93);trunk.add(tailG);
+    for(i=0;i<11;i++){var sd=(i-5)/5;tailG.add(strand([new V3(sd*.025,0,0),new V3(sd*.04,-.18,-.14),new V3(sd*.055,-.48,-.17+Math.sin(i*1.9)*.05),new V3(sd*.06,-.66-Math.pow(Math.sin(i*2.3),2)*.17,-.13+Math.sin(i*1.9)*.025)],.045));}
     // 轡・面繋・手綱
     var bridle = std(0x2a1410, .6), bron = std(0xa88a3a, .3, .8);
     var nb = mesh(new THREE.TorusGeometry(.075, .007, 6, 20), bridle); nb.position.set(0, 1.6, 1.29); nb.rotation.x = PI / 2 + .62; nb.scale.set(1, 1.25, 1); trunk.add(nb);
-    var cb = mesh(new THREE.TorusGeometry(.11, .007, 6, 20, PI), bridle); cb.position.set(0, 1.83, 1.1); cb.rotation.set(-.6, PI / 2, 0); trunk.add(cb);
-    [-1, 1].forEach(function (sd) { var bit = mesh(new THREE.TorusGeometry(.016, .005, 6, 12), bron); bit.position.set(sd * .07, 1.58, 1.28); bit.rotation.y = PI / 2; trunk.add(bit); });
-    var rein = new THREE.CatmullRomCurve3([new V3(.07, 1.58, 1.28), new V3(.12, 1.65, 1.0), new V3(.14, 1.86, .35), new V3(0, 1.84, .31), new V3(-.14, 1.86, .35), new V3(-.12, 1.65, 1.0), new V3(-.07, 1.58, 1.28)]);
-    trunk.add(mesh(new THREE.TubeGeometry(rein, 40, .006, 5), bridle, false));
-    // 鞍（鐙はまだ無い時代）と障泥
-    var pad = mesh(new THREE.CylinderGeometry(.31, .31, .62, 24, 1, true, -PI * .42, PI * .84), std(0x5a1410, .7, 0, { side: THREE.DoubleSide }));
-    pad.rotation.x = PI / 2; pad.position.set(0, 1.27, .08); pad.scale.set(1, 1, 1.05); trunk.add(pad);
-    var seat = mesh(new THREE.BoxGeometry(.3, .06, .42), std(0x2a0c08, .55)); seat.position.set(0, 1.58, .08); trunk.add(seat);
-    [.31, -.15].forEach(function (z) { var bow = mesh(new THREE.TorusGeometry(.13, .025, 8, 18, PI), std(0x1a0a08, .35, .1)); bow.position.set(0, 1.58, z); trunk.add(bow); });
-    [-1, 1].forEach(function (sd) {
-      var flap = mesh(new THREE.PlaneGeometry(.46, .4), std(0xffffff, .5, 0, { side: THREE.DoubleSide, map: lacquerCloudTex(21) })); flap.position.set(sd * .3, 1.3, .08); flap.rotation.y = sd * PI / 2; flap.rotation.z = sd * .12; trunk.add(flap);
+    function leatherStrap(points){trunk.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),24,.006,6),bridle));}
+    leatherStrap([new V3(-.086,1.86,1.04),new V3(-.065,1.958,1.01),new V3(0,1.979,1.015),new V3(.065,1.958,1.01),new V3(.086,1.86,1.04)]);
+    [-1,1].forEach(function(sd){
+      leatherStrap([new V3(sd*.086,1.89,1.065),new V3(sd*.092,1.79,1.14),new V3(sd*.078,1.67,1.235),new V3(sd*.07,1.58,1.28)]);
+      var bit=mesh(new THREE.TorusGeometry(.016,.005,6,12),bron);bit.position.set(sd*.07,1.58,1.28);bit.rotation.y=PI/2;trunk.add(bit);
     });
+    var rein = new THREE.CatmullRomCurve3([new V3(.07, 1.58, 1.28), new V3(.12, 1.65, 1.0), new V3(.14, 1.86, .35), new V3(0, 1.84, .31), new V3(-.14, 1.86, .35), new V3(-.12, 1.65, 1.0), new V3(-.07, 1.58, 1.28)]);
+    var riddenRein=mesh(new THREE.TubeGeometry(rein,40,.006,5),bridle,false);riddenRein.name='horse-ridden-reins';trunk.add(riddenRein);
+    var looseCurve=new THREE.CatmullRomCurve3([new V3(.07,1.58,1.28),new V3(.12,1.49,1.0),new V3(.15,1.46,.69),new V3(.14,1.56,.32),new V3(0,1.61,.18),new V3(-.14,1.56,.32),new V3(-.15,1.46,.69),new V3(-.12,1.49,1.0),new V3(-.07,1.58,1.28)]);
+    var looseRein=mesh(new THREE.TubeGeometry(looseCurve,48,.006,5),bridle,false);looseRein.name='horse-draped-reins';trunk.add(looseRein);
+    g.userData.setRidden=function(on){g.userData.ridden=!!on;riddenRein.visible=!!on;looseRein.visible=!on;};
+    g.userData.setRidden(false);
+    // 鞍（鐙はまだ無い時代）と障泥
+    var padGeo=new THREE.BufferGeometry(),pp=[],pi=[];
+    for(var row=0;row<=8;row++){var z=-.22+row*.075;for(var col=0;col<=24;col++){var angle=(col/24-.5)*3.45;pp.push(Math.sin(angle)*.316,1.22+Math.cos(angle)*.345-.035*Math.sin(row/8*PI)*Math.pow(Math.abs(Math.sin(angle)),3)+.007*Math.sin(row/8*PI*4)*Math.pow(Math.sin(angle),2),z+Math.sin(angle)*Math.sin(angle)*(row/8-.5)*-.055);if(row&&col){var idx=row*25+col;pi.push(idx,idx-1,idx-26,idx,idx-26,idx-25);}}}
+    padGeo.setAttribute('position',new THREE.Float32BufferAttribute(pp,3));padGeo.setIndex(pi);padGeo.computeVertexNormals();trunk.add(mesh(padGeo,std(0x5a2920,.88,0,{side:THREE.DoubleSide})));
+    var seat=horseLoft([[1.525,0,0,.08],[1.54,.13,.22,.08],[1.59,.17,.235,.08],[1.615,.135,.20,.08],[1.617,0,0,.08]],std(0x35241b,.83));trunk.add(seat);
+    // A low padded seat and bound cloth: no stirrups or later high wooden bows.
+    [-1,1].forEach(function(sd){var binding=new THREE.CatmullRomCurve3([new V3(sd*.15,1.59,-.13),new V3(sd*.20,1.51,-.10),new V3(sd*.285,1.30,-.09),new V3(sd*.27,1.13,.05)]);trunk.add(mesh(new THREE.TubeGeometry(binding,20,.013,7),std(0x4a3021,.8)));});
     var girth = mesh(new THREE.TorusGeometry(.33, .012, 6, 30), std(0x3a1a10, .7)); girth.position.set(0, 1.22, .2); girth.rotation.y = PI / 2; girth.scale.set(1, 1.05, .9); trunk.add(girth);
     // 脚
     var legs = [];
