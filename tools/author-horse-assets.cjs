@@ -3,7 +3,7 @@
  * Review output is ignored; no extra runtime mesh download is required.
  */
 const fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),out=path.resolve(process.argv[2]||path.join(root,'model-preview-output/horse-after'));
+const root=path.resolve(__dirname,'..'),out=path.resolve(process.argv[2]||path.join(root,'model-preview-output/horse-refine-v2'));
 const before=process.argv.find(a=>a.startsWith('--before='));
 const env={...process.env};if(before)env.MODEL_REF=before.slice(9);
 fs.mkdirSync(out,{recursive:true});
