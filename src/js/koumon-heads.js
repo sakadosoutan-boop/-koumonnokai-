@@ -121,9 +121,10 @@
   }
   function material(kind, asset, id) {
     var skin = kind === 'skin';
-    var hairTint=!skin&&id!=='zo'?new T.Color(0xb8b4b0).convertSRGBToLinear():0xffffff;
+    if (kind === 'ornament') return new T.MeshStandardMaterial({vertexColors:true,roughness:.38,metalness:.48});
+    var hairTint=!skin&&id!=='zo'&&id!=='gu'?new T.Color(0xb8b4b0).convertSRGBToLinear():0xffffff;
     return new T.MeshStandardMaterial({color: hairTint, vertexColors: true,
-      roughness: skin ? (asset.age > .5 ? .63 : .53) : kind === 'hair' ? .87 : .83,
+      roughness: skin ? (asset.age > .5 ? .63 : .53) : kind === 'hair' ? (id === 'gu' ? .76 : .87) : .83,
       metalness: 0, bumpMap: detail(!skin), bumpScale: skin ? .00016 : kind === 'hair' ? .000075 : .000045});
   }
   function irisTexture(doublePupil) {
@@ -153,14 +154,14 @@
   }
   function makeEyes(asset, params, quality) {
     var group = new T.Group(); group.name = 'anatomical-eyes'; group.userData.part = 'eyes';
-    var white = new T.MeshStandardMaterial({color: new T.Color(asset.gender === 'female' ? 0xd9d0c3 : 0xc3b7a6).convertSRGBToLinear(),roughness: .25,metalness: 0});
+    var white = new T.MeshStandardMaterial({color: new T.Color(asset.gender === 'female' ? 0xc7b7aa : 0xc3b7a6).convertSRGBToLinear(),roughness: .25,metalness: 0});
     var iris = new T.MeshStandardMaterial({map: irisTexture(params.doublePupil),roughness: .19,metalness: 0});
     asset.anchors.eyes.forEach(function (e) {
       var eg = new T.Group(); eg.position.fromArray(e.center); eg.rotation.set(params.gazePitch || 0,params.gazeYaw || 0,0);
       if(e.scale)eg.scale.fromArray(e.scale);
       var globe = new T.Mesh(new T.SphereGeometry(e.radius,quality === 'low' ? 24 : 40,quality === 'low' ? 16 : 24),white);
       globe.userData.part = 'eyes'; eg.add(globe);
-      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (asset.gender === 'female' ? .42 : .48),quality),iris); im.userData.part = 'eyes'; eg.add(im);
+      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (asset.gender === 'female' ? .49 : .48),quality),iris); im.userData.part = 'eyes'; eg.add(im);
       if(asset.gender === 'female') {
         var glint=new T.Mesh(new T.SphereGeometry(.00048,8,6),new T.MeshBasicMaterial({color:0xe7e2d7}));
         glint.position.set(-.0022,.0028,Math.sqrt(e.radius*e.radius-.0022*.0022-.0028*.0028)+.00022);
@@ -369,13 +370,11 @@
     pin.rotation.z=PI/2;pin.position.set(0,.012,-.002);group.add(pin);
     return finishHeadwear(group);
   }
-  function fittedHeadwear(id, asset) {
-    if(id==='gu') {
-      var g=new T.Group();g.name='gu-bun-anchored-hairpin';
-      var gold=headwearMat(0xa68856,.46,.55);
-      var pin=new T.Mesh(new T.CylinderGeometry(.00115,.00115,.095,10),gold);
-      pin.rotation.z=PI/2;pin.position.set(0,.130,-.058);g.add(pin);
-      var finial=new T.Mesh(new T.SphereGeometry(.0032,12,8),gold);finial.scale.y=.65;finial.position.set(.049,.130,-.058);g.add(finial);
+  function fittedHeadwear(id, asset, quality) {
+    if(id==='gu' && asset.lod[quality].ornament) {
+      var g=new T.Group();g.name='gu-botanical-hairpin';
+      var pin=new T.Mesh(geometry(asset.lod[quality].ornament,'gu|' + quality + '|ornament'),material('ornament',asset,id));
+      pin.userData.shared=true;g.add(pin);
       return finishHeadwear(g);
     }
     if(id==='ryo')return scholarFoldCap();
@@ -406,12 +405,13 @@
     var group = new T.Group(); group.name = 'asset-head-' + id; group.userData.asset = true;
     var surface = null;
     Object.keys(data).forEach(function (kind) {
+      if (kind === 'ornament') return;
       var g = geometry(data[kind],key + '|' + q + '|' + kind), m = new T.Mesh(g,material(kind,asset,id));
       m.name = id + '-' + kind; m.userData.part = kind; m.userData.asset = true; m.userData.shared = true; m.castShadow = m.receiveShadow = true;
       group.add(m); if (kind === 'skin') surface = m;
     });
     var eyes = makeEyes(asset,params,q); group.add(eyes);
-    var headwear = fittedHeadwear(id,asset); if(headwear)group.add(headwear);
+    var headwear = fittedHeadwear(id,asset,q); if(headwear)group.add(headwear);
     var anchors = JSON.parse(JSON.stringify(asset.anchors));
     anchors.mouth = outerLipAnchor(surface,id + '|' + q);
     if (id !== key) {

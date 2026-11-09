@@ -5,7 +5,7 @@
   "runtime": "src/js/koumon-cast3d.js: horseBody, horseLoft, horseLeg, makeHorseSDF",
   "sourceKind": "Continuous sculpted SDF skin for torso, shoulder, haunch, arched neck, wedge head and ears; closed elliptical anatomical limb lofts around retained joints; tapered swept mane/tail locks",
   "reproduce": "node tools/author-horse-assets.cjs",
-  "nativeSource": "model-preview-output/horse-after/zhui-stand-review.blend",
+  "nativeSource": "model-preview-output/horse-refine-v2/zhui-stand-review.blend",
   "preAssetCheckpoint": "node tools/author-horse-assets.cjs model-preview-output/horse-before --before=95bdbc7",
   "referenceUse": "Visual study only. No museum images redistributed and no external assets downloaded.",
   "references": [
@@ -22,11 +22,18 @@
       "url": "https://extension.umn.edu/agriculture/animals-and-livestock/horse/conformation-of-the-horse",
       "use": "Modern structural reference for shoulder slope, symmetrical muscling, hock/cannon relationship and sloping pastern/hoof transition; no imagery copied",
       "verified": "2026-11-06"
+    },
+    {
+      "title": "The Antarctic conformation photograph",
+      "institution": "Coolmore Stud",
+      "url": "https://coolmore.com/en/ireland/news/first-foal-for-the-antarctic/",
+      "use": "Visual reference for fine gray dappling, muzzle profile, shoulder transition and dark mane/tail; no image incorporated into the asset",
+      "verified": "2026-11-07"
     }
   ],
   "historicalScope": "Restrained leather bridle, low padded saddle/cloth and belly girth; no stirrups, high medieval bows or ornate hanging side boards. Interpretive reconstruction, not an archaeological replica.",
   "contacts": "Four hoof sole anchors and hip/knee/fetlock joint origins retained. saddleY 1.62 and reinGrips L [0.14,1.86,0.35] / R [-0.14,1.86,0.35] retained. Saddle and rein geometry parented to existing trunk bob; riderBob retained. Explicit setRidden(on) selects retained hand-grip rein geometry while ridden; riderless scenes use reins draped onto the withers/saddle instead of floating in the air.",
-  "lod": "Distinct cached low/high SDF skins; low elliptical limb ring count 12, high 20; low mane locks 16, high 24. Runtime generated, no binary payload increase.",
-  "evidence": "model-preview-output/horse-after/zhui-stand-full-{front,side,three-quarter,overhead}.png; before views in model-preview-output/horse-before",
+  "lod": "Distinct cached low/high SDF skins. Elliptical limb ring counts are 12/20, swept mane lock counts are 22/35, and tail lock counts are 16/25. Runtime-generated geometry.",
+  "evidence": "model-preview-output/horse-refine-v2/zhui-stand-full-{front,side,three-quarter,overhead}.png; immediate prior views in model-preview-output/horse-after and pre-asset views in model-preview-output/horse-before",
   "limitations": "Blender Cycles review of actual runtime meshes is independent geometry/material evidence, not game WebGL QA. Existing gait is preserved rather than replaced with a new equine gait solver. Mane and tail are stylized locks, not strand simulation. Original legacy horse fallback is retained for missing FIGKIT."
 }
