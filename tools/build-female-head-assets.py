@@ -147,8 +147,9 @@ def hair_ornament(quality):
  material=mat('gu_hairpin_gold',rgb('bf914b'),.38)
  material.node_tree.nodes.get('Principled BSDF').inputs['Metallic'].default_value=.48
  threads=GroomMesh()
+ detailed=quality=='high'
  def strand(points,radius):
-  threads.fibre([Vector(p) for p in points],radius,1,sides=6)
+  threads.fibre([Vector(p) for p in points],radius,1,sides=6 if detailed else 5)
  strand([(.021,.107,-.086),(.043,.113,-.075),(.062,.118,-.058),(.077,.120,-.044)],.0021)
  motif=Vector((.070,.112,-.041))
  for x,y,z in [(.081,.130,-.047),(.090,.118,-.046),(.087,.104,-.041),(.078,.095,-.033),(.061,.121,-.043)]:
@@ -156,14 +157,14 @@ def hair_ornament(quality):
   offset=Vector((-(tip.y-motif.y),tip.x-motif.x,.0)).normalized()*.0038
   for side in (-1,1):
    strand([motif,mid+offset*side+Vector((0,0,.002)),tip],.00135)
-  strand([motif,mid+Vector((0,0,.003)),tip],.00075)
+  if detailed:strand([motif,mid+Vector((0,0,.003)),tip],.00075)
  for start,end in [((.078,.103,-.035),(.082,.067,-.027)),((.086,.106,-.039),(.095,.080,-.036)),((.070,.100,-.036),(.073,.079,-.026))]:
   a,b=Vector(start),Vector(end)
-  strand([a,a.lerp(b,.35),a.lerp(b,.70),b],.00065)
+  strand([a,a.lerp(b,.35),a.lerp(b,.70),b] if detailed else [a,a.lerp(b,.5),b],.00065)
   strand([b+Vector((0,.002,0)),b-Vector((0,.002,0)),b-Vector((0,.007,0))],.0021)
  gold=threads.object('gu_botanical_hairpin',material)
  jewel=GroomMesh()
- jewel.fibre([motif+Vector((0,dy,.0035)) for dy in (.004,.001,-.002,-.005)],.0046,1,sides=10)
+ jewel.fibre([motif+Vector((0,dy,.0035)) for dy in (.004,.001,-.002,-.005)],.0046,1,sides=10 if detailed else 7)
  gem=jewel.object('gu_hairpin_red_inlay',material)
  for ob,hex_color in ((gold,'cda35c'),(gem,'a03941')):
   color=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT')
