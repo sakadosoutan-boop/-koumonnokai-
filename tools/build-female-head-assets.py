@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-beauty-v2';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-beauty-v3';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -23,12 +23,16 @@ bpy.context.view_layer.update()
 female=bpy.data.objects[names[0]]
 def female_canon(v):
  x,y,z=v.x*.90,(v.z-1.5144)*.90,-v.y*.90-.045
- # Retain the actual female topology; gently refine jaw and nasal breadth.
+ # Refine the profile while retaining the source facial topology.
  x*=1-.18*gauss(y+.058,.032)*smooth(-.120,-.067,y)
  x*=1-.15*smooth(-.082,-.168,y)
  y+=.009*gauss(y+.073,.025)*smooth(.015,.053,z)
  x*=1-.30*gauss(x,.019)*gauss(y+.010,.021)*smooth(.042,.071,z)
- z-=.0024*gauss(x,.014)*gauss(y+.013,.017)*smooth(.049,.073,z)
+ z-=.0038*gauss(x,.014)*gauss(y+.013,.017)*smooth(.049,.073,z)
+ z-=.0035*gauss(x,.025)*gauss(y+.040,.016)*smooth(.040,.065,z)
+ # Soften the transition under the mouth and fill the lower cheek plane.
+ z+=.0018*gauss(abs(x)-.034,.015)*gauss(y+.052,.021)*smooth(.025,.055,z)
+ z+=.0012*gauss(x,.020)*gauss(y+.060,.009)*smooth(.035,.060,z)
  return Vector((x,y,z))
 eyes=[]
 for name in names[1:]:
@@ -36,6 +40,7 @@ for name in names[1:]:
  eyes.append(dict(center=list(female_canon(local)),radius=.0120*.9,scale=[1.23,1.07,1]))
 record=dict(skin='e5bda4',hair='21181e',age=.02,gender='female',sourceObject=names[0],anchors=dict(eyes=eyes,hat=dict(offset=[0,0,0],scale=[1,1,1]),crown=[0,.12,-.03],chin=[0,-.067,.04],neck=[0,-.205,-.02]),lod={})
 render_parts=[]
+low_parts=[]
 def pigment(ob,hair=False):
  for old in list(ob.data.color_attributes):ob.data.color_attributes.remove(old)
  a=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT');base=rgb(record['hair'] if hair else record['skin'])
@@ -50,7 +55,7 @@ def pigment(ob,hair=False):
    lip=gauss(x,.019)*gauss(y-lip_center,.007)*smooth(.020,.043,z)
    blush=.13*gauss(abs(x)-.043,.021)*gauss(y+.008,.019)*smooth(.03,.07,z)
    shadow=.22*gauss(abs(x)-.034,.021)*gauss(y-.023,.008)*smooth(.040,.063,z)
-   c=[mix(mix(mix(base[k],rgb('c27b72')[k],blush),rgb('8b4647')[k],shadow),rgb('94263a')[k],lip) for k in range(3)]
+   c=[mix(mix(mix(base[k],rgb('c27b72')[k],blush),rgb('8b4647')[k],shadow),rgb('8d2033')[k],min(1,lip*1.35)) for k in range(3)]
   a.data[i].color=(*c,1)
  n=ob.data.materials[0].node_tree.nodes;l=ob.data.materials[0].node_tree.links;node=n.new('ShaderNodeVertexColor');node.layer_name='Complexion';l.new(node.outputs['Color'],n.get('Principled BSDF').inputs['Base Color'])
 def set_hair_grain(ob, tones):
@@ -62,12 +67,15 @@ def hair_surface(head, material, quality):
  def hairline(v):
   x,y,z=v
   angle=abs(math.atan2(x,z+.020))
-  sweep=.035*gauss(x+.044,.040)*smooth(.012,.060,z) + .017*gauss(x-.060,.019)*smooth(.008,.034,z)
-  part=.009*gauss(x-.024,.010)*smooth(.023,.052,z)
-  return y-(.077-.046*smooth(.45,1.67,angle)-.075*smooth(1.58,3.14,angle)-sweep+part)
+  sweep=.018*gauss(x+.045,.040)*smooth(.012,.060,z) + .013*gauss(x-.055,.025)*smooth(.008,.034,z)
+  part=.003*gauss(x-.018,.019)*smooth(.023,.052,z)
+  return y-(.080-.067*smooth(.40,1.62,angle)-.060*smooth(1.60,3.14,angle)-sweep+part)
  def comb(v):
   x,y,z=v
-  return 48*math.atan2(x+.025,z+.040)+178*y+3*math.sin(y*17)
+  # Angular coordinate of a continuous swept sheet, bending rearward as
+  # it descends from the off-centre part toward the temples and nape.
+  theta=math.atan2(x-.018,z+.035)
+  return theta + .24*math.sin(theta)*smooth(.11,-.05,y)
  vertices=[];faces=[]
  for f in head.data.polygons:
   poly=[(head.data.vertices[i].co.copy(),head.data.vertices[i].normal.copy()) for i in f.vertices]
@@ -81,20 +89,75 @@ def hair_surface(head, material, quality):
   if len(clipped)<3:continue
   faces.append(tuple(range(len(vertices),len(vertices)+len(clipped))))
   for v,n in clipped:
-   volume=.0033+.006*gauss(v.y-.077,.043)*gauss(v.x+.032,.081)
-   volume-=.0008*gauss(v.x-.024,.014)*smooth(.024,.055,v.z)
-   vertices.append(v+n*(volume+.00015*math.sin(comb(v))))
+   flow=comb(v)
+   # The shell is one continuous surface; broad, shallow grooves divide
+   # it into swept locks and fine ridges run along those same paths.
+   panel=.5+.5*math.cos(7*flow)
+   groove=(1-panel)**7
+   volume=.0044+.0045*gauss(v.y-.075,.050)*gauss(v.x+.025,.085)
+   volume+=.0012*panel-.0009*groove+.00012*math.cos(42*flow)
+   volume-=.0008*gauss(v.x-.018,.014)*smooth(.024,.055,v.z)
+   vertices.append(v+n*volume)
  scalp=mesh_object('gu_parted_scalp',vertices,faces,material)
  bm=bmesh.new();bm.from_mesh(scalp.data)
  bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=.000001)
  bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
  bm.to_mesh(scalp.data);bm.free();scalp.data.update()
- set_hair_grain(scalp,[1+.15*math.sin(comb(v.co))+.07*math.sin(comb(v.co)*.51) for v in scalp.data.vertices])
+ set_hair_grain(scalp,[.94+.10*(.5+.5*math.cos(7*comb(v.co)))+.035*math.cos(42*comb(v.co)) for v in scalp.data.vertices])
  parts=[scalp]
+ # Build overlapping, broad swept surfaces directly on the scalp guide.
+ # Every vertex is projected to the same guide; there are no free card tips.
+ guide=surface_bvh(scalp)
+ def sweep_panel(side,band):
+  steps=48 if quality=='high' else 24
+  across=12 if quality=='high' else 6
+  start=Vector((.018,.088+band*.006,.052-band*.004))
+  route=[start,Vector((side*.029,.083+band*.006,.048-band*.004)),
+   Vector((side*.058,.066+band*.006,.033-band*.003)),
+   Vector((side*.076,.040+band*.006,.009-band*.003)),
+   Vector((side*.078,.025+band*.006,-.020-band*.003)),
+   Vector((side*.066,.035+band*.006,-.052-band*.002)),
+   Vector((side*.040,.064+band*.004,-.083))]
+  def point(t):
+   u=t*(len(route)-1);i=min(int(u),len(route)-2);a=u-i
+   p0=route[max(0,i-1)];p1=route[i];p2=route[i+1];p3=route[min(len(route)-1,i+2)]
+   return .5*((2*p1)+(-p0+p2)*a+(2*p0-5*p1+4*p2-p3)*a*a+(-p0+3*p1-3*p2+p3)*a*a*a)
+  verts=[];faces=[];tones=[]
+  for j in range(steps+1):
+   t=j/steps; c=point(t); tangent=(point(min(1,t+.003))-point(max(0,t-.003))).normalized()
+   hit=guide.find_nearest(c); normal=hit[1] if hit[0] else Vector((0,0,1))
+   lateral=normal.cross(tangent).normalized()
+   width=.012*min(1,t*4)*min(1,(1-t)*8)
+   for k in range(across+1):
+    q=2*k/across-1
+    probe=c+lateral*(q*width); nearest=guide.find_nearest(probe)
+    pos,n=nearest[0],nearest[1]
+    if pos is None:pos,n=probe,normal
+    fade=min(1,t*4)*min(1,(1-t)*10)
+    bulge=fade*(.0003+.0015*(1-q*q))
+    verts.append(pos+n*bulge)
+    tones.append(.95+.10*(1-q*q)+.075*math.cos(q*math.pi*6))
+    if j and k:
+     a=(j-1)*(across+1)+k-1;b=j*(across+1)+k-1
+     faces.append((a,b,b+1,a+1))
+  # The two sides traverse in opposite directions; orient both outward so
+  # the runtime's front-face culling agrees with the Blender preview.
+  for face in faces:
+   a,b,c=(verts[face[i]] for i in range(3));cross=(b-a).cross(c-a)
+   if cross.length>1e-10:
+    near=guide.find_nearest((a+b+c)/3)
+    if near[1] and cross.dot(near[1])<0:faces=[tuple(reversed(f)) for f in faces]
+    break
+  ob=mesh_object('gu_swept_panel',verts,faces,material)
+  set_hair_grain(ob,tones);parts.append(ob)
+ for side in (-1,1):
+  for band in (-1,0,1):sweep_panel(side,band)
  # Groomed ribbon lofts have a continuous oval section, lengthwise ridges,
  # and width controls at the same knots that define their silhouette.
  def lock(name,knots,normal):
   points=[Vector(k[:3]) for k in knots]
+  if name.startswith('fringe_'):
+   for p in points: p.z-=.008
   if name.endswith('fold'):
    for p in points:
     above=max(0,p.y-.096)
@@ -130,17 +193,17 @@ def hair_surface(head, material, quality):
   set_hair_grain(ob,[1+.16*math.sin(math.tau*(i%sides)*7/sides+(i//sides)*.025)
                           +.09*math.sin(math.tau*(i%sides)*3/sides) for i in range(len(vertices))])
   parts.append(ob)
- lock('near_temple_lock',[(-.050,.067,.042,.002,.002),(-.063,.038,.045,.008,.003),(-.073,.005,.038,.007,.003),(-.073,-.028,.037,.005,.002),(-.066,-.057,.042,.003,.002),(-.061,-.085,.038,.00035,.00035)],(0,0,1))
- lock('near_free_wisp',[(-.066,.030,.041,.002,.001),(-.078,-.012,.036,.002,.001),(-.075,-.047,.039,.0016,.001),(-.064,-.069,.048,.00025,.00025)],(0,0,1))
- lock('far_temple_lock',[(.059,.063,.027,.002,.001),(.067,.041,.036,.005,.003),(.072,.012,.037,.006,.003),(.076,-.021,.028,.006,.002),(.074,-.045,.032,.003,.002),(.066,-.072,.043,.00035,.00035)],(0,0,1))
- lock('far_free_wisp',[(.070,.036,.031,.001,.001),(.075,.012,.030,.002,.001),(.080,-.015,.026,.003,.0015),(.078,-.040,.031,.0013,.001),(.072,-.058,.034,.00025,.00025)],(0,0,1))
- lock('raised_fold',[(-.028,.084,-.063,.017,.012),(-.023,.117,-.065,.023,.014),(-.002,.150,-.061,.023,.015),(.018,.155,-.068,.021,.014),(.031,.144,-.077,.019,.013),(.026,.122,-.087,.020,.014),(.003,.092,-.092,.014,.010)],(0,0,1))
- lock('crossed_fold',[(.049,.096,-.049,.009,.009),(.046,.117,-.070,.016,.010),(.024,.132,-.082,.019,.014),(-.009,.133,-.092,.019,.014),(-.037,.120,-.103,.016,.013),(-.039,.098,-.109,.013,.011),(-.008,.081,-.105,.014,.011)],(0,0,1))
- lock('binding_fold',[(.050,.097,-.059,.008,.006),(.041,.113,-.071,.013,.009),(.020,.124,-.077,.015,.011),(-.008,.114,-.086,.014,.009),(-.026,.092,-.099,.008,.007)],(0,0,1))
- lock('back_curtain',[(.004,.099,-.079,.024,.008),(.005,.049,-.098,.058,.011),(.001,-.021,-.088,.067,.013),(.003,-.083,-.092,.062,.011),(.014,-.139,-.099,.048,.010),(.004,-.189,-.106,.026,.008),(.001,-.216,-.103,.003,.002)],(0,0,1))
- lock('back_fall_left',[(-.024,.100,-.083,.012,.007),(-.035,.049,-.092,.025,.012),(-.043,-.025,-.080,.030,.014),(-.045,-.097,-.081,.028,.014),(-.032,-.163,-.091,.022,.010),(-.028,-.210,-.102,.014,.006),(-.044,-.225,-.109,.005,.002),(-.046,-.229,-.111,.001,.001)],(0,0,1))
- lock('back_fall_center',[(.012,.111,-.085,.011,.006),(.010,.051,-.104,.028,.012),(.004,-.030,-.097,.032,.016),(.011,-.110,-.102,.033,.016),(-.006,-.177,-.106,.022,.011),(.014,-.223,-.103,.013,.007),(.027,-.237,-.107,.006,.002),(.033,-.241,-.109,.001,.001)],(0,0,1))
- lock('back_fall_right',[(.037,.097,-.079,.012,.007),(.040,.036,-.092,.023,.012),(.043,-.038,-.087,.025,.014),(.054,-.103,-.084,.022,.012),(.055,-.153,-.092,.022,.010),(.045,-.197,-.098,.014,.006),(.056,-.214,-.104,.005,.002),(.060,-.219,-.106,.001,.001)],(0,0,1))
+ # Layered, tapering locks sweep away from the part and follow the cheeks.
+ lock('near_temple_lock',[(-.035,.074,.046,.001,.001),(-.055,.057,.046,.004,.0015),(-.067,.030,.042,.004,.0015),(-.071,.004,.040,.003,.001),(-.070,-.029,.041,.002,.001),(-.061,-.064,.045,.0002,.0002)],(0,0,1))
+ lock('near_free_wisp',[(-.057,.052,.046,.001,.0005),(-.069,.023,.043,.0015,.0007),(-.073,-.011,.043,.0012,.0007),(-.067,-.044,.046,.0008,.0005),(-.057,-.067,.049,.0001,.0001)],(0,0,1))
+ lock('far_temple_lock',[(.025,.078,.048,.001,.001),(.049,.064,.045,.004,.0015),(.065,.042,.039,.004,.0015),(.071,.014,.037,.003,.001),(.073,-.018,.038,.002,.001),(.067,-.052,.043,.0002,.0002)],(0,0,1))
+ lock('far_free_wisp',[(.054,.052,.043,.001,.0005),(.068,.025,.039,.0015,.0007),(.074,-.005,.039,.0012,.0007),(.071,-.036,.042,.0007,.0005),(.063,-.059,.046,.0001,.0001)],(0,0,1))
+ # Compact swept chignon, supported by a continuous back curtain.
+ lock('raised_fold',[(-.024,.091,-.073,.013,.008),(-.020,.110,-.076,.018,.009),(-.002,.119,-.080,.020,.010),(.021,.116,-.084,.018,.009),(.031,.099,-.090,.013,.008),(.011,.087,-.094,.010,.006)],(0,0,1))
+ lock('crossed_fold',[(.042,.091,-.066,.008,.006),(.030,.104,-.079,.012,.007),(.005,.108,-.091,.014,.008),(-.023,.100,-.099,.012,.007),(-.032,.087,-.101,.008,.006)],(0,0,1))
+ lock('back_curtain',[(.004,.095,-.082,.023,.007),(.005,.049,-.098,.055,.009),(.001,-.021,-.090,.062,.010),(.003,-.083,-.094,.060,.009),(.014,-.139,-.100,.048,.008),(.004,-.189,-.106,.025,.006),(.001,-.216,-.103,.002,.001)],(0,0,1))
+ for idx,(x,shift) in enumerate([(-.041,-.012),(-.025,.005),(-.008,-.004),(.010,.009),(.028,-.006),(.044,.012)]):
+  lock('fall_%d'%idx,[(x*.5,.077,-.091,.007,.003),(x,.030,-.099,.012,.004),(x+shift*.4,-.040,-.096,.013,.005),(x+shift,-.115,-.101,.012,.004),(x+shift*.4,-.180,-.106,.009,.003),(x+shift,-.225,-.110,.001,.001)],(0,0,1))
  return join_parts(parts,'gu_'+quality+'_hair')
 def hair_ornament(quality):
  # A cast leaf cluster pins the fold, with carved red inlay and fine drops.
@@ -184,22 +247,22 @@ for quality,level in [('high',1),('low',0)]:
  for v in head.data.vertices:
   for e in eyes:
    c=Vector(e['center']);d=v.co-c;w=gauss(d.x,.022)*gauss(d.y,.017)*smooth(.025,.050,v.co.z)
-   v.co.x+=d.x*.22*w
-   v.co.y+=d.x*(1 if c.x>0 else -1)*.09*w
-   v.co.y+=d.y*.10*w
+   v.co.x+=d.x*.19*w
+   v.co.y+=d.x*(1 if c.x>0 else -1)*.13*w
+   v.co.y+=d.y*.025*w
  for v in head.data.vertices:
   for e in eyes:
    c=Vector(e['center']);d=v.co-c
    # Set a calm almond upper lid over the iris while keeping the aperture open.
-   v.co.y-=.0011*gauss(d.x,.014)*gauss(d.y-.006,.0045)*smooth(.045,.060,v.co.z)
+   v.co.y-=.0015*gauss(d.x,.014)*gauss(d.y-.006,.0045)*smooth(.045,.060,v.co.z)
  head.data.update();pigment(head);bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.76),quality);pigment(hair,True)
  groom=GroomMesh()
  for side in [-1,1]:
-  for k in range(30 if quality=='high' else 16):
-   t=k/(29 if quality=='high' else 15);x=side*(.013+.038*t);y=.032+.006*math.sin(math.pi*t)-.003*t
+  for k in range(42 if quality=='high' else 22):
+   t=k/(41 if quality=='high' else 21);x=side*(.013+.038*t);y=.030+.004*math.sin(math.pi*t)-.002*t
    pts=[Vector((x+side*j*.0015,y-j*.00035,sample(bvh,x+side*j*.0015,y-j*.00035)+.0005)) for j in range(3)]
-   groom.fibre(pts,.00045*(1-.5*t),.9)
+   groom.fibre(pts,.00058*(1-.5*t),.9)
  brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb(record['hair']),.7));pigment(brow,True)
  # Follow the actual upper globe/lid contact so eyeliner follows the face at each LOD.
  liner=GroomMesh()
@@ -224,7 +287,7 @@ for quality,level in [('high',1),('low',0)]:
     rim.append(Vector((x,y,sample(bvh,x,y)+.0006)))
    for i in range(2,len(rim)-1):
     u=i/(len(rim)-1)
-    radius=.00079*math.sin(math.pi*u)**.70
+    radius=.00102*math.sin(math.pi*u)**.70
     liner.fibre(rim[i-2:i+2],radius,.95,sides=5)
  eye_line=liner.object('gu_'+quality+'_upper_lashes',mat('gu_lashes',rgb('352026'),.68))
  pigment(eye_line,True)
@@ -232,6 +295,7 @@ for quality,level in [('high',1),('low',0)]:
  parts=dict(skin=head,hair=hair,brow=brow,ornament=hair_ornament(quality));record['lod'][quality]={k:export_mesh(o) for k,o in parts.items()}
  for o in parts.values():o.hide_set(True);o.hide_render=True
  if quality=='high':render_parts=list(parts.values())
+ else:low_parts=list(parts.values())
 # Append unique new pools and only Gu record; all existing packed records stay identical.
 p=ROOT/'src/js/koumon-head-assets.js';prefix,payload=p.read_text(encoding='utf-8').split('window.KM_HEAD_ASSETS=',1);existing=json.loads(payload.strip().rstrip(';'))
 for key in list(existing['indices']):
@@ -256,6 +320,14 @@ for o in render_parts:o.hide_render=False;o.hide_set(False)
 setup_render();bpy.context.scene.cycles.samples=20;bpy.context.scene.render.resolution_x=512;bpy.context.scene.render.resolution_y=640;bpy.context.scene.camera.data.ortho_scale=.465
 for name,pos in [('front',(0,0,.7)),('threequarter',(.4,.025,.55)),('side',(.7,0,.001)),('top',(.12,.6,.25))]:
  target_camera(pos,(0,-.039,-.007));bpy.context.scene.render.filepath=str(OUT/('gu-head-'+name+'.png'));bpy.ops.render.render(write_still=True)
+# Review the real low-LOD geometry in the same four camera views.
+for ob in render_parts:
+ if ob.name.startswith('gu_high_'):ob.hide_render=True;ob.hide_set(True)
+for ob in low_parts:ob.hide_render=False;ob.hide_set(False)
+for name,pos in [('front',(0,0,.7)),('threequarter',(.4,.025,.55)),('side',(.7,0,.001)),('top',(.12,.6,.25))]:
+ target_camera(pos,(0,-.039,-.007));bpy.context.scene.render.filepath=str(OUT/('gu-head-low-'+name+'.png'));bpy.ops.render.render(write_still=True)
+for ob in low_parts:ob.hide_render=True;ob.hide_set(True)
+for ob in render_parts:ob.hide_render=False;ob.hide_set(False)
 bpy.context.preferences.filepaths.save_version=0
 bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'source-assets/gu-head.blend'),compress=True)
 print('GU_HEAD',[(q,{k:(v['v'],v['t']) for k,v in d.items()}) for q,d in record['lod'].items()])
