@@ -11116,6 +11116,9 @@ window.KM_HAND_ASSETS={"source":"Blender Studio Human Base Meshes v1.2.0, CC0","
         '</div>' +
       '</div>';
     if (window.KoumonClassroom) el.panel.innerHTML = window.KoumonClassroom.homeHTML(meta, !!ST.is3D);
+    // 本文と表紙で同じパネルを使うため、本文用の高さとスクロールを解除する。
+    fixedPanel(false);
+    el.panel.scrollTop = 0;
     mode = 'title';
   }
 

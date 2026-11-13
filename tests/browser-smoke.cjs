@@ -50,6 +50,12 @@ async function until(p, fn, arg, guard = 60) {
 
 async function story(browser, name, viewport) {
   const { p, errors } = await open(browser, viewport, '2d');
+  const titleLayout = () => p.$eval('#km-panel', panel => {
+    const { top, bottom } = panel.getBoundingClientRect();
+    return { top, bottom, scrollTop: panel.scrollTop };
+  });
+  const initialTitle = await titleLayout();
+  assert.ok(initialTitle.top <= 1 && initialTitle.bottom >= viewport.height - 1, name + ': 表紙が画面全体に広がる');
   await p.click('[data-km="new"]');
   await until(p, () => window.Koumon._mode() === 'gen');
   assert.ok(await inView(p, '[data-km="gennext"]'), name + ': 原文の段の「次へ」が画面内にある');
@@ -68,6 +74,8 @@ async function story(browser, name, viewport) {
   await p.waitForFunction(() => window.Koumon._mode() === 'feedback');
   assert.ok(await inView(p, '[data-km="fbnext"]'), name + ': 解説の「次へ」が画面内にある');
   await p.click('[data-km="quit"]');
+  assert.deepEqual(await titleLayout(), initialTitle, name + ': 本文の窓から戻っても表紙が元の高さ・スクロール位置に戻る');
+  assert.ok(await p.isVisible('[data-km="continue"]'), name + ': 表紙に「続きから」が表示される');
   await p.click('[data-km="intro"]');
   assert.ok(await p.isVisible('.km-drama-card'), name + ': 導入の紙芝居');
   assert.ok(await inView(p, '[data-intro="cutnext"]'), name + ': 紙芝居の「次へ」が画面内にある');
