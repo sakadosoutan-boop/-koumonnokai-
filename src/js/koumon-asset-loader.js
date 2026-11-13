@@ -4,7 +4,7 @@
  * 配布用の一枚HTML（dist）ではデータを先に埋め込むので、loaded() がはじめから true になる。 */
 (function () {
   'use strict';
-  var FILES = ['src/js/koumon-head-assets.js?v=20261113a', 'src/js/koumon-hand-assets.js?v=20261026f'];
+  var FILES = ['src/js/koumon-head-assets.js?v=20261113b', 'src/js/koumon-hand-assets.js?v=20261026f'];
   var pending = null;
   function loaded() { return !!(window.KM_HEAD_ASSETS && window.KM_HAND_ASSETS); }
   function ready() {
