@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-beauty-v3';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-fringe-v5';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -69,7 +69,7 @@ def hair_surface(head, material, quality):
   angle=abs(math.atan2(x,z+.020))
   sweep=.018*gauss(x+.045,.040)*smooth(.012,.060,z) + .013*gauss(x-.055,.025)*smooth(.008,.034,z)
   part=.003*gauss(x-.018,.019)*smooth(.023,.052,z)
-  return y-(.080-.067*smooth(.40,1.62,angle)-.060*smooth(1.60,3.14,angle)-sweep+part)
+  return y-(.080-.067*smooth(.40,1.62,angle)-.060*smooth(1.60,3.14,angle)-sweep+part + .028*gauss(x-.008,.046)*smooth(.025,.055,z))
  def comb(v):
   x,y,z=v
   # Angular coordinate of a continuous swept sheet, bending rearward as
@@ -94,77 +94,98 @@ def hair_surface(head, material, quality):
    # it into swept locks and fine ridges run along those same paths.
    panel=.5+.5*math.cos(7*flow)
    groove=(1-panel)**7
-   volume=.0044+.0045*gauss(v.y-.075,.050)*gauss(v.x+.025,.085)
-   volume+=.0012*panel-.0009*groove+.00012*math.cos(42*flow)
+   volume=.0032+.0030*gauss(v.y-.075,.050)*gauss(v.x+.025,.085)
+   volume+=.0010*panel-.0007*groove+.00020*math.cos(35*flow)+.00012*math.cos(53*flow)
    volume-=.0008*gauss(v.x-.018,.014)*smooth(.024,.055,v.z)
+   # Keep the closure flush where the forehead locks meet it.
+   edge=smooth(0,.021,hairline(v))
+   front=smooth(.005,.039,v.z)
+   volume=mix(volume,.0012+(volume-.0012)*edge,front)
    vertices.append(v+n*volume)
  scalp=mesh_object('gu_parted_scalp',vertices,faces,material)
  bm=bmesh.new();bm.from_mesh(scalp.data)
  bmesh.ops.remove_doubles(bm,verts=list(bm.verts),dist=.000001)
  bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
  bm.to_mesh(scalp.data);bm.free();scalp.data.update()
- set_hair_grain(scalp,[.94+.10*(.5+.5*math.cos(7*comb(v.co)))+.035*math.cos(42*comb(v.co)) for v in scalp.data.vertices])
+ set_hair_grain(scalp,[.93+.15*(.5+.5*math.cos(7*comb(v.co)))+.063*math.cos(35*comb(v.co))+.03*math.cos(53*comb(v.co)) for v in scalp.data.vertices])
  parts=[scalp]
- # Build overlapping, broad swept surfaces directly on the scalp guide.
- # Every vertex is projected to the same guide; there are no free card tips.
- guide=surface_bvh(scalp)
- def sweep_panel(side,band):
-  steps=48 if quality=='high' else 24
-  across=12 if quality=='high' else 6
-  start=Vector((.018,.088+band*.006,.052-band*.004))
-  route=[start,Vector((side*.029,.083+band*.006,.048-band*.004)),
-   Vector((side*.058,.066+band*.006,.033-band*.003)),
-   Vector((side*.076,.040+band*.006,.009-band*.003)),
-   Vector((side*.078,.025+band*.006,-.020-band*.003)),
-   Vector((side*.066,.035+band*.006,-.052-band*.002)),
-   Vector((side*.040,.064+band*.004,-.083))]
-  def point(t):
-   u=t*(len(route)-1);i=min(int(u),len(route)-2);a=u-i
-   p0=route[max(0,i-1)];p1=route[i];p2=route[i+1];p3=route[min(len(route)-1,i+2)]
-   return .5*((2*p1)+(-p0+p2)*a+(2*p0-5*p1+4*p2-p3)*a*a+(-p0+3*p1-3*p2+p3)*a*a*a)
-  verts=[];faces=[];tones=[]
-  for j in range(steps+1):
-   t=j/steps; c=point(t); tangent=(point(min(1,t+.003))-point(max(0,t-.003))).normalized()
-   hit=guide.find_nearest(c); normal=hit[1] if hit[0] else Vector((0,0,1))
-   lateral=normal.cross(tangent).normalized()
-   width=.012*min(1,t*4)*min(1,(1-t)*8)
-   for k in range(across+1):
-    q=2*k/across-1
-    probe=c+lateral*(q*width); nearest=guide.find_nearest(probe)
-    pos,n=nearest[0],nearest[1]
-    if pos is None:pos,n=probe,normal
-    fade=min(1,t*4)*min(1,(1-t)*10)
-    bulge=fade*(.0003+.0015*(1-q*q))
-    verts.append(pos+n*bulge)
-    tones.append(.95+.10*(1-q*q)+.075*math.cos(q*math.pi*6))
+ # The fringe's curves are drawn in the front plane, then fitted to the
+ # forehead. Its edges feather into the side hair and follow the skull in depth.
+ head_guide=surface_bvh(head)
+ def catmull(a,b,c,d,t):
+  return .5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t*t+(-a+3*b-3*c+d)*t*t*t)
+ def sample_route(route,t):
+  u=t*(len(route)-1)
+  i=min(int(u),len(route)-2)
+  return catmull(route[max(0,i-1)],route[i],route[i+1],route[min(len(route)-1,i+2)],u-i)
+ def forehead_depth(x,y):
+  hit=head_guide.ray_cast(Vector((x,y,.25)),Vector((0,0,-1)),.5)[0]
+  return hit.z if hit else None
+ def fitted_fringe(name,knots,shade,detail=False):
+  # Knot order is x, y, half width, lift at the centre of the lock.
+  route=[Vector(k) for k in knots]
+  rows=(len(route)-1)*(6 if quality=='high' else 4)
+  columns=(16 if quality=='high' else 10) if not detail else 4
+  verts=[];tones=[];faces=[]
+  for j in range(rows+1):
+   t=j/rows
+   x,y,width,lift=sample_route(route,t)
+   before=sample_route(route,max(0,t-.002))
+   after=sample_route(route,min(1,t+.002))
+   tangent=Vector((after[0]-before[0],after[1]-before[1])).normalized()
+   cross=Vector((-tangent.y,tangent.x))
+   for k in range(columns+1):
+    v=k/columns
+    q=2*v-1
+    px,py=Vector((x,y))+cross*(q*max(.00007,width))
+    depth=forehead_depth(px,py)
+    if depth is None:
+     # Clamp occasional samples near the silhouette onto the visible scalp.
+     for shift in (.0005,.0015,.003,.004,.006):
+      px-=math.copysign(shift,px)
+      depth=forehead_depth(px,py)
+      if depth is not None:break
+    if depth is None:
+     px,py=x,y
+     depth=forehead_depth(x,y)
+    if depth is None:
+     raise ValueError(f'{name} root outside forehead at {x:.4f}, {y:.4f}')
+    dome=math.sqrt(max(0,1-q*q))
+    fiber=math.sin(math.tau*(v*4+.13*t+.065*math.sin(5*t)))
+    base=.0011 if not detail else .0015
+    verts.append((px,py,depth+base+lift*dome+.00012*fiber*dome))
+    tones.append(shade+.095*dome+.075*fiber+.054*math.sin(math.tau*(v*7-.06*t)))
     if j and k:
-     a=(j-1)*(across+1)+k-1;b=j*(across+1)+k-1
+     a=(j-1)*(columns+1)+k-1
+     b=j*(columns+1)+k-1
      faces.append((a,b,b+1,a+1))
-  # The two sides traverse in opposite directions; orient both outward so
-  # the runtime's front-face culling agrees with the Blender preview.
-  for face in faces:
-   a,b,c=(verts[face[i]] for i in range(3));cross=(b-a).cross(c-a)
-   if cross.length>1e-10:
-    near=guide.find_nearest((a+b+c)/3)
-    if near[1] and cross.dot(near[1])<0:faces=[tuple(reversed(f)) for f in faces]
-    break
-  ob=mesh_object('gu_swept_panel',verts,faces,material)
+  # Projected faces all look toward the front. Select winding explicitly.
+  a,b,c=(Vector(verts[i]) for i in faces[len(faces)//2][:3])
+  if (b-a).cross(c-a).z<0:faces=[tuple(reversed(face)) for face in faces]
+  ob=mesh_object(name,verts,faces,material)
   set_hair_grain(ob,tones);parts.append(ob)
- for side in (-1,1):
-  for band in (-1,0,1):sweep_panel(side,band)
+ # Larger lock drops across the outer brow; shorter opposing lock opens the part.
+ fitted_fringe('gu_fringe_sweep',[(.024,.101,.0012,.0013),(.008,.087,.007,.0030),
+  (-.016,.071,.016,.0050),(-.035,.050,.016,.0055),(-.052,.030,.011,.0040),
+  (-.058,.017,.0048,.0027),(-.060,.010,.0002,.0007)],1.0)
+ fitted_fringe('gu_fringe_crown',[(.024,.103,.0003,.002),(.003,.097,.007,.0038),
+  (-.022,.089,.012,.0058),(-.046,.075,.014,.0053),(-.061,.055,.009,.004),
+  (-.061,.041,.0035,.002),(-.061,.034,.0002,.0010)],.91)
+ fitted_fringe('gu_fringe_return',[(.025,.104,.0011,.0015),(.038,.087,.008,.0048),
+  (.046,.068,.010,.0050),(.054,.047,.009,.0046),(.057,.035,.005,.0037),
+  (.059,.026,.0022,.0026),(.060,.019,.0002,.0010)],.94)
+ fitted_fringe('gu_fringe_inner_tip',[(.012,.084,.0003,.0030),(-.003,.072,.003,.0048),
+  (-.023,.057,.0045,.0052),(-.039,.040,.0040,.0048),(-.051,.023,.0025,.0036),
+  (-.056,.010,.0012,.0024),(-.059,.002,.0001,.0014)],1.06,True)
  # Groomed ribbon lofts have a continuous oval section, lengthwise ridges,
  # and width controls at the same knots that define their silhouette.
  def lock(name,knots,normal):
   points=[Vector(k[:3]) for k in knots]
-  if name.startswith('fringe_'):
-   for p in points: p.z-=.008
   if name.endswith('fold'):
    for p in points:
     above=max(0,p.y-.096)
     p.y-=above*.27
     p.z-=above*.17
-  def catmull(a,b,c,d,t):
-   return .5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t*t+(-a+3*b-3*c+d)*t*t*t)
   def interpolate(values,i,t):
    return catmull(values[max(i-1,0)],values[i],values[i+1],values[min(i+2,len(values)-1)],t)
   radii=[Vector(k[3:]) for k in knots]
@@ -182,7 +203,8 @@ def hair_surface(head, material, quality):
    for k in range(sides):
     a=math.tau*k/sides
     ripple=1+.028*math.cos(a*(9 if quality=='high' else 5)+u*.75)
-    vertices.append(center+(width_axis*(max(w,.0002)*math.cos(a))+depth_axis*(max(d,.0002)*math.sin(a)))*ripple)
+    pos=center+(width_axis*(max(w,.0002)*math.cos(a))+depth_axis*(max(d,.0002)*math.sin(a)))*ripple
+    vertices.append(pos)
     if j:
      start=(j-1)*sides;next_k=(k+1)%sides
      faces.append((start+k,start+sides+k,start+sides+next_k,start+next_k))
