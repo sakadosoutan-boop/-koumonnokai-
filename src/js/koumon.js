@@ -427,6 +427,9 @@
         '</div>' +
       '</div>';
     if (window.KoumonClassroom) el.panel.innerHTML = window.KoumonClassroom.homeHTML(meta, !!ST.is3D);
+    // 本文と表紙で同じパネルを使うため、本文用の高さとスクロールを解除する。
+    fixedPanel(false);
+    el.panel.scrollTop = 0;
     mode = 'title';
   }
 
