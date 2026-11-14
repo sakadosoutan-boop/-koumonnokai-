@@ -93,3 +93,10 @@
 - [Julia Dumaの女性向けゲーム用結髪の作例](https://xyzduma.artstation.com/projects/5vLGJE)を正面・斜め・横から比較し、前髪から耳上を経て後ろへ流れる房の重なりと、頬沿いの髪の太さの差を参考にした。
 - [AirshipのMetaHuman制作事例](https://www.goairship.uk/case-studies/metahumans)を参考に、精細・軽量で側髪の輪郭と密度の差を抑えた。作例のメッシュ、テクスチャ、画像は観察のみ。
 - [横顔の変更前後](assets/gu-sidehair/profile-comparison.jpg)と[斜めの確認画像](assets/gu-sidehair/three-quarter.jpg)はゲーム用メッシュをBlenderで描画したもの。スマホ幅390×844の人物ギャラリーでも軽量版の全身・横顔を確認した。拡大時は束の先にやや葉状の形が残る。
+
+
+## 分け目・襟足・顔立ちの調整（2026-11-14）
+
+- 前髪の起点を額寄りへ下げ、頭頂の房をそこへつなげた。襟足の生え際を下げ、耳の後ろから背へ流れる房と、長さが異なる後ろ髪を造形した。頬と顎の面、口角、淡い紅、上瞼と虹彩を調整して表情を柔らかくした。
+- 高・低画質を正面、左右の横顔、斜め、背面、後ろ斜め、上方から確認。スマホ幅390×844の人物ギャラリーでも軽量版を確認した。残る表現上の特徴は、拡大すると房がまとまった面として読めること。
+- [正面の描画](assets/gu-hair-face/front.jpg)・[後ろ斜めの変更前後](assets/gu-hair-face/rear-comparison.jpg)。いずれも衣装込みのゲーム用メッシュをBlenderで描画した。
