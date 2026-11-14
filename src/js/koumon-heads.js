@@ -154,14 +154,14 @@
   }
   function makeEyes(asset, params, quality) {
     var group = new T.Group(); group.name = 'anatomical-eyes'; group.userData.part = 'eyes';
-    var white = new T.MeshStandardMaterial({color: new T.Color(asset.gender === 'female' ? 0xc7b7aa : 0xc3b7a6).convertSRGBToLinear(),roughness: .25,metalness: 0});
+    var white = new T.MeshStandardMaterial({color: new T.Color(asset.gender === 'female' ? 0xcfbfb1 : 0xc3b7a6).convertSRGBToLinear(),roughness: .25,metalness: 0});
     var iris = new T.MeshStandardMaterial({map: irisTexture(params.doublePupil),roughness: .19,metalness: 0});
     asset.anchors.eyes.forEach(function (e) {
       var eg = new T.Group(); eg.position.fromArray(e.center); eg.rotation.set(params.gazePitch || 0,params.gazeYaw || 0,0);
       if(e.scale)eg.scale.fromArray(e.scale);
       var globe = new T.Mesh(new T.SphereGeometry(e.radius,quality === 'low' ? 24 : 40,quality === 'low' ? 16 : 24),white);
       globe.userData.part = 'eyes'; eg.add(globe);
-      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (asset.gender === 'female' ? .49 : .48),quality),iris); im.userData.part = 'eyes'; eg.add(im);
+      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (asset.gender === 'female' ? .52 : .48),quality),iris); im.userData.part = 'eyes'; eg.add(im);
       if(asset.gender === 'female') {
         var glint=new T.Mesh(new T.SphereGeometry(.00048,8,6),new T.MeshBasicMaterial({color:0xe7e2d7}));
         glint.position.set(-.0022,.0028,Math.sqrt(e.radius*e.radius-.0022*.0022-.0028*.0028)+.00022);
