@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-hair-face-nov14';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-portrait-nov15';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -27,16 +27,20 @@ def female_canon(v):
  x*=1-.18*gauss(y+.058,.032)*smooth(-.120,-.067,y)
  x*=1-.15*smooth(-.082,-.168,y)
  y+=.009*gauss(y+.073,.025)*smooth(.015,.053,z)
- x*=1-.30*gauss(x,.019)*gauss(y+.010,.021)*smooth(.042,.071,z)
- z-=.0038*gauss(x,.014)*gauss(y+.013,.017)*smooth(.049,.073,z)
+ x*=1-.31*gauss(x,.019)*gauss(y+.010,.021)*smooth(.042,.071,z)
+ z-=.0049*gauss(x,.014)*gauss(y+.013,.017)*smooth(.049,.073,z)
  z-=.0035*gauss(x,.025)*gauss(y+.040,.016)*smooth(.040,.065,z)
- # Soften the transition under the mouth and fill the lower cheek plane.
- z+=.0018*gauss(abs(x)-.034,.015)*gauss(y+.052,.021)*smooth(.025,.055,z)
+ # Fill the buccal plane under the cheekbone, tapering into the mouth and jaw.
+ # Preserve the outer cheekbone and the orbital surface.
+ cheek=gauss(abs(x)-.047,.019)*gauss(y+.029,.023)
+ z+=.0060*cheek*smooth(.009,.060,z)
+ x+=math.copysign(.0020*cheek*smooth(.005,.039,z),x)
+ z+=.0019*gauss(abs(x)-.034,.017)*gauss(y+.051,.020)*smooth(.026,.051,z)
  z+=.0012*gauss(x,.020)*gauss(y+.060,.009)*smooth(.035,.060,z)
  # Lift the mouth corners and soften the cheek and chin transitions.
  y+=.0011*gauss(abs(x)-.016,.008)*gauss(y+.043,.007)*smooth(.030,.052,z)
- z+=.0012*gauss(abs(x)-.036,.016)*gauss(y+.034,.020)*smooth(.030,.055,z)
- z-=.0014*gauss(x,.018)*gauss(y+.069,.011)*smooth(.031,.055,z)
+ z-=.0020*gauss(x,.018)*gauss(y+.069,.011)*smooth(.031,.055,z)
+ y+=.0014*gauss(x,.020)*gauss(y+.075,.010)*smooth(.027,.052,z)
  return Vector((x,y,z))
 eyes=[]
 for name in names[1:]:
@@ -57,9 +61,9 @@ def pigment(ob,hair=False):
   else:
    lip_center=-.043+.0015*gauss(abs(x)-.006,.003)+.0010*gauss(abs(x)-.016,.008)
    lip=gauss(x,.019)*gauss(y-lip_center,.007)*smooth(.020,.043,z)
-   blush=.19*gauss(abs(x)-.043,.021)*gauss(y+.008,.019)*smooth(.03,.07,z)
+   blush=.23*gauss(abs(x)-.043,.021)*gauss(y+.010,.022)*smooth(.029,.066,z)
    shadow=.22*gauss(abs(x)-.034,.021)*gauss(y-.023,.008)*smooth(.040,.063,z)
-   c=[mix(mix(mix(base[k],rgb('c27b72')[k],blush),rgb('8b4647')[k],shadow),rgb('aa5961')[k],min(1,lip*1.13)) for k in range(3)]
+   c=[mix(mix(mix(base[k],rgb('cf827d')[k],blush),rgb('8b4647')[k],shadow),rgb('ad4d58')[k],min(1,lip*1.10)) for k in range(3)]
   a.data[i].color=(*c,1)
  n=ob.data.materials[0].node_tree.nodes;l=ob.data.materials[0].node_tree.links;node=n.new('ShaderNodeVertexColor');node.layer_name='Complexion';l.new(node.outputs['Color'],n.get('Principled BSDF').inputs['Base Color'])
 def set_hair_grain(ob, tones):
@@ -74,7 +78,9 @@ def hair_surface(head, material, quality):
   sweep=.018*gauss(x+.045,.040)*smooth(.012,.060,z) + .013*gauss(x-.055,.025)*smooth(.008,.034,z)
   part=.003*gauss(x-.018,.019)*smooth(.023,.052,z)
   # Lower the frontal part and carry the rear hairline down behind the ear.
-  nape=.036*smooth(-.015,-.069,z)
+  nape=.041*smooth(-.013,-.054,z)
+  # Draw the underlayer closer to the back of the ear before it meets the fall.
+  nape+=.012*gauss(z+.043,.018)*smooth(.040,.064,abs(x))
   ear=.014*gauss(z+.008,.012)*smooth(.057,.077,abs(x))
   bridge=.008*gauss(x+.055,.018)*smooth(.026,.056,z)
   return y-(.080-.067*smooth(.40,1.62,angle)-.060*smooth(1.60,3.14,angle)-sweep+part
@@ -344,19 +350,19 @@ def hair_surface(head, material, quality):
  lock('crossed_fold',[(.042,.091,-.066,.008,.006),(.030,.104,-.079,.012,.007),(.005,.108,-.091,.014,.008),(-.023,.100,-.099,.012,.007),(-.032,.087,-.101,.008,.006)],(0,0,1))
  # The nape locks form the same hairstyle when viewed from behind the ear.
  # They join the long fall at varied lengths so the hem has no straight edge.
- lock('back_underlayer',[(.003,.095,-.080,.021,.008),(.002,.050,-.093,.050,.011),
-  (.000,-.020,-.090,.060,.011),(.003,-.078,-.097,.057,.010),
+ lock('back_underlayer',[(.003,.095,-.080,.021,.008),(.002,.050,-.091,.050,.013),
+  (.000,-.020,-.082,.060,.016),(.003,-.078,-.089,.057,.014),
   (.011,-.132,-.108,.047,.009),(.001,-.174,-.115,.025,.006),
   (-.010,-.201,-.117,.001,.001)],(0,0,1),.89)
  for side in (-1,1):
   stagger=.009 if side<0 else 0
   lock('behind_ear',[(side*.039,.056,-.054,.010,.006),
-   (side*.050,.022,-.060,.016,.007),(side*.056,-.010,-.059,.015,.008),
-   (side*.056,-.040,-.070,.012,.008),(side*.048,-.076,-.092,.010,.006),
-   (side*.041,-.113,-.108,.006,.004),(side*.041,-.147+stagger,-.115,.0003,.0003)],(0,0,1),1.00)
+   (side*.054,.022,-.048,.015,.007),(side*.059,-.012,-.045,.015,.008),
+   (side*.056,-.043,-.051,.014,.009),(side*.051,-.078,-.068,.011,.008),
+   (side*.043,-.109,-.091,.006,.005),(side*.042,-.139+stagger,-.108,.0003,.0003)],(0,0,1),1.00)
   lock('nape_sweep',[(side*.041,.038,-.070,.010,.005),
-   (side*.044,.007,-.083,.017,.007),(side*.046,-.027,-.087,.016,.007),
-   (side*.040,-.071,-.101,.014,.006),(side*.039,-.107,-.116,.010,.005),
+   (side*.051,.007,-.066,.017,.008),(side*.050,-.028,-.062,.017,.009),
+   (side*.043,-.069,-.080,.015,.006),(side*.040,-.108,-.102,.010,.005),
    (side*.050,-.149,-.122,.005,.003),(side*.047,-.185-stagger,-.127,.0003,.0003)],(0,0,1),.97)
  for idx,(x,sway,end,shade) in enumerate([
   (-.043,-.009,-.178,1.03),(-.027,.006,-.211,.98),(-.010,-.004,-.239,1.06),
@@ -366,40 +372,73 @@ def hair_surface(head, material, quality):
    (x+sway,-.100,-.114,.011,.005),(x+sway*.6,end+.051,-.126,.007,.004),
    (x+sway,end,-.128,.0005,.0005)],(0,0,1),shade)
  return join_parts(parts,'gu_'+quality+'_hair')
-def hair_ornament(quality):
- # A cast leaf cluster pins the fold, with carved red inlay and fine drops.
- material=mat('gu_hairpin_gold',rgb('bf914b'),.38)
- material.node_tree.nodes.get('Principled BSDF').inputs['Metallic'].default_value=.48
- threads=GroomMesh()
+def hair_ornament(quality, head):
+ # A small plum blossom with jade center and paired, lobe-seated jade drops.
  detailed=quality=='high'
- def strand(points,radius):
-  threads.fibre([Vector(p) for p in points],radius,1,sides=6 if detailed else 5)
- strand([(.021,.107,-.086),(.043,.113,-.075),(.062,.118,-.058),(.077,.120,-.044)],.0021)
- motif=Vector((.070,.112,-.041))
- for x,y,z in [(.081,.130,-.047),(.090,.118,-.046),(.087,.104,-.041),(.078,.095,-.033),(.061,.121,-.043)]:
-  tip=Vector((x,y,z));mid=(tip+motif)*.5
-  offset=Vector((-(tip.y-motif.y),tip.x-motif.x,.0)).normalized()*.0038
-  for side in (-1,1):
-   strand([motif,mid+offset*side+Vector((0,0,.002)),tip],.00135)
-  if detailed:strand([motif,mid+Vector((0,0,.003)),tip],.00075)
- for start,end in [((.078,.103,-.035),(.082,.067,-.027)),((.086,.106,-.039),(.095,.080,-.036)),((.070,.100,-.036),(.073,.079,-.026))]:
-  a,b=Vector(start),Vector(end)
-  strand([a,a.lerp(b,.35),a.lerp(b,.70),b] if detailed else [a,a.lerp(b,.5),b],.00065)
-  strand([b+Vector((0,.002,0)),b-Vector((0,.002,0)),b-Vector((0,.007,0))],.0021)
- gold=threads.object('gu_botanical_hairpin',material)
- jewel=GroomMesh()
- jewel.fibre([motif+Vector((0,dy,.0035)) for dy in (.004,.001,-.002,-.005)],.0046,1,sides=10 if detailed else 7)
- gem=jewel.object('gu_hairpin_red_inlay',material)
- for ob,hex_color in ((gold,'cda35c'),(gem,'a03941')):
-  color=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT')
-  for vertex in color.data:vertex.color=(*rgb(hex_color),1)
- attr=material.node_tree.nodes.new('ShaderNodeVertexColor')
- attr.layer_name='Complexion'
- material.node_tree.links.new(attr.outputs['Color'],material.node_tree.nodes.get('Principled BSDF').inputs['Base Color'])
- ob=join_parts([gold,gem],'gu_'+quality+'_ornament')
- for v in ob.data.vertices:v.co.y-=.007
- ob.data.update()
- return ob
+ material=mat('gu_hairpin_gold',rgb('cda35c'),.38)
+ material.node_tree.nodes.get('Principled BSDF').inputs['Metallic'].default_value=.48
+ gold=GroomMesh();jade=GroomMesh()
+ sides=6 if detailed else 4
+ def line(mesh,points,radius):
+  mesh.fibre([Vector(p) for p in points],radius,1,sides=sides)
+ # The stem enters the coiffure; five rounded petals face the portrait camera.
+ center=Vector((.070,.105,-.039))
+ line(gold,[(.026,.100,-.083),(.044,.105,-.070),(.060,.106,-.050),center],.0018)
+ for i in range(5):
+  a=math.tau*i/5+math.pi/2
+  radial=Vector((math.cos(a),math.sin(a),0));cross=Vector((-math.sin(a),math.cos(a),0))
+  tip=center+radial*.012+Vector((0,0,.001))
+  left=center+radial*.007+cross*.0042+Vector((0,0,.002))
+  right=center+radial*.007-cross*.0042+Vector((0,0,.002))
+  line(gold,[center,left,tip,right,center],.00125)
+  if detailed:line(gold,[center,center+radial*.007+Vector((0,0,.002)),tip],.00055)
+ # Inset enamel petals give the flower a readable silhouette at phone scale.
+ petals=[];petal_faces=[]
+ for i in range(5):
+  angle=math.tau*i/5+math.pi/2
+  radial=Vector((math.cos(angle),math.sin(angle),0));cross=Vector((-math.sin(angle),math.cos(angle),0))
+  offset=len(petals);segments=14 if detailed else 8
+  mid=center+radial*.0068+Vector((0,0,.0022))
+  petals.append(mid+Vector((0,0,.0011)))
+  for j in range(segments):
+   a=math.tau*j/segments
+   petals.append(mid+radial*(.0047*math.cos(a))+cross*(.0032*math.sin(a)))
+  for j in range(segments):
+   petal_faces.append((offset,offset+1+j,offset+1+(j+1)%segments))
+  # A shallow back keeps the enamel readable as a solid petal from behind.
+  back=len(petals);petals.append(mid-Vector((0,0,.0010)))
+  for j in range(segments):
+   petal_faces.append((back,offset+1+(j+1)%segments,offset+1+j))
+ # Jade cabochon and two restrained pendant beads.
+ line(jade,[center+Vector((0,-.003,.004)),center+Vector((0,0,.004)),center+Vector((0,.003,.004))],.0035)
+ for dx,length in [(-.004,.015),(.005,.021)]:
+  start=center+Vector((dx,-.010,.001));end=start+Vector((.002,-length,0))
+  line(gold,[start,start.lerp(end,.5),end],.00065)
+  line(jade,[end+Vector((0,.001,0)),end+Vector((0,-.002,0)),end+Vector((0,-.005,0))],.0019)
+ # Place studs on the frontmost ear surface, then hang the drop below the lobe.
+ ear_bvh=surface_bvh(head)
+ for side in (-1,1):
+  hit=None
+  for x in (.071,.068,.074,.065):
+   for y in (-.028,-.024,-.032,-.020):
+    p=ear_bvh.ray_cast(Vector((side*x,y,.25)),Vector((0,0,-1)),.5)[0]
+    if p is not None:
+     hit=p;break
+   if hit is not None:break
+  if hit is None:continue
+  stud=hit+Vector((0,0,.0015));chain=stud+Vector((0,-.004,0));drop=chain+Vector((0,-.003,0))
+  line(gold,[stud+Vector((0,.001,.0003)),stud,chain],.00125)
+  line(jade,[chain,drop,drop+Vector((0,-.004,0))],.0023)
+ enamel=mesh_object('gu_plum_enamel',petals,petal_faces,material)
+ objects=[]
+ for ob,color in [(gold.object('gu_flower_gold',material),'d6ae69'),
+                  (jade.object('gu_jade_drops',material),'78b5a0'),(enamel,'bb445c')]:
+  attr=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT')
+  for v in attr.data:v.color=(*rgb(color),1)
+  objects.append(ob)
+ node=material.node_tree.nodes.new('ShaderNodeVertexColor');node.layer_name='Complexion'
+ material.node_tree.links.new(node.outputs['Color'],material.node_tree.nodes.get('Principled BSDF').inputs['Base Color'])
+ return join_parts(objects,'gu_'+quality+'_ornament')
 for quality,level in [('high',1),('low',0)]:
  female.modifiers[0].levels=level
  ev=female.evaluated_get(bpy.context.evaluated_depsgraph_get());me=ev.to_mesh()
@@ -421,9 +460,9 @@ for quality,level in [('high',1),('low',0)]:
  groom=GroomMesh()
  for side in [-1,1]:
   for k in range(42 if quality=='high' else 22):
-   t=k/(41 if quality=='high' else 21);x=side*(.013+.038*t);y=.030+.0047*math.sin(math.pi*t)-.0014*t
+   t=k/(41 if quality=='high' else 21);x=side*(.013+.038*t);y=.030+.0045*math.sin(math.pi*t)-.0013*t
    pts=[Vector((x+side*j*.0015,y-j*.00035,sample(bvh,x+side*j*.0015,y-j*.00035)+.0005)) for j in range(3)]
-   groom.fibre(pts,.00053*(1-.47*t),.9)
+   groom.fibre(pts,.00065*(1-.52*t),.9)
  brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb(record['hair']),.7));pigment(brow,True)
  # Follow the actual upper globe/lid contact so eyeliner follows the face at each LOD.
  liner=GroomMesh()
@@ -448,12 +487,12 @@ for quality,level in [('high',1),('low',0)]:
     rim.append(Vector((x,y,sample(bvh,x,y)+.0006)))
    for i in range(2,len(rim)-1):
     u=i/(len(rim)-1)
-    radius=.00102*math.sin(math.pi*u)**.70
+    radius=.00110*math.sin(math.pi*u)**.76
     liner.fibre(rim[i-2:i+2],radius,.95,sides=5)
  eye_line=liner.object('gu_'+quality+'_upper_lashes',mat('gu_lashes',rgb('352026'),.68))
  pigment(eye_line,True)
  brow=join_parts([brow,eye_line],'gu_'+quality+'_brow')
- parts=dict(skin=head,hair=hair,brow=brow,ornament=hair_ornament(quality));record['lod'][quality]={k:export_mesh(o) for k,o in parts.items()}
+ parts=dict(skin=head,hair=hair,brow=brow,ornament=hair_ornament(quality,head));record['lod'][quality]={k:export_mesh(o) for k,o in parts.items()}
  for o in parts.values():o.hide_set(True);o.hide_render=True
  if quality=='high':render_parts=list(parts.values())
  else:low_parts=list(parts.values())
