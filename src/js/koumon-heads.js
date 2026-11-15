@@ -127,8 +127,8 @@
       roughness: skin ? (asset.age > .5 ? .63 : .53) : kind === 'hair' ? (id === 'gu' ? .82 : .87) : .83,
       metalness: 0, bumpMap: detail(!skin), bumpScale: skin ? .00016 : kind === 'hair' ? .000075 : .000045});
   }
-  function irisTexture(doublePupil) {
-    var key = 'iris' + !!doublePupil; if (TEXTURES[key]) return TEXTURES[key];
+  function irisTexture(doublePupil, warm) {
+    var key = 'iris' + !!doublePupil + (warm ? '-warm' : ''); if (TEXTURES[key]) return TEXTURES[key];
     var tx = canvas(256, 256, function (c, w, h) {
       var im = c.createImageData(w, h), d = im.data;
       for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
@@ -137,7 +137,10 @@
         var edge = Math.max(0, Math.min(1, (1 - r) * 9));
         var pupil = doublePupil ? Math.min(Math.hypot(dx - .11, dy), Math.hypot(dx + .11, dy)) < .29 : r < .37;
         var i = (y * w + x) * 4;
-        d[i] = pupil ? 5 : (22 + 31 * strand) * edge; d[i + 1] = pupil ? 4 : (14 + 18 * strand) * edge; d[i + 2] = pupil ? 3 : (9 + 11 * strand) * edge; d[i + 3] = 255;
+        d[i] = pupil ? 5 : ((warm ? 37 : 22) + 31 * strand) * edge;
+        d[i + 1] = pupil ? 4 : ((warm ? 23 : 14) + 18 * strand) * edge;
+        d[i + 2] = pupil ? 3 : ((warm ? 15 : 9) + 11 * strand) * edge;
+        d[i + 3] = 255;
       }
       c.putImageData(im, 0, 0);
     });
@@ -155,13 +158,13 @@
   function makeEyes(asset, params, quality) {
     var group = new T.Group(); group.name = 'anatomical-eyes'; group.userData.part = 'eyes';
     var white = new T.MeshStandardMaterial({color: new T.Color(asset.gender === 'female' ? 0xcfbfb1 : 0xc3b7a6).convertSRGBToLinear(),roughness: .25,metalness: 0});
-    var iris = new T.MeshStandardMaterial({map: irisTexture(params.doublePupil),roughness: .19,metalness: 0});
+    var iris = new T.MeshStandardMaterial({map: irisTexture(params.doublePupil, asset.gender === 'female'),roughness: .19,metalness: 0});
     asset.anchors.eyes.forEach(function (e) {
       var eg = new T.Group(); eg.position.fromArray(e.center); eg.rotation.set(params.gazePitch || 0,params.gazeYaw || 0,0);
       if(e.scale)eg.scale.fromArray(e.scale);
       var globe = new T.Mesh(new T.SphereGeometry(e.radius,quality === 'low' ? 24 : 40,quality === 'low' ? 16 : 24),white);
       globe.userData.part = 'eyes'; eg.add(globe);
-      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (asset.gender === 'female' ? .52 : .48),quality),iris); im.userData.part = 'eyes'; eg.add(im);
+      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (asset.gender === 'female' ? .57 : .48),quality),iris); im.userData.part = 'eyes'; eg.add(im);
       if(asset.gender === 'female') {
         var glint=new T.Mesh(new T.SphereGeometry(.00048,8,6),new T.MeshBasicMaterial({color:0xe7e2d7}));
         glint.position.set(-.0022,.0028,Math.sqrt(e.radius*e.radius-.0022*.0022-.0028*.0028)+.00022);
