@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-foundation-nov16';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-soft-portrait-nov16';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -27,14 +27,25 @@ def female_canon(v):
  # Keep the proportional shortening gradual from orbit to upper neck.
  lower_face=smooth(.010,-.077,y)*smooth(-.163,-.092,y)
  y+=.006*lower_face
+ # Taper below the mouth only, then blend the adjustment out under the jaw.
+ jaw=smooth(-.042,-.065,y)*smooth(-.135,-.095,y)
+ x*=1-.045*jaw
+ chin=smooth(-.039,-.072,y)*smooth(-.114,-.086,y)
+ y+=.0025*chin
+ z-=.0014*gauss(x,.023)*gauss(y+.064,.017)*smooth(.020,.046,z)
  # Shape the neck below the jaw, where the skin meets the costume collar.
  x*=1-.12*smooth(-.085,-.161,y)
  # Keep nose and mouth refinements local to the central features.
  nose=gauss(y+.010,.021)*smooth(.042,.071,z)
- x*=1-.19*gauss(x,.018)*nose
+ x*=1-.22*gauss(x,.018)*nose
+ # Round the tip down into the alar wings so the front view shows less underside.
+ nose_tip=gauss(x,.012)*gauss(y+.015,.011)*smooth(.057,.075,z)
+ y-=.0030*nose_tip
+ z-=.0016*gauss(abs(x)-.012,.006)*gauss(y+.020,.010)*smooth(.044,.062,z)
  z-=.0038*gauss(x,.014)*gauss(y+.013,.017)*smooth(.049,.073,z)
- z-=.0017*gauss(x,.018)*gauss(y+.040,.012)*smooth(.042,.068,z)
- y+=.0008*gauss(abs(x)-.016,.008)*gauss(y+.043,.007)*smooth(.030,.052,z)
+ z-=.0022*gauss(x,.018)*gauss(y+.040,.012)*smooth(.042,.068,z)
+ z+=.0008*gauss(x,.011)*gauss(y+.045,.0045)*smooth(.037,.056,z)
+ y+=.0023*gauss(abs(x)-.015,.007)*gauss(y+.041,.008)*smooth(.030,.052,z)
  return Vector((x,y,z))
 eyes=[]
 for name in names[1:]:
@@ -43,9 +54,9 @@ for name in names[1:]:
 record=dict(skin='e5bda4',hair='21181e',age=.02,gender='female',sourceObject=names[0],anchors=dict(eyes=eyes,hat=dict(offset=[0,0,0],scale=[1,1,1]),crown=[0,.12,-.03],chin=[0,-.067,.04],neck=[0,-.205,-.02]),lod={})
 render_parts=[]
 low_parts=[]
-def pigment(ob,hair=False):
+def pigment(ob,hair=False,tint=None):
  for old in list(ob.data.color_attributes):ob.data.color_attributes.remove(old)
- a=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT');base=rgb(record['hair'] if hair else record['skin'])
+ a=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT');base=rgb(tint or record['hair' if hair else 'skin'])
  for i,v in enumerate(ob.data.vertices):
   x,y,z=v.co
   if hair:
@@ -54,10 +65,10 @@ def pigment(ob,hair=False):
    c=[value*(tone or 1) for value in base]
   else:
    lip_center=-.0375+.0015*gauss(abs(x)-.006,.003)+.0010*gauss(abs(x)-.016,.008)
-   lip=gauss(x,.019)*gauss(y-lip_center,.007)*smooth(.020,.043,z)
-   blush=.15*gauss(abs(x)-.043,.019)*gauss(y+.006,.019)*smooth(.029,.066,z)
-   shadow=.12*gauss(abs(x)-.034,.021)*gauss(y-.023,.009)*smooth(.040,.063,z)
-   c=[mix(mix(mix(base[k],rgb('cf827d')[k],blush),rgb('8b4647')[k],shadow),rgb('aa4654')[k],min(1,lip*1.19)) for k in range(3)]
+   lip=gauss(x,.017)*gauss(y-lip_center,.006)*smooth(.020,.043,z)
+   blush=.19*gauss(abs(x)-.041,.018)*gauss(y+.009,.018)*smooth(.029,.066,z)
+   shadow=.085*gauss(abs(x)-.034,.021)*gauss(y-.023,.009)*smooth(.040,.063,z)
+   c=[mix(mix(mix(base[k],rgb('cf827d')[k],blush),rgb('8b4647')[k],shadow),rgb('a74758')[k],min(1,lip*1.10)) for k in range(3)]
   a.data[i].color=(*c,1)
  n=ob.data.materials[0].node_tree.nodes;l=ob.data.materials[0].node_tree.links;node=n.new('ShaderNodeVertexColor');node.layer_name='Complexion';l.new(node.outputs['Color'],n.get('Principled BSDF').inputs['Base Color'])
 def set_hair_grain(ob, tones):
@@ -603,18 +614,19 @@ for quality,level in [('high',1),('low',0)]:
  for v in head.data.vertices:
   for e in eyes:
    c=Vector(e['center']);d=v.co-c
-   # Set a calm almond upper lid over the iris while keeping the aperture open.
-   v.co.y-=.0008*gauss(d.x,.014)*gauss(d.y-.006,.0045)*smooth(.045,.060,v.co.z)
+   # Lift the upper lid over the iris and keep the inner corner and lower rim seated.
+   lateral=d.x*(1 if c.x>0 else -1)
+   v.co.y+=.00075*gauss(lateral-.002,.010)*gauss(d.y-.006,.0045)*smooth(.045,.060,v.co.z)
    v.co.y+=.00075*gauss(d.x,.008)*gauss(d.y+.005,.0038)*smooth(.046,.063,v.co.z)
  head.data.update();pigment(head);bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
  groom=GroomMesh()
  for side in [-1,1]:
   for k in range(42 if quality=='high' else 22):
-   t=k/(41 if quality=='high' else 21);x=side*(.013+.038*t);y=.029+.0035*math.sin(math.pi*t)-.0011*t
+   t=k/(41 if quality=='high' else 21);x=side*(.014+.037*t);y=.029+.0042*math.sin(math.pi*t)-.0018*t
    pts=[Vector((x+side*j*.0015,y-j*.00035,sample(bvh,x+side*j*.0015,y-j*.00035)+.0005)) for j in range(3)]
-   groom.fibre(pts,.00082*(1-.52*t),.9)
- brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb(record['hair']),.7));pigment(brow,True)
+   groom.fibre(pts,.00073*(1-.58*t),.98+.25*gauss(t,.20))
+ brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('38292a'),.7));pigment(brow,True,'38292a')
  # Follow the actual upper globe/lid contact so eyeliner follows the face at each LOD.
  liner=GroomMesh()
  for e in eyes:
@@ -644,10 +656,10 @@ for quality,level in [('high',1),('low',0)]:
     rim.append(Vector((x,y,sample(bvh,x,y)+.0006)))
    for i in range(2,len(rim)-1):
     u=i/(len(rim)-1)
-    radius=.00110*math.sin(math.pi*u)**.76
+    radius=.00087*math.sin(math.pi*u)**.76
     liner.fibre(rim[i-2:i+2],radius,.95,sides=5)
  eye_line=liner.object('gu_'+quality+'_upper_lashes',mat('gu_lashes',rgb('352026'),.68))
- pigment(eye_line,True)
+ pigment(eye_line,True,'352026')
  brow=join_parts([brow,eye_line],'gu_'+quality+'_brow')
  parts=dict(skin=head,hair=hair,brow=brow,ornament=hair_ornament(quality,head,hair));record['lod'][quality]={k:export_mesh(o) for k,o in parts.items()}
  for o in parts.values():o.hide_set(True);o.hide_render=True
