@@ -137,9 +137,21 @@
         var edge = Math.max(0, Math.min(1, (1 - r) * 9));
         var pupil = doublePupil ? Math.min(Math.hypot(dx - .11, dy), Math.hypot(dx + .11, dy)) < .29 : r < .37;
         var i = (y * w + x) * 4;
-        d[i] = pupil ? 5 : ((warm ? 37 : 22) + 31 * strand) * edge;
-        d[i + 1] = pupil ? 4 : ((warm ? 23 : 14) + 18 * strand) * edge;
-        d[i + 2] = pupil ? 3 : ((warm ? 15 : 9) + 11 * strand) * edge;
+        if (warm) {
+          // Brown radial fibres under a soft, slightly off-axis catchlight.
+          var amber = Math.exp(-Math.pow((r - .60) / .22, 2)) * (.54 + .46 * strand);
+          var shine = .68 * Math.exp(-Math.pow((dx + .32) / .14, 2) - Math.pow((dy + .38) / .10, 2));
+          var ir = pupil ? 7 : 14 + edge * (28 + 45 * amber);
+          var ig = pupil ? 5 : 9 + edge * (16 + 26 * amber);
+          var ib = pupil ? 4 : 7 + edge * (10 + 15 * amber);
+          d[i] = ir + (246 - ir) * shine;
+          d[i + 1] = ig + (232 - ig) * shine;
+          d[i + 2] = ib + (211 - ib) * shine;
+        } else {
+          d[i] = pupil ? 5 : (22 + 31 * strand) * edge;
+          d[i + 1] = pupil ? 4 : (14 + 18 * strand) * edge;
+          d[i + 2] = pupil ? 3 : (9 + 11 * strand) * edge;
+        }
         d[i + 3] = 255;
       }
       c.putImageData(im, 0, 0);
@@ -165,11 +177,6 @@
       var globe = new T.Mesh(new T.SphereGeometry(e.radius,quality === 'low' ? 24 : 40,quality === 'low' ? 16 : 24),white);
       globe.userData.part = 'eyes'; eg.add(globe);
       var im = new T.Mesh(irisGeometry(e.radius,e.radius * (asset.gender === 'female' ? .57 : .48),quality),iris); im.userData.part = 'eyes'; eg.add(im);
-      if(asset.gender === 'female') {
-        var glint=new T.Mesh(new T.SphereGeometry(.00048,8,6),new T.MeshBasicMaterial({color:0xe7e2d7}));
-        glint.position.set(-.0022,.0028,Math.sqrt(e.radius*e.radius-.0022*.0022-.0028*.0028)+.00022);
-        glint.userData.part='eyes';eg.add(glint);
-      }
       group.add(eg);
     });
     return group;
