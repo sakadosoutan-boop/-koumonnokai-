@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-reference-nov15';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-anatomy-nov15';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -53,6 +53,12 @@ def female_canon(v):
  y+=.0011*gauss(abs(x)-.016,.008)*gauss(y+.043,.007)*smooth(.030,.052,z)
  z-=.0020*gauss(x,.018)*gauss(y+.069,.011)*smooth(.031,.055,z)
  y+=.0014*gauss(x,.020)*gauss(y+.075,.010)*smooth(.027,.052,z)
+ # Shorten the middle and lower face with one continuous deformation, carrying
+ # the mandible and neck together instead of building separate cheek bulges.
+ compression=smooth(.014,-.084,y)
+ y+=.0090*compression
+ # Gently round the mandibular angle while retaining the malar width and chin.
+ x*=1-.055*gauss(abs(x)-.047,.024)*gauss(y+.050,.030)*smooth(-.035,.030,z)
  return Vector((x,y,z))
 eyes=[]
 for name in names[1:]:
@@ -71,7 +77,7 @@ def pigment(ob,hair=False):
    tone=grain.data[i].value if grain else 0
    c=[value*(tone or 1) for value in base]
   else:
-   lip_center=-.043+.0015*gauss(abs(x)-.006,.003)+.0010*gauss(abs(x)-.016,.008)
+   lip_center=-.0375+.0015*gauss(abs(x)-.006,.003)+.0010*gauss(abs(x)-.016,.008)
    lip=gauss(x,.019)*gauss(y-lip_center,.007)*smooth(.020,.043,z)
    blush=.15*gauss(abs(x)-.043,.019)*gauss(y+.006,.019)*smooth(.029,.066,z)
    shadow=.12*gauss(abs(x)-.034,.021)*gauss(y-.023,.009)*smooth(.040,.063,z)
@@ -613,14 +619,17 @@ for quality,level in [('high',1),('low',0)]:
  for v in head.data.vertices:
   for e in eyes:
    c=Vector(e['center']);d=v.co-c;w=gauss(d.x,.022)*gauss(d.y,.017)*smooth(.025,.050,v.co.z)
-   v.co.x+=d.x*.19*w
+   v.co.x+=d.x*.28*w
    v.co.y+=d.x*(1 if c.x>0 else -1)*.13*w
-   v.co.y+=d.y*.025*w
+   # Move the orbital skin away from the fissure, upper lid more than
+   # lower. The underlying globe stays fixed and the corners remain tapered.
+   v.co.y+=d.y*(.19 if d.y>0 else .10)*w
  for v in head.data.vertices:
   for e in eyes:
    c=Vector(e['center']);d=v.co-c
    # Set a calm almond upper lid over the iris while keeping the aperture open.
-   v.co.y-=.0018*gauss(d.x,.014)*gauss(d.y-.006,.0045)*smooth(.045,.060,v.co.z)
+   v.co.y-=.0008*gauss(d.x,.014)*gauss(d.y-.006,.0045)*smooth(.045,.060,v.co.z)
+   v.co.y+=.00075*gauss(d.x,.008)*gauss(d.y+.005,.0038)*smooth(.046,.063,v.co.z)
  head.data.update();pigment(head);bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
  groom=GroomMesh()
@@ -647,6 +656,12 @@ for quality,level in [('high',1),('low',0)]:
    if upper:
     rim.append(Vector((x,upper+.00055,sample(bvh,x,upper+.00055)+.00065)))
   if len(rim)>5:
+   # Small lashes grow from the fitted lid rather than floating over the iris.
+   for fraction in ((.63,.71,.79,.87) if quality=='high' else (.69,.83)):
+    root=rim[round(fraction*(len(rim)-1))]
+    length=mix(.0014,.0028,fraction)
+    liner.fibre([root,root+Vector((side*length*.36,length*.32,.0007)),
+                 root+Vector((side*length*.75,length*.63,.0012))],.00031,.96,sides=5)
    end=rim[-1]
    for i in range(1,5):
     x=end.x+side*.0013*i;y=end.y+.0006*i+.00007*i*i
