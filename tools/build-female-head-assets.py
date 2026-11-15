@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-anatomy-nov15';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-foundation-nov16';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -23,42 +23,18 @@ bpy.context.view_layer.update()
 female=bpy.data.objects[names[0]]
 def female_canon(v):
  x,y,z=v.x*.90,(v.z-1.5144)*.90,-v.y*.90-.045
- # Refine the profile while retaining the source facial topology.
- x*=1-.18*gauss(y+.058,.032)*smooth(-.120,-.067,y)
- x*=1-.15*smooth(-.082,-.168,y)
- y+=.009*gauss(y+.073,.025)*smooth(.015,.053,z)
- x*=1-.31*gauss(x,.019)*gauss(y+.010,.021)*smooth(.042,.071,z)
- z-=.0049*gauss(x,.014)*gauss(y+.013,.017)*smooth(.049,.073,z)
- z-=.0035*gauss(x,.025)*gauss(y+.040,.016)*smooth(.040,.065,z)
- # Fill the buccal plane under the cheekbone, tapering into the mouth and jaw.
- # Preserve the outer cheekbone and the orbital surface.
- cheek=gauss(abs(x)-.047,.019)*gauss(y+.029,.023)
- z+=.0039*cheek*smooth(.009,.060,z)
- x+=math.copysign(.0013*cheek*smooth(.005,.039,z),x)
- z+=.0019*gauss(abs(x)-.034,.017)*gauss(y+.051,.020)*smooth(.026,.051,z)
- z+=.0012*gauss(x,.020)*gauss(y+.060,.009)*smooth(.035,.060,z)
- # High lateral malar plane flows from lower orbit toward the ear. A broad,
- # shallow rise preserves the soft cheek below instead of carving a hollow.
- malar=gauss(abs(x)-.047,.018)*gauss(y-.002,.018)*smooth(.008,.047,z)
- z+=.0043*malar
- x+=math.copysign(.0021*malar,x)
- # Shape an oval lower face, leaving the narrow rounded chin pad intact.
- x*=1-.102*gauss(abs(x)-.045,.020)*gauss(y+.058,.020)*smooth(.005,.038,z)
- # Integrate alar wings and the nose tip with a gentle continuous transition.
- z+=.0008*gauss(abs(x)-.011,.007)*gauss(y+.023,.010)*smooth(.040,.065,z)
- z-=.0015*gauss(x,.008)*gauss(y+.019,.007)*smooth(.055,.075,z)
- # Lower vermilion and philtrum have subtle volume, without a painted smile.
- z+=.0018*gauss(x,.014)*gauss(y+.048,.0045)*smooth(.033,.053,z)
- # Lift the mouth corners and soften the cheek and chin transitions.
- y+=.0011*gauss(abs(x)-.016,.008)*gauss(y+.043,.007)*smooth(.030,.052,z)
- z-=.0020*gauss(x,.018)*gauss(y+.069,.011)*smooth(.031,.055,z)
- y+=.0014*gauss(x,.020)*gauss(y+.075,.010)*smooth(.027,.052,z)
- # Shorten the middle and lower face with one continuous deformation, carrying
- # the mandible and neck together instead of building separate cheek bulges.
- compression=smooth(.014,-.084,y)
- y+=.0090*compression
- # Gently round the mandibular angle while retaining the malar width and chin.
- x*=1-.055*gauss(abs(x)-.047,.024)*gauss(y+.050,.030)*smooth(-.035,.030,z)
+ # The original CC0 mesh supplies the continuous cheek and jaw in all views.
+ # Keep the proportional shortening gradual from orbit to upper neck.
+ lower_face=smooth(.010,-.077,y)*smooth(-.163,-.092,y)
+ y+=.006*lower_face
+ # Shape the neck below the jaw, where the skin meets the costume collar.
+ x*=1-.12*smooth(-.085,-.161,y)
+ # Keep nose and mouth refinements local to the central features.
+ nose=gauss(y+.010,.021)*smooth(.042,.071,z)
+ x*=1-.19*gauss(x,.018)*nose
+ z-=.0038*gauss(x,.014)*gauss(y+.013,.017)*smooth(.049,.073,z)
+ z-=.0017*gauss(x,.018)*gauss(y+.040,.012)*smooth(.042,.068,z)
+ y+=.0008*gauss(abs(x)-.016,.008)*gauss(y+.043,.007)*smooth(.030,.052,z)
  return Vector((x,y,z))
 eyes=[]
 for name in names[1:]:
