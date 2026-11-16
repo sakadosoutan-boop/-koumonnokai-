@@ -121,11 +121,12 @@
   }
   function material(kind, asset, id) {
     var skin = kind === 'skin';
+    var guSkin = skin && id === 'gu';
     if (kind === 'ornament') return new T.MeshStandardMaterial({vertexColors:true,roughness:.38,metalness:.48});
     var hairTint=!skin&&id!=='zo'&&id!=='gu'?new T.Color(0xb8b4b0).convertSRGBToLinear():0xffffff;
     return new T.MeshStandardMaterial({color: hairTint, vertexColors: true,
-      roughness: skin ? (asset.age > .5 ? .63 : .53) : kind === 'hair' ? (id === 'gu' ? .82 : .87) : .83,
-      metalness: 0, bumpMap: detail(!skin), bumpScale: skin ? .00016 : kind === 'hair' ? .000075 : .000045});
+      roughness: skin ? (guSkin ? .64 : asset.age > .5 ? .63 : .53) : kind === 'hair' ? (id === 'gu' ? .82 : .87) : .83,
+      metalness: 0, bumpMap: detail(!skin), bumpScale: skin ? (guSkin ? .00005 : .00016) : kind === 'hair' ? .000075 : .000045});
   }
   function irisTexture(doublePupil, warm) {
     var key = 'iris' + !!doublePupil + (warm ? '-warm' : ''); if (TEXTURES[key]) return TEXTURES[key];

@@ -322,18 +322,47 @@ def sculpt(v,p):
         zz-=.0015*(gauss(x-.004,.0018)+gauss(x+.004,.0018))*gauss(y-.047,.014)*front
     return portrait_form(Vector((xx,yy,zz)),v,identity)
 
-def trim_neck(ob):
+def blend_neck_rim(bm,edges,cut,end,length):
+    bm.normal_update()
+    rim=dict.fromkeys(v for edge in edges for v in edge.verts)
+    collar_center=Vector((0,0,-.020))
+    span=cut-end
+    for v in rim:
+        radial=Vector((v.co.x,0,v.co.z))-collar_center
+        direction=radial.normalized()
+        alignment=max(.20,v.normal.dot(direction))
+        # Match the incoming neck slope, easing back into the collar taper.
+        slope=max(-.50,min(.85,v.normal.y/alignment))
+        rim[v]=(radial,direction,slope+.08*radial.length/span)
+    previous={v:v for v in rim}
+    for distance in (length*.26,length*.58,length,span):
+        taper=1-.08*distance/span
+        blend=distance*max(0,1-distance/length)**2
+        ring={}
+        for v,(radial,direction,slope_delta) in rim.items():
+            point=collar_center+radial*taper+direction*(slope_delta*blend)
+            point.y=cut-distance
+            ring[v]=bm.verts.new(point)
+        for edge in edges:
+            a,b=edge.verts
+            bm.faces.new((previous[a],previous[b],ring[b],ring[a]))
+        previous=ring
+
+def trim_neck(ob,transition=0):
     bm=bmesh.new(); bm.from_mesh(ob.data)
-    bmesh.ops.bisect_plane(bm,geom=list(bm.verts)+list(bm.edges)+list(bm.faces),dist=.000001,plane_co=(0,-.095,0),plane_no=(0,1,0),clear_inner=True)
-    edges=[e for e in bm.edges if e.is_boundary and all(abs(v.co.y+.095)<.00001 for v in e.verts)]
-    ret=bmesh.ops.extrude_edge_only(bm,edges=edges)
-    nv=[v for v in ret['geom'] if isinstance(v,bmesh.types.BMVert)]
-    for v in nv:
-        # Continue inside the standing/sitting costume collars, so side views
-        # cannot expose the closed neck cap above the opening.
-        v.co.y=-.205; v.co.x*=.92; v.co.z=(v.co.z+.020)*.92-.020
-    end=[e for e in bm.edges if e.is_boundary and all(abs(v.co.y+.205)<.00001 for v in e.verts)]
-    bmesh.ops.holes_fill(bm,edges=end,sides=0)
+    cut,end=-.095,-.205
+    bmesh.ops.bisect_plane(bm,geom=list(bm.verts)+list(bm.edges)+list(bm.faces),dist=.000001,plane_co=(0,cut,0),plane_no=(0,1,0),clear_inner=True)
+    edges=[e for e in bm.edges if e.is_boundary and all(abs(v.co.y-cut)<.00001 for v in e.verts)]
+    if transition:
+        blend_neck_rim(bm,edges,cut,end,transition)
+    else:
+        ret=bmesh.ops.extrude_edge_only(bm,edges=edges)
+        nv=[v for v in ret['geom'] if isinstance(v,bmesh.types.BMVert)]
+        for v in nv:
+            # Continue inside the standing/sitting costume collars.
+            v.co.y=end; v.co.x*=.92; v.co.z=(v.co.z+.020)*.92-.020
+    end_edges=[e for e in bm.edges if e.is_boundary and all(abs(v.co.y-end)<.00001 for v in e.verts)]
+    bmesh.ops.holes_fill(bm,edges=end_edges,sides=0)
     bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
     bm.to_mesh(ob.data); bm.free(); ob.data.update()
 
