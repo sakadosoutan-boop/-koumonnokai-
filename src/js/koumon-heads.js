@@ -141,7 +141,7 @@
         if (warm) {
           // Brown radial fibres under a soft, slightly off-axis catchlight.
           var amber = Math.exp(-Math.pow((r - .60) / .22, 2)) * (.54 + .46 * strand);
-          var shine = .76 * Math.exp(-Math.pow((dx + .32) / .14, 2) - Math.pow((dy + .38) / .10, 2));
+          var shine = .56 * Math.exp(-Math.pow((dx + .32) / .17, 2) - Math.pow((dy + .38) / .13, 2));
           var ir = pupil ? 7 : 16 + edge * (34 + 52 * amber);
           var ig = pupil ? 5 : 11 + edge * (20 + 29 * amber);
           var ib = pupil ? 4 : 8 + edge * (12 + 17 * amber);
@@ -170,7 +170,7 @@
   }
   function makeEyes(asset, params, quality) {
     var group = new T.Group(); group.name = 'anatomical-eyes'; group.userData.part = 'eyes';
-    var white = new T.MeshStandardMaterial({color: new T.Color(asset.gender === 'female' ? 0xd7c8bf : 0xc3b7a6).convertSRGBToLinear(),roughness: .25,metalness: 0});
+    var white = new T.MeshStandardMaterial({color: new T.Color(asset.gender === 'female' ? 0xd1c2ba : 0xc3b7a6).convertSRGBToLinear(),roughness: .25,metalness: 0});
     var iris = new T.MeshStandardMaterial({map: irisTexture(params.doublePupil, asset.gender === 'female'),roughness: .19,metalness: 0});
     asset.anchors.eyes.forEach(function (e) {
       var eg = new T.Group(); eg.position.fromArray(e.center); eg.rotation.set(params.gazePitch || 0,params.gazeYaw || 0,0);
