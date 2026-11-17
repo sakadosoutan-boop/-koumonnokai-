@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-gentler-features-nov16';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-royal-reference-nov16';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -29,9 +29,9 @@ def female_canon(v):
  y+=.006*lower_face
  # Taper below the mouth only, then blend the adjustment out under the jaw.
  jaw=smooth(-.042,-.065,y)*smooth(-.135,-.095,y)
- x*=1-.045*jaw
+ x*=1-.075*jaw
  chin=smooth(-.039,-.072,y)*smooth(-.114,-.086,y)
- y+=.0025*chin
+ y+=.0048*chin
  z-=.0014*gauss(x,.023)*gauss(y+.064,.017)*smooth(.020,.046,z)
  z+=.0009*gauss(abs(x)-.038,.013)*gauss(y+.051,.017)*smooth(.023,.060,z)
  # Shape the neck below the jaw, where the skin meets the costume collar.
@@ -41,9 +41,10 @@ def female_canon(v):
  x*=1-.18*gauss(x,.022)*nose
  # Use a broad transition from the bridge through the tip and into each wing.
  nose_tip=gauss(x,.016)*gauss(y+.015,.014)*smooth(.057,.075,z)
- y-=.0020*nose_tip
+ y-=.0024*nose_tip
+ y-=.0012*gauss(abs(x)-.012,.006)*gauss(y+.016,.007)*smooth(.055,.074,z)
  z-=.0008*gauss(abs(x)-.013,.009)*gauss(y+.020,.013)*smooth(.044,.065,z)
- z-=.0046*gauss(x,.017)*gauss(y+.013,.019)*smooth(.049,.073,z)
+ z-=.0060*gauss(x,.018)*gauss(y+.013,.020)*smooth(.049,.073,z)
  z-=.0022*gauss(x,.018)*gauss(y+.040,.012)*smooth(.042,.068,z)
  z+=.0008*gauss(x,.011)*gauss(y+.045,.0045)*smooth(.037,.056,z)
  y+=.0014*gauss(abs(x)-.016,.010)*gauss(y+.041,.010)*smooth(.030,.052,z)
@@ -87,8 +88,11 @@ def pigment(ob,hair=False,tint=None):
    lip_center=-.0375+.0015*gauss(abs(x)-.006,.003)+.0010*gauss(abs(x)-.016,.008)
    lip=gauss(x,.017)*gauss(y-lip_center,.006)*smooth(.020,.043,z)
    blush=.19*gauss(abs(x)-.041,.018)*gauss(y+.009,.018)*smooth(.029,.066,z)
-   shadow=.085*gauss(abs(x)-.034,.021)*gauss(y-.023,.009)*smooth(.040,.063,z)
-   c=[mix(mix(mix(base[k],rgb('cf827d')[k],blush),rgb('8b4647')[k],shadow),rgb('a74758')[k],min(1,lip*1.10)) for k in range(3)]
+   shadow=.30*gauss(abs(x)-.034,.022)*gauss(y-.019,.010)*smooth(.040,.063,z)
+   c=[mix(mix(mix(base[k],rgb('cf827d')[k],blush),rgb('a65c62')[k],shadow),rgb('a74758')[k],min(1,lip*1.10)) for k in range(3)]
+   mark=gauss(x,.0021)*gauss(y-.048,.0030)*smooth(.040,.064,z)
+   for k in range(3):c[k]=mix(c[k],rgb('a84a50')[k],.65*mark)
+
   a.data[i].color=(*c,1)
  n=ob.data.materials[0].node_tree.nodes;l=ob.data.materials[0].node_tree.links;node=n.new('ShaderNodeVertexColor');node.layer_name='Complexion';l.new(node.outputs['Color'],n.get('Principled BSDF').inputs['Base Color'])
 def set_hair_grain(ob, tones):
@@ -100,8 +104,8 @@ def hair_surface(head, material, quality):
  def hairline(v):
   x,y,z=v
   angle=abs(math.atan2(x,z+.020))
-  sweep=.018*gauss(x+.045,.040)*smooth(.012,.060,z) + .013*gauss(x-.055,.025)*smooth(.008,.034,z)
-  part=.003*gauss(x-.018,.019)*smooth(.023,.052,z)
+  sweep=.009*gauss(abs(x)-.057,.019)*smooth(.012,.060,z)
+  part=.004*gauss(x,.013)*smooth(.023,.052,z)
   # Lower the frontal part and carry the rear hairline down behind the ear.
   nape=.041*smooth(-.013,-.054,z)
   # Draw the underlayer closer to the back of the ear before it meets the fall.
@@ -206,19 +210,16 @@ def hair_surface(head, material, quality):
   if (b-a).cross(c-a).z<0:faces=[tuple(reversed(face)) for face in faces]
   ob=mesh_object(name,verts,faces,material)
   set_hair_grain(ob,tones);parts.append(ob)
- # Larger lock drops across the outer brow; shorter opposing lock opens the part.
- fitted_fringe('gu_fringe_sweep',[(.021,.083,.0012,.0013),(.005,.075,.008,.0030),
-  (-.018,.063,.0145,.0050),(-.035,.047,.015,.0055),(-.052,.030,.011,.0040),
-  (-.058,.017,.0048,.0027),(-.060,.010,.0002,.0007)],1.0)
- fitted_fringe('gu_fringe_crown',[(.022,.085,.0003,.002),(.004,.084,.009,.0038),
-  (-.020,.079,.013,.0058),(-.045,.070,.014,.0053),(-.061,.055,.009,.004),
-  (-.061,.041,.0035,.002),(-.061,.034,.0002,.0010)],.91)
- fitted_fringe('gu_fringe_return',[(.023,.085,.0011,.0015),(.035,.076,.008,.0048),
-  (.045,.062,.009,.0050),(.053,.045,.008,.0046),(.057,.035,.005,.0037),
-  (.059,.026,.0022,.0026),(.060,.019,.0002,.0010)],.94)
- fitted_fringe('gu_fringe_inner_tip',[(.010,.076,.0003,.0030),(-.005,.066,.003,.0048),
-  (-.024,.054,.0045,.0052),(-.039,.040,.0040,.0048),(-.051,.023,.0025,.0036),
-  (-.056,.010,.0012,.0024),(-.059,.002,.0001,.0014)],1.06,True)
+ # Paired lifted temple waves expose the forehead and meet at the central part.
+ for side in (-1,1):
+  fitted_fringe('gu_open_wave',[(side*.002,.085,.0005,.002),
+   (side*.017,.083,.010,.008),(side*.038,.074,.015,.012),
+   (side*.057,.057,.014,.011),(side*.065,.039,.009,.007),
+   (side*.066,.024,.003,.004),(side*.064,.015,.0002,.001)],.98)
+  fitted_fringe('gu_wave_edge',[(side*.005,.082,.0003,.003),
+   (side*.026,.075,.005,.010),(side*.046,.060,.007,.013),
+   (side*.060,.042,.006,.009),(side*.065,.025,.003,.005),
+   (side*.064,.014,.0002,.001)],1.07,True)
  # Follow the upper scalp from the part to the bun with overlapping locks.
  # Fitting to the scalp keeps their roots and fine edges seated in the hair.
  crown_guide=surface_bvh(scalp)
@@ -290,7 +291,7 @@ def hair_surface(head, material, quality):
    w,d=interpolate(radii,i,t)
    for k in range(sides):
     a=math.tau*k/sides
-    ripple=1+.028*math.cos(a*(9 if quality=='high' else 5)+u*.75)
+    ripple=1+.018*math.cos(a*(27 if quality=='high' else 15)+u*.75)
     pos=center+(width_axis*(max(w,.0002)*math.cos(a))+depth_axis*(max(d,.0002)*math.sin(a)))*ripple
     vertices.append(pos)
     if j:
@@ -300,7 +301,7 @@ def hair_surface(head, material, quality):
   ob=mesh_object('gu_'+name,vertices,faces,material)
   bm=bmesh.new();bm.from_mesh(ob.data);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
   bm.to_mesh(ob.data);bm.free()
-  set_hair_grain(ob,[shade+.17*math.sin(math.tau*(i%sides)*7/sides+(i//sides)*.026)
+  set_hair_grain(ob,[shade+.24*math.sin(math.tau*(i%sides)*11/sides+(i//sides)*.026)
                               +.11*math.sin(math.tau*(i%sides)*3/sides) for i in range(len(vertices))])
   parts.append(ob)
  # Scalp-fitted side locks. The longitudinal axis runs from the swept
@@ -370,32 +371,20 @@ def hair_surface(head, material, quality):
   lock('gu_cheek_wisp',[(side*.064,.039,.047,.0005,.0005),
    (side*.070,.013,.043,.0012,.0006),(side*.072,-.012,.042,.0011,.0006),
    (side*.068,-.034,.047,.0007,.0005),(side*.059,-.048+stagger,.051,.0001,.0001)],(0,0,1))
- # Compact swept chignon, supported by a continuous back curtain.
- lock('raised_fold',[(-.024,.091,-.073,.013,.008),(-.020,.110,-.076,.018,.009),(-.002,.119,-.080,.020,.010),(.021,.116,-.084,.018,.009),(.031,.099,-.090,.013,.008),(.011,.087,-.094,.010,.006)],(0,0,1))
- lock('crossed_fold',[(.042,.091,-.066,.008,.006),(.030,.104,-.079,.012,.007),(.005,.108,-.091,.014,.008),(-.023,.100,-.099,.012,.007),(-.032,.087,-.101,.008,.006)],(0,0,1))
- # The nape locks form the same hairstyle when viewed from behind the ear.
- # They join the long fall at varied lengths so the hem has no straight edge.
- lock('back_underlayer',[(.003,.095,-.080,.021,.008),(.002,.050,-.091,.050,.013),
-  (.000,-.020,-.082,.060,.016),(.003,-.078,-.089,.057,.014),
-  (.011,-.132,-.108,.047,.009),(.001,-.174,-.115,.025,.006),
-  (-.010,-.201,-.117,.001,.001)],(0,0,1),.89)
+ # High folded loops and low lateral rolls give the coiffure its silhouette.
  for side in (-1,1):
-  stagger=.009 if side<0 else 0
-  lock('behind_ear',[(side*.039,.056,-.054,.010,.006),
-   (side*.054,.022,-.048,.015,.007),(side*.059,-.012,-.045,.015,.008),
-   (side*.056,-.043,-.051,.014,.009),(side*.051,-.078,-.068,.011,.008),
-   (side*.043,-.109,-.091,.006,.005),(side*.042,-.139+stagger,-.108,.0003,.0003)],(0,0,1),1.00)
-  lock('nape_sweep',[(side*.041,.038,-.070,.010,.005),
-   (side*.051,.007,-.066,.017,.008),(side*.050,-.028,-.062,.017,.009),
-   (side*.043,-.069,-.080,.015,.006),(side*.040,-.108,-.102,.010,.005),
-   (side*.050,-.149,-.122,.005,.003),(side*.047,-.185-stagger,-.127,.0003,.0003)],(0,0,1),.97)
- for idx,(x,sway,end,shade) in enumerate([
-  (-.043,-.009,-.178,1.03),(-.027,.006,-.211,.98),(-.010,-.004,-.239,1.06),
-  (.009,.008,-.224,.96),(.027,-.005,-.202,1.04),(.042,.011,-.185,.99)]):
-  lock('fall_%d'%idx,[(x*.48,.086,-.094,.005,.003),
-   (x,.036,-.104,.010,.005),(x+sway*.4,-.037,-.103,.012,.006),
-   (x+sway,-.100,-.114,.011,.005),(x+sway*.6,end+.051,-.126,.007,.004),
-   (x+sway,end,-.128,.0005,.0005)],(0,0,1),shade)
+  lock('royal_loop',[(side*.018,.090,-.056,.012,.008),
+   (side*.030,.113,-.059,.014,.009),(side*.030,.145,-.069,.015,.010),
+   (side*.010,.153,-.085,.012,.009),(side*.002,.135,-.096,.011,.008),
+   (side*.014,.113,-.090,.012,.008)],(0,0,1),.98)
+  lock('lower_roll',[(side*.053,.048,-.043,.011,.008),
+   (side*.059,.020,-.063,.015,.011),(side*.055,-.018,-.073,.017,.012),
+   (side*.037,-.031,-.082,.016,.011),(side*.022,-.014,-.086,.012,.009),
+   (side*.029,.028,-.081,.010,.008)],(0,0,1),1.02)
+  lock('back_sweep',[(side*.025,.107,-.082,.012,.008),
+   (side*.044,.071,-.095,.022,.012),(side*.046,.016,-.096,.023,.014),
+   (side*.027,-.040,-.090,.020,.012),(side*.011,-.065,-.084,.010,.007),
+   (side*.004,-.053,-.079,.001,.001)],(0,0,1),.92)
  return join_parts(parts,'gu_'+quality+'_hair')
 def hair_ornament(quality, head, hair):
  """Seat a gilt plum comb and a smaller counter-spray in Gu's swept hair."""
@@ -408,7 +397,7 @@ def hair_ornament(quality, head, hair):
  material.node_tree.links.new(node.outputs['Color'],shader.inputs['Base Color'])
  vertices=[];faces=[];colors=[]
  gold=rgb('dfb369');bright=rgb('f3cb81');shadow=rgb('9c6130')
- red=rgb('a52f42');red_edge=rgb('d95a58');pearl=rgb('f1d4a6')
+ red=rgb('be6867');red_edge=rgb('f0a19a');pearl=rgb('f1d4a6')
  jade=rgb('78aa92');up=Vector((0,1,0))
  scalp=surface_bvh(hair);skin=surface_bvh(head)
 
@@ -564,8 +553,24 @@ def hair_ornament(quality, head, hair):
    tube([knot+radial*width*.38,knot.lerp(tip,.5)+radial*width*.34,tip],
         [.00040,.00046,.00030],red_edge if i%4==1 else red,5 if detailed else 4)
 
+ # Twin pierced sprays rise from a jade boss seated on the front coiffure.
+ seat,normal=comb_seat((0,.89,.48))
+ base=seat+normal*.004
+ bead(base,.010,.011,normal,gold)
+ bead(base+normal*.003,.0078,.0088,normal,jade)
+ for side in (-1,1):
+  branch=base+Vector((side*.029,.030,-.012))
+  stem=[base,base+Vector((side*.010,.012,-.004)),branch]
+  strand(stem,.00085,gold)
+  for j in range(4):
+   t=.28+j*.19
+   start=base.lerp(branch,t)
+   direction=1 if j%2==0 else -1
+   tip=start+Vector((side*(.007+direction*.005),.010+j*.002,.001))
+   leaf(start,tip,Vector((0,.25,.97)).normalized(),.0024,bright,True)
+  bead(branch,.0016,.0020,Vector((0,0,1)),pearl)
  end,normal=spray([
-  ((.24,.86,.63),.0187,.46,False),
+  ((.58,.78,.60),.0200,.46,True),
   ((.57,.76,.61),.0113,.62,True),
   ((.77,.62,.59),.0086,.98,False),
   ((.93,.43,.44),.0095,.14,False),
@@ -582,7 +587,7 @@ def hair_ornament(quality, head, hair):
  chain(short,jade_end,hanging,6 if detailed else 5,.00120)
  bead(jade_end-up*.002,.0024,.0045,hanging,jade)
  end,normal=spray([
-  ((-.55,.84,.53),.0092,.29,False),
+  ((-.58,.78,.60),.0175,.29,True),
   ((-.79,.66,.59),.0082,.66,True),
   ((-.95,.54,.39),.0073,.43,False),
  ],False)
@@ -637,7 +642,7 @@ for quality,level in [('high',1),('low',0)]:
    c=Vector(e['center']);d=v.co-c
    # Allow the upper lid to cover the iris slightly while the lower rim stays seated.
    lateral=d.x*(1 if c.x>0 else -1)
-   v.co.y+=.00025*gauss(lateral-.002,.010)*gauss(d.y-.006,.0045)*smooth(.045,.060,v.co.z)
+   v.co.y-=.00135*gauss(lateral-.002,.011)*gauss(d.y-.0048,.005)*smooth(.045,.060,v.co.z)
    v.co.y+=.00075*gauss(d.x,.008)*gauss(d.y+.005,.0038)*smooth(.046,.063,v.co.z)
  head.data.update();pigment(head);bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
