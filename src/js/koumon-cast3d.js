@@ -942,6 +942,7 @@
     var hp = headParts(c, id), HEAD_PIV = [0, -.032, -.018];
     var mouthContact = hp.asset && hp.anchors && hp.anchors.mouth ? hp.anchors.mouth.slice() : [0,-.038,.073];
     var headG = new THREE.Group(); headG.position.set(-HEAD_PIV[0], -HEAD_PIV[1] + .1 * s, -HEAD_PIV[2]); headG.scale.setScalar(s); headPiv.add(headG);
+    if (id === 'gu') headG.position.y -= .025 * s;
     if (hp.head) headG.add(hp.head); else { var hb = mesh(new THREE.SphereGeometry(.1, 20, 16), skinM); hb.position.y = .03; headG.add(hb); }
     if (hp.hair) headG.add(hp.hair);
     var hat = hp.headwear ? new THREE.Group() : hatMesh(c.cap, c); headG.add(hat);
@@ -953,7 +954,7 @@
     hat.traverse(function (o) { if (o.isMesh) o.castShadow = false; }); // 冠の影で目元が暗くならないように
     if (c.cap === 'bawang' || c.cap === 'kabuto') hat.position.y = .008;
     if (!hp.asset) sculptPortrait(headG, c.head);
-    var headTop = new THREE.Object3D(); headTop.position.set(0, .34 * s, 0); headPiv.add(headTop);
+    var headTop = new THREE.Object3D(); headTop.position.set(0, (id === 'gu' ? .315 : .34) * s, 0); headPiv.add(headTop);
 
     // 披風（項王）
     var cape = null;

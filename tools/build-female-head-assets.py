@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-royal-reference-nov16';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-neck-repair-nov18';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -29,13 +29,18 @@ def female_canon(v):
  y+=.006*lower_face
  # Taper below the mouth only, then blend the adjustment out under the jaw.
  jaw=smooth(-.042,-.065,y)*smooth(-.135,-.095,y)
- x*=1-.075*jaw
+ x*=1-.035*jaw
  chin=smooth(-.039,-.072,y)*smooth(-.114,-.086,y)
- y+=.0048*chin
+ y+=.0035*chin
  z-=.0014*gauss(x,.023)*gauss(y+.064,.017)*smooth(.020,.046,z)
  z+=.0009*gauss(abs(x)-.038,.013)*gauss(y+.051,.017)*smooth(.023,.060,z)
  # Shape the neck below the jaw, where the skin meets the costume collar.
  x*=1-.12*smooth(-.085,-.161,y)
+ # Preserve the source neck/clavicle topology, placing its widening below the
+ # neckline instead of extruding the jaw cut into a long polygonal column.
+ neck=smooth(-.075,-.135,y)
+ y-=.065*neck
+ x*=1-.18*gauss(y+.116,.036)*smooth(-.073,-.098,y)
  # Keep nose and mouth refinements local to the central features.
  nose=gauss(y+.010,.021)*smooth(.042,.071,z)
  x*=1-.18*gauss(x,.022)*nose
@@ -49,6 +54,15 @@ def female_canon(v):
  z+=.0008*gauss(x,.011)*gauss(y+.045,.0045)*smooth(.037,.056,z)
  y+=.0014*gauss(abs(x)-.016,.010)*gauss(y+.041,.010)*smooth(.030,.052,z)
  return Vector((x,y,z))
+
+def retain_anatomical_neck(ob):
+ bm=bmesh.new();bm.from_mesh(ob.data)
+ end=-.205
+ bmesh.ops.bisect_plane(bm,geom=list(bm.verts)+list(bm.edges)+list(bm.faces),dist=.000001,plane_co=(0,end,0),plane_no=(0,1,0),clear_inner=True)
+ edges=[e for e in bm.edges if e.is_boundary and all(abs(v.co.y-end)<.00001 for v in e.verts)]
+ bmesh.ops.holes_fill(bm,edges=edges,sides=0)
+ bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
+ bm.to_mesh(ob.data);bm.free();ob.data.update()
 
 def relax_face_planes(head):
  # Ease short ridges on the cheek-to-jaw and upper alar surfaces.
@@ -627,7 +641,7 @@ for quality,level in [('high',1),('low',0)]:
  female.modifiers[0].levels=level
  ev=female.evaluated_get(bpy.context.evaluated_depsgraph_get());me=ev.to_mesh()
  head=mesh_object('gu_'+quality+'_skin',[female_canon(v.co) for v in me.vertices],[tuple(f.vertices) for f in me.polygons],mat('gu_'+quality+'_skin',rgb(record['skin']),.5));ev.to_mesh_clear()
- trim_neck(head,transition=.018)
+ retain_anatomical_neck(head)
  relax_face_planes(head)
  for v in head.data.vertices:
   for e in eyes:
