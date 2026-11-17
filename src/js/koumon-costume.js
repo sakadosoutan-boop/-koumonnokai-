@@ -54,6 +54,99 @@
     var tex=new T.CanvasTexture(canvas);tex.encoding=T.sRGBEncoding;tex.wrapS=tex.wrapT=T.RepeatWrapping;
     tex.repeat.set(2.5,2.7);tex.anisotropy=8;return SURFACES['plum-silk']=tex;
   }
+  // The brocade is drawn in the cloth's UV space. Each strip includes its
+  // own binding and weave, so the goldwork stays sewn to the curved cloth.
+  var GU_CLOTH={};
+  function guCloth(kind){
+    if(GU_CLOTH[kind])return GU_CLOTH[kind];
+    var canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;
+    var ctx=canvas.getContext('2d'),gold='#a8753c',shadow='#713f29',high='#d0a165';
+    ctx.lineCap='round';ctx.lineJoin='round';
+    function line(color,w,draw){ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();draw();ctx.stroke();}
+    function strip(x,w,color){ctx.fillStyle=color;ctx.fillRect(x,0,w,512);}
+    function rail(x,w){
+      strip(x,w,shadow);strip(x+2,w-4,gold);strip(x+4,2,high);strip(x+w-5,1,'#d7aa76');
+    }
+    function spray(x,y,size,flip,angle){
+      ctx.save();ctx.translate(x,y);ctx.scale(flip*size,size);ctx.rotate(angle||0);
+      function tendril(){
+        ctx.moveTo(-48,115);ctx.bezierCurveTo(75,89,28,43,51,-6);ctx.bezierCurveTo(75,-44,68,-94,23,-93);
+        ctx.bezierCurveTo(-8,-88,-5,-54,17,-58);ctx.bezierCurveTo(32,-60,32,-73,23,-75);
+        ctx.moveTo(10,89);ctx.bezierCurveTo(-56,69,-84,19,-64,-19);ctx.bezierCurveTo(-56,-35,-30,-31,-32,-17);
+        ctx.bezierCurveTo(-35,-6,-49,-7,-49,-17);
+        ctx.moveTo(35,48);ctx.bezierCurveTo(76,31,104,-8,88,-33);
+      }
+      line(shadow,6,tendril);line(gold,3.6,tendril);line(high,1.1,tendril);
+      // Split feather leaves follow the two curling shoots.
+      [[29,66,.62],[38,40,1.10],[42,15,1.04],[61,-9,.65],[57,-43,.16],[-13,76,-.37],[-45,49,-.66],[-61,16,-.81],[75,30,.85]].forEach(function(p,i){
+        ctx.save();ctx.translate(p[0],p[1]);ctx.rotate(p[2]);var l=i<5?50-i*4:33;
+        ctx.fillStyle=i%2?'#9c6239':gold;ctx.beginPath();ctx.moveTo(0,0);
+        ctx.bezierCurveTo(-9,-16,-5,-l*.71,0,-l);ctx.bezierCurveTo(10,-l*.68,6,-9,0,0);ctx.fill();
+        line(high,1.4,function(){ctx.moveTo(0,-3);ctx.quadraticCurveTo(5,-l*.53,1,-l+4);});ctx.restore();
+      });
+      plumBlossom(ctx,86,-39,13,high,shadow);plumBlossom(ctx,-66,-32,10,gold,'#a83936');
+      ctx.restore();
+    }
+    var dye=ctx.createLinearGradient(0,0,512,512);
+    dye.addColorStop(0,'#791123');dye.addColorStop(.48,'#961c30');dye.addColorStop(1,'#681323');
+    ctx.fillStyle=kind==='ground'?'#851729':dye;ctx.fillRect(0,0,512,512);
+    if(kind==='lapel'||kind==='shoulder'){
+      for(var row=-1;row<11;row++){
+        var y=row*53+13;
+        if(kind==='shoulder'){
+          spray(111,y,.39,1,-.22);spray(402,y+26,.39,-1,-.22);
+          spray(180,y+25,.38,-1,.28);spray(337,y,.38,1,.28);
+          plumBlossom(ctx,255,y+13,14,'#ac744b','#6f331d');
+          spray(255,y+36,.24,-1,.43);
+        }else{
+          spray(268,y,.37,1,-.25);spray(352,y+26,.36,-1,.18);spray(433,y,.32,-1,.27);
+        }
+      }
+      rail(7,22);rail(483,22);
+      if(kind!=='shoulder'){
+        strip(30,173,'#327869');rail(32,18);rail(186,17);
+        for(y=-18;y<542;y+=46){
+          line('#b48c59',3,function(){ctx.moveTo(54,y);ctx.bezierCurveTo(119,y+4,117,y+37,178,y+44);ctx.moveTo(177,y);ctx.bezierCurveTo(101,y+4,117,y+37,54,y+44);});
+          plumBlossom(ctx,114,y+22,11,'#c09b65','#495646');
+        }
+      }else {rail(32,10);rail(470,10);}
+    }else if(kind==='bib'){
+      // A single peony over the bodice, framed by lower sprays and bound hem.
+      spray(157,350,1.00,1,.58);spray(355,347,1.00,-1,.58);
+      for(var n=0;n<4;n++)for(var i=0;i<9;i++){
+        var a=i*PI*2/9+n*.42,r=63-n*15;
+        ctx.save();ctx.translate(256,198);ctx.rotate(a);
+        ctx.fillStyle=['#e5b269','#b95643','#f4cb88','#db795b'][n];ctx.strokeStyle='#fae0a3';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(-4,7);ctx.bezierCurveTo(-r*.62,-r*.16,-r*.78,-r*.76,-r*.48,-r);
+        ctx.bezierCurveTo(-r*.14,-r*1.35,r*.59,-r*1.17,r*.62,-r*.83);ctx.bezierCurveTo(r*.69,-r*.58,r*.26,-r*.2,-4,7);
+        ctx.fill();ctx.stroke();ctx.restore();
+      }
+      ctx.fillStyle='#f8d894';ctx.beginPath();ctx.arc(256,198,8,0,PI*2);ctx.fill();
+      ctx.save();ctx.translate(512,0);ctx.rotate(PI/2);rail(3,25);rail(481,25);ctx.restore();
+    }else if(kind==='hem'){
+      // Bind along the length of the rolled hem rather than across its grain.
+      ctx.save();ctx.translate(512,0);ctx.rotate(PI/2);
+      rail(13,38);strip(51,65,'#347c6e');rail(116,31);
+      rail(427,55);ctx.restore();
+      for(var x=16;x<512;x+=32)plumBlossom(ctx,x,282,12,gold,shadow);
+      line('#d8964f',9,function(){for(var x=0;x<512;x+=32){ctx.moveTo(x,310);ctx.quadraticCurveTo(x+16,336,x+32,310);}});
+    }else if(kind==='sleeve'||kind==='upper'){
+      for(var x=0;x<512;x+=85)for(y=65;y<520;y+=99){
+        spray(x+(y%2?45:14),y,kind==='upper'?.32:.41,x%2?1:-1,.24);
+      }
+      if(kind==='sleeve'){ctx.save();ctx.translate(512,0);ctx.rotate(PI/2);rail(2,12);strip(14,20,'#347c6e');rail(34,8);ctx.restore();}
+    }else{
+      for(var row=-1;row<4;row++)for(var col=-1;col<4;col++){
+        spray(col*256+(row%2?128:0),row*256+110,.56,col%2?1:-1,-.25);
+      }
+    }
+    ctx.globalAlpha=.13;line('#f9d6a5',.7,function(){for(var i=0;i<=512;i+=3){ctx.moveTo(i,0);ctx.lineTo(i,512);}});
+    ctx.globalAlpha=.16;line('#572332',.65,function(){for(var i=0;i<=512;i+=3){ctx.moveTo(0,i);ctx.lineTo(512,i);}});
+    var tex=new T.CanvasTexture(canvas);tex.encoding=T.sRGBEncoding;tex.wrapS=tex.wrapT=T.RepeatWrapping;
+    tex.anisotropy=8;if(kind==='hem')tex.repeat.set(3,1);
+    var mat=material(0xffffff,.79,0,{map:tex,side:T.DoubleSide,bumpMap:grain('cloth-height'),bumpScale:.00016});
+    mat.name='Gu silk brocade: '+kind;return GU_CLOTH[kind]=mat;
+  }
   function brocade(family) {
     if(family==='plum-silk')return plumSilk();
     var key='brocade-'+family;if(SURFACES[key])return SURFACES[key];
@@ -134,13 +227,20 @@
     return d[1] * Math.pow(Math.max(0,1 - Math.pow(a,2.6)), 1 / 2.4);
   }
   function thorax(s, b, color) {
+    var gu=color===STYLES.gu.robe;
     var g = sheet(42,72,function (u,v) {
       var y = mix(-.34,.235,u), originalY=y, a = v * PI * 2, d = bodySize(y,b), sn = Math.sin(a), cs = Math.cos(a);
       var x = cpow(sn,2/2.6) * d[0], z = cpow(cs,2/2.4) * d[1], front = Math.pow(Math.max(0,cs),2), back = Math.pow(Math.max(0,-cs),2);
       // The robe is cut open at the throat. The top front edge dips into the
       // crossed neckline; it must never rise behind it as a closed turtleneck.
-      y -= .102 * Math.max(0,cs) * ease(.125,.235,y);
+      y -= (gu?.158:.102) * Math.max(0,cs) * ease(.125,.235,y);
       z = mix(z,chestFront(x,y,b),ease(.125,.235,originalY)*ease(0,.20,cs));
+      // The upper shell turns back under Gu's open lapel instead of crossing
+      // its upper face. Keep the original shoulder and nape attachments.
+      if(gu){
+        y-=.032*ease(.142,.228,originalY);
+        z-=.035*ease(.060,.217,originalY)*ease(.10,.82,cs);
+      }
       var belt = ease(-.31,-.19,y) * (1-ease(.07,.17,y));
       // Cloth is caught under the belt; broad folds run toward the armholes.
       var crease = 0;
@@ -163,7 +263,7 @@
   }
 
   var STYLES = {
-    gu:{robe:0x903c4b,trim:0x512f37,thread:0xe9c78c,inner:0xe4d1af,belt:0x4a2831,fabric:'plum-silk'},
+    gu:{robe:0x85182e,trim:0xb58a4b,thread:0xe9c78c,inner:0xe9cdb7,belt:0x40796a,fabric:'royal-silk'},
     hai:{robe:0x25464c,trim:0x22383d,thread:0x9c8b65,inner:0xc8c2ae,belt:0x26211c,fabric:'teal'},
     ko:{robe:0x1d1719,trim:0x68372a,inner:0xd5cbb5,belt:0x9a783a},
     ryo:{robe:0x344856,trim:0x263740,thread:0x758692,inner:0xccc7b8,belt:0x25282d,fabric:'blue'},
@@ -210,7 +310,46 @@
     },depth*.45*s,false,true);
     return object(g,mat,name);
   }
+  function guCollar(s,b){
+    var g=new T.Group();g.name='Gu embroidered open-front robe';
+    // Continuous lining closes the space between the anatomical neck and the
+    // open silk lapels. It follows the neck at its top and the chest below.
+    var lining=sheet(28,64,function(u,v){
+      var a=v*PI*2,cs=Math.cos(a),sn=Math.sin(a),front=Math.max(0,cs);
+      var y=mix(.065,.205-.055*front,u),rx=mix(.146*b,.059,u),rz=mix(.121*b,.049,u);
+      return [sn*rx*s,y*s,(cs*rz-.003*u)*s];
+    },.0022*s,true,true);
+    g.add(object(lining,material(0x63323a,.94),'Continuous silk neckline facing'));
+    function add(nu,nv,fn,depth,mat,name,flip){
+      var geo=sheet(nu,nv,function(u,v){var p=fn(u,v);return [p[0]*s,p[1]*s,p[2]*s];},depth*s,false,flip);
+      g.add(object(geo,mat,name));return geo;
+    }
+    add(22,24,function(u,v){
+      var x=(v-.5)*mix(.196,.156,u),y=mix(-.243,.085,u)-.010*Math.sin(v*PI)*ease(.76,1,u);
+      return [x,y,chestFront(x,y,b)+.016+.004*Math.sin(v*PI)*Math.sin(u*PI)];
+    },.0024,guCloth('bib'),'Peony embroidered silk bodice',true);
+    [-1,1].forEach(function(sd){
+      // The wide outer lapel runs over the shoulder into the back waist, with
+      // a soft curl at the shoulder tip rather than a separate shoulder pad.
+      var shoulderOuter=[[.127,-.260,.095],[.158,-.080,.103],[.190,.081,.085],[.215,.160,.035],[.197,.159,-.051],[.151,.056,-.104],[.099,-.238,-.119]];
+      var shoulderInner=[[.069,-.259,.110],[.060,-.077,.125],[.065,.081,.124],[.077,.155,.089],[.073,.177,-.051],[.055,.094,-.117],[.042,-.238,-.126]];
+      function curve(points){return new T.CatmullRomCurve3(points.map(function(p){return new V(p[0],p[1],p[2]);}));}
+      var outer=curve(shoulderOuter),inner=curve(shoulderInner);
+      add(38,12,function(u,v){
+        var a=inner.getPoint(u),z=outer.getPoint(u),p=a.lerp(z,v),cap=bell(u-.50,.19);
+        return [sd*p.x,p.y+.007*cap*Math.sin(v*PI),p.z+.005*Math.sin(v*PI)*Math.tanh(p.z*26)];
+      },.0031,guCloth('shoulder'),'Feather-scroll silk shoulder',sd<0);
+      var path=curve([[.067,-.260,.125],[.060,-.115,.140],[.056,.008,.145],[.071,.089,.137],[.085,.139,.114],[.071,.180,.063],[.058,.195,-.016],[.064,.193,-.062],[.076,.143,-.091]]);
+      add(44,12,function(u,v){
+        var p=path.getPoint(u),width=.031+.027*(1-ease(.40,.76,u)),x=(v-.50)*width;
+        return [sd*(p.x+x),p.y-.016*(v-.5)*bell(u-.64,.24),p.z+.0025*Math.sin(v*PI)-.009*v*ease(.12,.57,u)];
+      },.0025,guCloth('lapel'),'Jade and gilt bound silk lapel',sd<0);
+    });
+    var nape=sheet(22,8,function(u,v){var a=mix(PI*.51,PI*1.49,u),r=.059+(v-.5)*.007;return [Math.sin(a)*r*s,(.193+(v-.5)*.021)*s,(Math.cos(a)*r*.85-.004)*s];},.002*s,false,true);
+    g.add(object(nape,guCloth('lapel'),'Sewn nape band'));return g;
+  }
   function collar(c,s,b,armored,id) {
+    if(id==='gu')return guCollar(s,b);
     var group=new T.Group();group.name='sewn-layered-collar';
     // Tailor the opening to the actual anatomical neck, independently of
     // shoulder width. The broad guard's collar must not cut through his neck.
@@ -220,7 +359,7 @@
       var xy=under?[[-.061,.234],[-.058,.211],[-.044,.168],[-.008,.114],[.010,.086]]:[[.061,.234],[.058,.211],[.044,.163],[-.012,.064],[-.082,-.071],[-.144,cut]];
       return xy.map(function(p,i){var x=p[0]*(i<2?neckFit:1),z=i===0?-.006:i===1?.040*neckDepth:chestFront(x,p[1],b)+.005+(under?0:.004);if(armored&&i>1)z-=.022*ease(.17,.05,p[1]);return [x,p[1],z];});
     }
-    var broad=trimMaterial(c.trim,c.thread,armored,id==='gu'),lining=fabric(material(c.inner||0xd2c6b2,.94,0,{side:T.DoubleSide}));
+    var broad=trimMaterial(c.trim,c.thread,armored),lining=fabric(material(c.inner||0xd2c6b2,.94,0,{side:T.DoubleSide}));
     var backingMat=fabric(material(c.scarf||c.robe,.88,0,{side:T.DoubleSide}),armored?'rugged':c.fabric);
     var under=pts(-1,true),over=pts(1,false);
     // The underrobe is a continuous open-neck shell: its upper ring follows
@@ -276,7 +415,8 @@
   /* Deep folds are irregularly spaced and continue from the belt capture to
      the weighted hem. The wrapped front is a second cut piece of cloth. */
   function skirt(o,mat) {
-    fabric(mat,clothFamily(o.color));
+    var family=clothFamily(o.color),gu=family==='royal-silk';
+    if(gu)mat=guCloth('ground');else fabric(mat,family);
     var group=new T.Group();group.name=o.seat?'seated-wrapped-robe':'standing-wrapped-robe';
     var folds=[[-2.82,.018],[-2.21,-.014],[-1.70,.020],[-1.10,-.017],[-.62,.018],[-.13,-.022],[.35,.020],[.83,-.018],[1.31,.020],[1.94,-.014],[2.44,.017],[2.92,-.016]];
     function surf(u,a,off){
@@ -301,8 +441,12 @@
     }
     function colored(geo,isWrap){var N=geo.userData.outerCount,base=new T.Color(o.color),trim=new T.Color(o.trim);return paint(geo,function(i,x,y,z,c){var j=i%N,u=Math.floor(j/(geo.userData.nv+1))/geo.userData.nu,v=(j%(geo.userData.nv+1))/geo.userData.nv;c.copy(u>.958||isWrap&&v<.035?trim:base);c.multiplyScalar(i>=N?.62:isWrap?1:.94);});}
     var full=colored(sheet(42,112,function(u,v){return surf(u,v*PI*2,0);},.0035*(o.len>.7?1:.8),true,true),false);
-    var fullUV=full.attributes.uv;for(var q=0;q<fullUV.count;q++){fullUV.setXY(q,fullUV.getX(q)*(o.r0+o.r1)*PI/.95,fullUV.getY(q)*o.len/.575);}fullUV.needsUpdate=true;
+    var fullUV=full.attributes.uv;for(var q=0;q<fullUV.count;q++){fullUV.setXY(q,fullUV.getX(q)*(gu?5:(o.r0+o.r1)*PI/.95),fullUV.getY(q)*o.len/(gu?.28:.575));}fullUV.needsUpdate=true;
     group.add(object(full,mat,'under-robe-with-weighted-hem'));
+    if(gu){
+      var hem=sheet(5,84,function(u,v){return surf(mix(.955,.998,u),v*PI*2,.0026);},.0015,true,true);
+      group.add(object(hem,guCloth('hem'),'Embroidered and bound skirt hem'));
+    }
     if(o.wrap){
       var over=colored(sheet(46,68,function(u,v){var edge=-1.45+2.60*Math.pow(u,.91),a=edge+v*3.95;return surf(u,a,.007+.004*Math.sin(v*PI));},.004,false,true),true);
       var overUV=over.attributes.uv;for(var q=0;q<overUV.count;q++){overUV.setXY(q,overUV.getX(q)*(o.r0+o.r1)*1.975/.95,overUV.getY(q)*o.len/.575);}overUV.needsUpdate=true;
@@ -312,9 +456,11 @@
   }
 
   function sleeve(o,mat) {
-    if(!mat.userData.sewnFabric)fabric(mat,clothFamily(o.color));
+    var family=clothFamily(o.color),gu=family==='royal-silk';
+    if(gu)mat=guCloth(o.upper?'upper':'sleeve');
+    else if(!mat.userData.sewnFabric)fabric(mat,family);
     var nu=o.upper?(QUALITY==='low'?14:22):(QUALITY==='low'?18:28),nv=QUALITY==='low'?24:40,N=(nu+1)*(nv+1),baseU=[],baseA=[],pos=[],uv=[],idx=[],s=o.scale||1,side=o.side||1;
-    for(var layer=0;layer<2;layer++)for(var i=0;i<=nu;i++)for(var j=0;j<=nv;j++){var u=i/nu,a=j/nv*PI*2;baseU.push(u);baseA.push(a);pos.push(0,0,0);uv.push(j/nv*.42,u*.54);}
+    for(var layer=0;layer<2;layer++)for(var i=0;i<=nu;i++)for(var j=0;j<=nv;j++){var u=i/nu,a=j/nv*PI*2;baseU.push(u);baseA.push(a);pos.push(0,0,0);uv.push(gu?j/nv:j/nv*.42,gu?u:u*.54);}
     for(i=0;i<nu;i++)for(j=0;j<nv;j++){var a0=i*(nv+1)+j,b0=a0+nv+1;idx.push(a0,b0,a0+1,a0+1,b0,b0+1,a0+N,a0+1+N,b0+N,a0+1+N,b0+1+N,b0+N);}
     for(j=0;j<nv;j++){var e=nu*(nv+1)+j;idx.push(j,j+N,j+1,j+1,j+N,j+1+N,e,e+1,e+N,e+1,e+1+N,e+N);}
     // The padded shoulder root continues beneath the armhole when raised.
@@ -324,13 +470,24 @@
     var m=object(g,mat,o.upper?'sewn-shoulder-and-upper-sleeve':'gravity-draped-bag-sleeve'),def=(o.def||new V(-side*.5,0,-.86)).clone().normalize();
     var base=new T.Color(o.color),trim=new T.Color(o.trim==null?o.color:o.trim);
     paint(g,function(k,x,y,z,c){c.copy(baseU[k]>.90?trim:base).multiplyScalar(k>=N?.75:1);});
+    var shawl=null;
+    if(gu&&!o.upper){
+      var shNu=QUALITY==='low'?8:14,shNv=QUALITY==='low'?24:36;
+      var shG=sheet(shNu,shNv,function(u,v){return [Math.sin(v*PI*2),-u,Math.cos(v*PI*2)];},.002*s,true,true);
+      var shawlMat=GU_CLOTH.shawl;
+      if(!shawlMat)shawlMat=GU_CLOTH.shawl=fabric(material(0xf6d9d3,.78,0,{side:T.DoubleSide}));
+      var shMesh=object(shG,shawlMat,'Folded pale rose silk drape');
+      // Its contour follows the sleeve's pose and can outgrow the first frame.
+      shMesh.frustumCulled=false;m.add(shMesh);
+      shawl={geometry:shG,nu:shG.userData.nu,nv:shG.userData.nv,N:shG.userData.outerCount};
+    }
     m.userData.bag=function(down){
       var along=-down.y,L=Math.sqrt(down.x*down.x+down.z*down.z),t=ease(.05,.40,L),bx=mix(def.x,L>1e-5?down.x/L:def.x,t),bz=mix(def.z,L>1e-5?down.z/L:def.z,t),bl=Math.sqrt(bx*bx+bz*bz)||1;bx/=bl;bz/=bl;
       var raised=o.slide?Math.max(0,-along):0,hang=.70+.30*ease(.1,.65,L),p=g.attributes.position;
       var elbow=m.userData.elbowJoint ? sat(Math.abs(m.userData.elbowJoint.rotation.x)/1.25) : .25;
-      for(var k=0;k<baseU.length;k++){
-        var u=baseU[k],a=baseA[k],sn=Math.sin(a),cs=Math.cos(a),dot=sn*bx+cs*bz,gravity=Math.pow(Math.max(0,dot),.72);
-        var rad=o.r(u)*(o.upper?mix(.64,1,ease(0,.18,u)):1),thick=k>=N?.0032*s:0;
+      function put(target,k,u,a,thick,extra){
+        var sn=Math.sin(a),cs=Math.cos(a),dot=sn*bx+cs*bz,gravity=Math.pow(Math.max(0,dot),.72);
+        var rad=o.r(u)*(o.upper?mix(.64,1,ease(0,.18,u)):1);
         // Large, coherent seam-to-cuff folds; no regular corrugated cylinder.
         var fold=(.0065*Math.sin(a*4+u*2.5)+.0038*Math.sin(a*7-u*4+.4))*s*Math.sin(u*PI);
         var creaseAngle=Math.atan2(Math.sin(a-(.3+u*1.4)),Math.cos(a-(.3+u*1.4)));
@@ -338,7 +495,7 @@
         fold+=.0017*s*(Math.sin(a*13-u*6)+.50*Math.sin(a*21+u*9))*Math.sin(u*PI)*(.45+.55*elbow);
         var cap=o.upper?(o.fitted?.008:.006)*s*Math.sin(u*PI)*(.5+.5*Math.abs(sn)):0;
         var bendFold=o.upper?(.010*bell(u-.80,.045)-.006*bell(u-.88,.030)+.007*bell(u-.95,.025)):(.008*bell(u-.075,.040)-.005*bell(u-.16,.035));
-        rad+=fold+cap+bendFold*s*elbow*Math.pow(Math.max(0,cs),2)-thick;
+        rad+=fold+cap+bendFold*s*elbow*Math.pow(Math.max(0,cs),2)-thick+extra;
         var h=(o.H?o.H(u):0)*hang*(1-.63*raised);
         var y=(o.y0||0)-o.len*u*(1-.28*raised*ease(.15,1,u));
         y-=(o.sag||0)*ease(.2,.88,u)*gravity*Math.max(0,along);
@@ -347,8 +504,23 @@
         var x=sn*rad+bx*h*gravity+socket,z=cs*rad+bz*h*gravity;
         // The bottom of the bag has its own weighted fold, not a sharp cone.
         x+=bx*.005*s*gravity*Math.sin(u*PI);z+=bz*.005*s*gravity*Math.sin(u*PI);
-        p.setXYZ(k,x,y+rootRise,z);
-      }p.needsUpdate=true;g.computeVertexNormals();
+        target.setXYZ(k,x,y+rootRise,z);
+      }
+      for(var k=0;k<baseU.length;k++)put(p,k,baseU[k],baseA[k],k>=N?.0032*s:0,0);
+      p.needsUpdate=true;g.computeVertexNormals();
+      if(shawl){
+        var shPos=shawl.geometry.attributes.position;
+        for(var j=0;j<shawl.N;j++){
+          var v=(j%(shawl.nv+1))/shawl.nv,a=v*PI*2,u=Math.floor(j/(shawl.nv+1))/shawl.nu;
+          var start=.035+.068*(.5+.5*Math.sin(a*side-.34)),end=.48+.084*Math.cos(a+.22)+.024*Math.sin(a*2);
+          var edge=.0046*(bell(u-.045,.051)+bell(u-.96,.061));
+          var ridges=.0062*bell(u-(.30+.064*Math.sin(a)),.12)+.0051*bell(u-(.68+.079*Math.sin(a+.52)),.11);
+          var extra=(.0045+edge+ridges+.0045*Math.sin(u*PI)*(.5+.5*Math.sin(a*side-.7)))*s;
+          put(shPos,j,mix(start,end,u),a,0,extra);
+          put(shPos,j+shawl.N,mix(start,end,u),a,.002*s,extra);
+        }
+        shPos.needsUpdate=true;shawl.geometry.computeVertexNormals();
+      }
     };m.userData.bag(new V(0,-1,0));return m;
   }
 
