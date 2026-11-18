@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-neck-repair-nov18';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-refined-face-nov19';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -30,6 +30,10 @@ def female_canon(v):
  # Taper below the mouth only, then blend the adjustment out under the jaw.
  jaw=smooth(-.042,-.065,y)*smooth(-.135,-.095,y)
  x*=1-.035*jaw
+ # Soften only the lateral mandibular angle. The central nose/lips and the
+ # cheek volume above the mouth are outside this mask.
+ angle=smooth(-.026,-.060,y)*smooth(-.105,-.078,y)*smooth(.029,.047,abs(x))
+ x-=math.copysign(.0030*angle,x)
  chin=smooth(-.039,-.072,y)*smooth(-.114,-.086,y)
  y+=.0035*chin
  z-=.0014*gauss(x,.023)*gauss(y+.064,.017)*smooth(.020,.046,z)
@@ -102,8 +106,15 @@ def pigment(ob,hair=False,tint=None):
    lip_center=-.0375+.0015*gauss(abs(x)-.006,.003)+.0010*gauss(abs(x)-.016,.008)
    lip=gauss(x,.017)*gauss(y-lip_center,.006)*smooth(.020,.043,z)
    blush=.19*gauss(abs(x)-.041,.018)*gauss(y+.009,.018)*smooth(.029,.066,z)
-   shadow=.30*gauss(abs(x)-.034,.022)*gauss(y-.019,.010)*smooth(.040,.063,z)
+   shadow=.42*gauss(abs(x)-.034,.022)*gauss(y-.019,.010)*smooth(.040,.063,z)
    c=[mix(mix(mix(base[k],rgb('cf827d')[k],blush),rgb('a65c62')[k],shadow),rgb('a74758')[k],min(1,lip*1.10)) for k in range(3)]
+   # A soft continuous brow tint sits in the skin itself; fine strands add
+   # detail without leaving a row of disconnected dots at mobile resolution.
+   bt=max(0,min(1,(abs(x)-.014)/.039))
+   by=.027+.0062*math.sin(math.pi*bt*.91)-.0031*bt
+   brow=.48*gauss(y-by,.0016)*smooth(.012,.018,abs(x))*(1-smooth(.046,.056,abs(x)))*smooth(.035,.060,z)
+   outer=.14*gauss(abs(x)-.047,.012)*gauss(y-.012,.010)*smooth(.039,.060,z)
+   for k in range(3):c[k]=mix(mix(c[k],rgb('a65c62')[k],outer),rgb('725449')[k],brow)
    mark=gauss(x,.0021)*gauss(y-.048,.0030)*smooth(.040,.064,z)
    for k in range(3):c[k]=mix(c[k],rgb('a84a50')[k],.65*mark)
 
@@ -647,7 +658,7 @@ for quality,level in [('high',1),('low',0)]:
   for e in eyes:
    c=Vector(e['center']);d=v.co-c;w=gauss(d.x,.022)*gauss(d.y,.017)*smooth(.025,.050,v.co.z)
    v.co.x+=d.x*.28*w
-   v.co.y+=d.x*(1 if c.x>0 else -1)*.09*w
+   v.co.y+=d.x*(1 if c.x>0 else -1)*.055*w
    # Move the orbital skin away from the fissure, upper lid more than
    # lower. The underlying globe stays fixed and the corners remain tapered.
    v.co.y+=d.y*(.12 if d.y>0 else .10)*w
@@ -656,16 +667,16 @@ for quality,level in [('high',1),('low',0)]:
    c=Vector(e['center']);d=v.co-c
    # Allow the upper lid to cover the iris slightly while the lower rim stays seated.
    lateral=d.x*(1 if c.x>0 else -1)
-   v.co.y-=.00135*gauss(lateral-.002,.011)*gauss(d.y-.0048,.005)*smooth(.045,.060,v.co.z)
+   v.co.y-=.00195*gauss(lateral-.002,.011)*gauss(d.y-.0048,.005)*smooth(.045,.060,v.co.z)
    v.co.y+=.00075*gauss(d.x,.008)*gauss(d.y+.005,.0038)*smooth(.046,.063,v.co.z)
  head.data.update();pigment(head);bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
  groom=GroomMesh()
  for side in [-1,1]:
   for k in range(42 if quality=='high' else 22):
-   t=k/(41 if quality=='high' else 21);x=side*(.014+.037*t);y=.029+.0042*math.sin(math.pi*t)-.0018*t
-   pts=[Vector((x+side*j*.0015,y-j*.00035,sample(bvh,x+side*j*.0015,y-j*.00035)+.0005)) for j in range(3)]
-   groom.fibre(pts,.00073*(1-.58*t),.98+.25*gauss(t,.20))
+   t=k/(41 if quality=='high' else 21);x=side*(.014+.039*t);y=.027+.0062*math.sin(math.pi*t*.91)-.0031*t
+   pts=[Vector((x+side*j*.0012,y-j*.00025,sample(bvh,x+side*j*.0012,y-j*.00025)+.0005)) for j in range(3)]
+   groom.fibre(pts,.00060*(.56+.44*math.sin(math.pi*t)**.5)*(1-.62*t),.94+.13*gauss(t,.20))
  brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('38292a'),.7));pigment(brow,True,'38292a')
  # Follow the actual upper globe/lid contact so eyeliner follows the face at each LOD.
  liner=GroomMesh()
