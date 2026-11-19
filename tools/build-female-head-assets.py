@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-refined-face-nov19';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-nose-lip-nov20';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -660,7 +660,10 @@ for quality,level in [('high',1),('low',0)]:
   for e in eyes:
    c=Vector(e['center']);d=v.co-c;w=gauss(d.x,.022)*gauss(d.y,.017)*smooth(.025,.050,v.co.z)
    v.co.x+=d.x*.28*w
-   v.co.y+=d.x*(1 if c.x>0 else -1)*.055*w
+   # Localize the eye styling to the lids. Keep the reference nose and mouth
+   # coordinates outside this band even where the Gaussian has a long tail.
+   eye_band=smooth(.019,.028,abs(v.co.x))*smooth(-.008,.008,v.co.y)
+   v.co.y+=d.x*(1 if c.x>0 else -1)*mix(.09,.055,eye_band)*w
    # Move the orbital skin away from the fissure, upper lid more than
    # lower. The underlying globe stays fixed and the corners remain tapered.
    v.co.y+=d.y*(.12 if d.y>0 else .10)*w
@@ -669,7 +672,8 @@ for quality,level in [('high',1),('low',0)]:
    c=Vector(e['center']);d=v.co-c
    # Allow the upper lid to cover the iris slightly while the lower rim stays seated.
    lateral=d.x*(1 if c.x>0 else -1)
-   v.co.y-=.00195*gauss(lateral-.002,.011)*gauss(d.y-.0048,.005)*smooth(.045,.060,v.co.z)
+   eye_band=smooth(.019,.028,abs(v.co.x))*smooth(-.008,.008,v.co.y)
+   v.co.y-=mix(.00135,.00195,eye_band)*gauss(lateral-.002,.011)*gauss(d.y-.0048,.005)*smooth(.045,.060,v.co.z)
    v.co.y+=.00075*gauss(d.x,.008)*gauss(d.y+.005,.0038)*smooth(.046,.063,v.co.z)
  head.data.update();pigment(head);bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
