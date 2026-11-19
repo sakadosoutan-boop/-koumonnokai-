@@ -101,6 +101,35 @@ test('every principal character uses an anatomical head in both quality levels',
     assert.ok(size.x>.10&&size.x<.26&&size.y>.20&&size.y<.45,id+' has a plausible head and neck scale');
   }
 });
+test('Gu eyelid styling preserves the reference nose and lip contours in both LODs',()=>{
+  // Landmark positions from the accepted November 18 head, in exported metres.
+  const reference={
+    high:[
+      [-.01082,.01178,.07452],
+      [.00007,-.01451,.09876],
+      [-.01251,-.01870,.08631],[.01265,-.01871,.08640],
+      [-.00010,-.03670,.08580],
+      [-.01713,-.03684,.07942],[.01703,-.03694,.07940]
+    ],
+    low:[
+      [.00004,-.01214,.09959],
+      [-.01304,-.01898,.08436],[.01309,-.01898,.08446],
+      [-.00010,-.03839,.08685],
+      [-.01772,-.03693,.07878],[.01762,-.03702,.07875]
+    ]
+  };
+  for(const [quality,landmarks] of Object.entries(reference)){
+    const positions=C.KM_HEADS.build('gu',C.KM_CAST3D.CAST.gu.head,quality).surface.geometry.attributes.position.array;
+    for(const point of landmarks){
+      let nearest=Infinity;
+      for(let i=0;i<positions.length;i+=3){
+        const squared=(positions[i]-point[0])**2+(positions[i+1]-point[1])**2+(positions[i+2]-point[2])**2;
+        nearest=Math.min(nearest,squared);
+      }
+      assert.ok(nearest<=(.00002)**2,quality+' nose/lip landmark '+point.join(','));
+    }
+  }
+});
 test('character rig preserves imported facial geometry and survives representative poses',()=>{
   C.KM_CAST3D.setQuality('low');
   for(const id of ids){
