@@ -45,6 +45,8 @@ def female_canon(v):
  neck=smooth(-.075,-.135,y)
  y-=.065*neck
  x*=1-.18*gauss(y+.116,.036)*smooth(-.073,-.098,y)
+ # The hidden clavicular base is a neck insert, not a second shoulder mesh.
+ x*=1-.15*smooth(-.150,-.205,y)
  # Keep nose and mouth refinements local to the central features.
  nose=gauss(y+.010,.021)*smooth(.042,.071,z)
  x*=1-.18*gauss(x,.022)*nose
