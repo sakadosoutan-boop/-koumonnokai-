@@ -141,7 +141,7 @@
         if (warm) {
           // Brown radial fibres under a soft, slightly off-axis catchlight.
           var amber = Math.exp(-Math.pow((r - .60) / .22, 2)) * (.54 + .46 * strand);
-          var shine = .56 * Math.exp(-Math.pow((dx + .32) / .17, 2) - Math.pow((dy + .38) / .13, 2));
+          var shine = .36 * Math.exp(-Math.pow((dx + .32) / .17, 2) - Math.pow((dy + .38) / .13, 2));
           var ir = pupil ? 7 : 16 + edge * (34 + 52 * amber);
           var ig = pupil ? 5 : 11 + edge * (20 + 29 * amber);
           var ib = pupil ? 4 : 8 + edge * (12 + 17 * amber);
@@ -170,14 +170,18 @@
   }
   function makeEyes(asset, params, quality) {
     var group = new T.Group(); group.name = 'anatomical-eyes'; group.userData.part = 'eyes';
-    var white = new T.MeshStandardMaterial({color: new T.Color(asset.gender === 'female' ? 0xd1c2ba : 0xc3b7a6).convertSRGBToLinear(),roughness: .25,metalness: 0});
-    var iris = new T.MeshStandardMaterial({map: irisTexture(params.doublePupil, asset.gender === 'female'),roughness: .19,metalness: 0});
+    var female = asset.gender === 'female';
+    var white = new T.MeshStandardMaterial({color: new T.Color(female ? 0xd1c2ba : 0xc3b7a6).convertSRGBToLinear(),roughness: female ? .33 : .25,metalness: 0});
+    var iris = new T.MeshStandardMaterial({map: irisTexture(params.doublePupil, female),roughness: female ? .32 : .19,metalness: 0});
     asset.anchors.eyes.forEach(function (e) {
       var eg = new T.Group(); eg.position.fromArray(e.center); eg.rotation.set(params.gazePitch || 0,params.gazeYaw || 0,0);
       if(e.scale)eg.scale.fromArray(e.scale);
       var globe = new T.Mesh(new T.SphereGeometry(e.radius,quality === 'low' ? 24 : 40,quality === 'low' ? 16 : 24),white);
       globe.userData.part = 'eyes'; eg.add(globe);
-      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (asset.gender === 'female' ? .57 : .48),quality),iris); im.userData.part = 'eyes'; eg.add(im);
+      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (female ? .57 : .48),quality),iris);
+      // Gu's irises converge on the same near point while the globes keep their lid fit.
+      if (female) im.rotation.y = -Math.atan2(e.center[0], .95 * (e.scale ? e.scale[0] : 1));
+      im.userData.part = 'eyes'; eg.add(im);
       group.add(eg);
     });
     return group;
