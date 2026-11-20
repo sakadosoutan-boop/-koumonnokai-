@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-nose-lip-nov20';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-natural-eyes';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -95,28 +95,44 @@ for name in names[1:]:
 record=dict(skin='e5bda4',hair='21181e',age=.02,gender='female',sourceObject=names[0],anchors=dict(eyes=eyes,hat=dict(offset=[0,0,0],scale=[1,1,1]),crown=[0,.12,-.03],chin=[0,-.067,.04],neck=[0,-.205,-.02]),lod={})
 render_parts=[]
 low_parts=[]
-def pigment(ob,hair=False,tint=None):
+
+def brow_profile(t):
+ # The full inner half rises gradually into a thinner outer tail.
+ height=.0275+.0050*math.sin(math.pi*t*.92)-.0015*t
+ width=mix(.0029,.0011,smooth(.38,1,t))
+ return height,width
+
+def pigment(ob,hair=False,tint=None,lids=()):
  for old in list(ob.data.color_attributes):ob.data.color_attributes.remove(old)
  a=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT');base=rgb(tint or record['hair' if hair else 'skin'])
  for i,v in enumerate(ob.data.vertices):
   x,y,z=v.co
   if hair:
-   grain=ob.data.attributes.get('HairGrain')
+   grain=ob.data.attributes.get('HairGrain') or ob.data.attributes.get('GroomShade')
    tone=grain.data[i].value if grain else 0
    c=[value*(tone or 1) for value in base]
   else:
    lip_center=-.0375+.0015*gauss(abs(x)-.006,.003)+.0010*gauss(abs(x)-.016,.008)
    lip=gauss(x,.017)*gauss(y-lip_center,.006)*smooth(.020,.043,z)
    blush=.19*gauss(abs(x)-.041,.018)*gauss(y+.009,.018)*smooth(.029,.066,z)
-   shadow=.42*gauss(abs(x)-.034,.022)*gauss(y-.019,.010)*smooth(.040,.063,z)
+   shadow=.29*gauss(abs(x)-.035,.017)*gauss(y-.019,.007)*smooth(.045,.064,z)
    c=[mix(mix(mix(base[k],rgb('cf827d')[k],blush),rgb('a65c62')[k],shadow),rgb('a74758')[k],min(1,lip*1.10)) for k in range(3)]
    # A soft continuous brow tint sits in the skin itself; fine strands add
    # detail without leaving a row of disconnected dots at mobile resolution.
-   bt=max(0,min(1,(abs(x)-.014)/.039))
-   by=.027+.0062*math.sin(math.pi*bt*.91)-.0031*bt
-   brow=.48*gauss(y-by,.0016)*smooth(.012,.018,abs(x))*(1-smooth(.046,.056,abs(x)))*smooth(.035,.060,z)
-   outer=.14*gauss(abs(x)-.047,.012)*gauss(y-.012,.010)*smooth(.039,.060,z)
-   for k in range(3):c[k]=mix(mix(c[k],rgb('a65c62')[k],outer),rgb('725449')[k],brow)
+   bt=max(0,min(1,(abs(x)-.015)/.037))
+   by,bw=brow_profile(bt)
+   brow=.72*gauss(y-by,bw)*smooth(.013,.020,abs(x))*(1-smooth(.047,.054,abs(x)))*smooth(.035,.060,z)
+   outer=.19*gauss(abs(x)-.046,.010)*gauss(y-.011,.007)*smooth(.040,.060,z)
+   for k in range(3):c[k]=mix(mix(c[k],rgb('a76566')[k],outer),rgb('65504c')[k],brow)
+   if .019<abs(x)<.054 and -.009<y<.029 and z>.048:
+    lid_weight=0
+    for upper,lower in lids:
+     for rim,width,strength in ((upper,.0028,.42),(lower,.0022,.24)):
+      if not rim:continue
+      distance=min((x-p.x)**2+(y-p.y)**2 for p in rim)
+      lid_weight=max(lid_weight,strength*math.exp(-distance/width**2))
+    lid_weight*=smooth(.019,.024,abs(x))*smooth(.048,.061,z)
+    c=[mix(c[k],rgb('9f6865')[k],lid_weight) for k in range(3)]
    mark=gauss(x,.0021)*gauss(y-.048,.0030)*smooth(.040,.064,z)
    for k in range(3):c[k]=mix(c[k],rgb('a84a50')[k],.65*mark)
 
@@ -675,31 +691,49 @@ for quality,level in [('high',1),('low',0)]:
    eye_band=smooth(.019,.028,abs(v.co.x))*smooth(-.008,.008,v.co.y)
    v.co.y-=mix(.00135,.00195,eye_band)*gauss(lateral-.002,.011)*gauss(d.y-.0048,.005)*smooth(.045,.060,v.co.z)
    v.co.y+=.00075*gauss(d.x,.008)*gauss(d.y+.005,.0038)*smooth(.046,.063,v.co.z)
- head.data.update();pigment(head);bvh=surface_bvh(head)
+   # Open the central curve of the lid and taper back toward both corners.
+   v.co.y+=.00115*eye_band*gauss(lateral+.001,.007)*gauss(d.y-.005,.0045)*smooth(.045,.060,v.co.z)
+   v.co.y-=.00045*eye_band*gauss(lateral,.008)*gauss(d.y+.005,.0040)*smooth(.046,.063,v.co.z)
+ head.data.update();bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
  groom=GroomMesh()
  for side in [-1,1]:
-  for k in range(42 if quality=='high' else 22):
-   t=k/(41 if quality=='high' else 21);x=side*(.014+.039*t);y=.027+.0062*math.sin(math.pi*t*.91)-.0031*t
-   pts=[Vector((x+side*j*.0012,y-j*.00025,sample(bvh,x+side*j*.0012,y-j*.00025)+.0005)) for j in range(3)]
-   groom.fibre(pts,.00060*(.56+.44*math.sin(math.pi*t)**.5)*(1-.62*t),.94+.13*gauss(t,.20))
- brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('38292a'),.7));pigment(brow,True,'38292a')
+  count=55 if quality=='high' else 29
+  for k in range(count):
+   t=(k+.5)/count;x=side*(.015+.037*t)
+   height,width=brow_profile(t)
+   y=height-width*(.47+.22*math.sin(k*2.4))
+   lean=mix(.0012,.0030,t)
+   rise=width*mix(1.00,.60,t)
+   points=[]
+   for u in (0,.5,1):
+    px=x+side*lean*u
+    py=y+rise*u
+    points.append(Vector((px,py,sample(bvh,px,py)+.00032)))
+   radius=.00034*math.sin(math.pi*t)**.55
+   groom.fibre(points,radius,.93+.13*math.sin(k*1.7))
+ brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('55413d'),.7));pigment(brow,True,'55413d')
  # Follow the actual upper globe/lid contact so eyeliner follows the face at each LOD.
  liner=GroomMesh()
+ lids=[]
  for e in eyes:
   cx,cy,cz=e['center'];r=e['radius'];sx,sy,_=e['scale']
   side=1 if cx>0 else -1
   rim=[]
+  lower_rim=[]
   for i in range(23 if quality=='high' else 13):
    x=cx+side*mix(-.0085,.0115,i/(22 if quality=='high' else 12))
-   upper=0
-   for j in range(42):
-    y=cy-.003+j*.00035
+   upper=lower=None
+   for j in range(57):
+    y=cy-.009+j*.00035
     radial=r*r-((x-cx)/sx)**2-((y-cy)/sy)**2
     if radial>0 and cz+math.sqrt(radial)>sample(bvh,x,y):
+     if lower is None:lower=y
      upper=y
-   if upper:
+   if upper is not None:
     rim.append(Vector((x,upper+.00055,sample(bvh,x,upper+.00055)+.00054)))
+    lower_rim.append(Vector((x,lower-.00035,0)))
+  lids.append((rim[:],lower_rim))
   if len(rim)>5:
    # Small lashes grow from the fitted lid rather than floating over the iris.
    for fraction in ((.63,.71,.79,.87) if quality=='high' else (.69,.83)):
@@ -711,13 +745,11 @@ for quality,level in [('high',1),('low',0)]:
    for i in range(1,3):
     x=end.x+side*.0013*i;y=end.y+.00025*i
     rim.append(Vector((x,y,sample(bvh,x,y)+.00054)))
-   for i in range(2,len(rim)-1):
-    u=i/(len(rim)-1)
-    radius=.00061*math.sin(math.pi*u)**.76
-    liner.fibre(rim[i-2:i+2],radius,.95,sides=5)
+   liner.fibre(rim,.00052,.95,sides=5)
  eye_line=liner.object('gu_'+quality+'_upper_lashes',mat('gu_lashes',rgb('493334'),.68))
  pigment(eye_line,True,'493334')
  brow=join_parts([brow,eye_line],'gu_'+quality+'_brow')
+ pigment(head,lids=lids)
  parts=dict(skin=head,hair=hair,brow=brow,ornament=hair_ornament(quality,head,hair));record['lod'][quality]={k:export_mesh(o) for k,o in parts.items()}
  for o in parts.values():o.hide_set(True);o.hide_render=True
  if quality=='high':render_parts=list(parts.values())
