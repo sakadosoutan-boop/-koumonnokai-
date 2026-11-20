@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-natural-eyes';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-portrait-makeup';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -98,8 +98,8 @@ low_parts=[]
 
 def brow_profile(t):
  # The full inner half rises gradually into a thinner outer tail.
- height=.0275+.0050*math.sin(math.pi*t*.92)-.0015*t
- width=mix(.0029,.0011,smooth(.38,1,t))
+ height=.0281+.0046*math.sin(math.pi*t*.92)-.0015*t
+ width=mix(.0042,.0015,smooth(.38,1,t))
  return height,width
 
 def pigment(ob,hair=False,tint=None,lids=()):
@@ -114,25 +114,26 @@ def pigment(ob,hair=False,tint=None,lids=()):
   else:
    lip_center=-.0375+.0015*gauss(abs(x)-.006,.003)+.0010*gauss(abs(x)-.016,.008)
    lip=gauss(x,.017)*gauss(y-lip_center,.006)*smooth(.020,.043,z)
-   blush=.19*gauss(abs(x)-.041,.018)*gauss(y+.009,.018)*smooth(.029,.066,z)
-   shadow=.29*gauss(abs(x)-.035,.017)*gauss(y-.019,.007)*smooth(.045,.064,z)
-   c=[mix(mix(mix(base[k],rgb('cf827d')[k],blush),rgb('a65c62')[k],shadow),rgb('a74758')[k],min(1,lip*1.10)) for k in range(3)]
+   blush=.34*gauss(abs(x)-.041,.020)*gauss(y+.010,.018)*smooth(.029,.066,z)
+   shadow=.34*gauss(abs(x)-.035,.017)*gauss(y-.019,.007)*smooth(.045,.064,z)
+   lip_tint=rgb('a34c48' if y>lip_center else 'bb6255')
+   c=[mix(mix(mix(base[k],rgb('d27d76')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],min(1,lip*1.16)) for k in range(3)]
    # A soft continuous brow tint sits in the skin itself; fine strands add
    # detail without leaving a row of disconnected dots at mobile resolution.
    bt=max(0,min(1,(abs(x)-.015)/.037))
    by,bw=brow_profile(bt)
-   brow=.72*gauss(y-by,bw)*smooth(.013,.020,abs(x))*(1-smooth(.047,.054,abs(x)))*smooth(.035,.060,z)
-   outer=.19*gauss(abs(x)-.046,.010)*gauss(y-.011,.007)*smooth(.040,.060,z)
-   for k in range(3):c[k]=mix(mix(c[k],rgb('a76566')[k],outer),rgb('65504c')[k],brow)
-   if .019<abs(x)<.054 and -.009<y<.029 and z>.048:
+   brow=.92*gauss(y-by,bw)*smooth(.013,.022,abs(x))*(1-smooth(.047,.054,abs(x)))*smooth(.035,.060,z)
+   outer=.29*gauss(abs(x)-.046,.010)*gauss(y-.011,.008)*smooth(.040,.060,z)
+   for k in range(3):c[k]=mix(mix(c[k],rgb('ac6860')[k],outer),rgb('5a4138')[k],brow)
+   if .019<abs(x)<.055 and -.010<y<.030 and z>.048:
     lid_weight=0
     for upper,lower in lids:
-     for rim,width,strength in ((upper,.0028,.42),(lower,.0022,.24)):
+     for rim,width,strength in ((upper,.0042,.62),(lower,.0031,.35)):
       if not rim:continue
       distance=min((x-p.x)**2+(y-p.y)**2 for p in rim)
       lid_weight=max(lid_weight,strength*math.exp(-distance/width**2))
     lid_weight*=smooth(.019,.024,abs(x))*smooth(.048,.061,z)
-    c=[mix(c[k],rgb('9f6865')[k],lid_weight) for k in range(3)]
+    c=[mix(c[k],rgb('99564f')[k],lid_weight) for k in range(3)]
    mark=gauss(x,.0021)*gauss(y-.048,.0030)*smooth(.040,.064,z)
    for k in range(3):c[k]=mix(c[k],rgb('a84a50')[k],.65*mark)
 
@@ -710,7 +711,7 @@ for quality,level in [('high',1),('low',0)]:
     px=x+side*lean*u
     py=y+rise*u
     points.append(Vector((px,py,sample(bvh,px,py)+.00032)))
-   radius=.00034*math.sin(math.pi*t)**.55
+   radius=.00041*math.sin(math.pi*t)**.55
    groom.fibre(points,radius,.93+.13*math.sin(k*1.7))
  brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('55413d'),.7));pigment(brow,True,'55413d')
  # Follow the actual upper globe/lid contact so eyeliner follows the face at each LOD.
