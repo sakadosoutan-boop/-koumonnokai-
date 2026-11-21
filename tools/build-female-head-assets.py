@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-makeup-refinement';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-almond-eyes';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -97,9 +97,9 @@ render_parts=[]
 low_parts=[]
 
 def brow_profile(t):
- # The full inner half rises gradually into a thinner outer tail.
- height=.0281+.0045*math.sin(math.pi*t*.89)-.0012*t
- width=mix(.0042,.0015,smooth(.38,1,t))
+ # Carry the fuller brow along a shallow arch before dropping into the tail.
+ height=.0279+.0047*smooth(0,.65,t)-.0030*smooth(.64,1,t)
+ width=mix(.0041,.00105,smooth(.48,1,t))
  return height,width
 
 def pigment(ob,hair=False,tint=None,lids=()):
@@ -120,12 +120,12 @@ def pigment(ob,hair=False,tint=None,lids=()):
    c=[mix(mix(mix(base[k],rgb('d27d76')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],min(1,lip*1.16)) for k in range(3)]
    # A soft continuous brow tint sits in the skin itself; fine strands add
    # detail without leaving a row of disconnected dots at mobile resolution.
-   bt=max(0,min(1,(abs(x)-.015)/.037))
+   bt=max(0,min(1,(abs(x)-.014)/.042))
    by,bw=brow_profile(bt)
-   brow=.92*gauss(y-by,bw)*smooth(.013,.022,abs(x))*(1-smooth(.047,.054,abs(x)))*smooth(.035,.060,z)
+   brow=.96*gauss(y-by,bw)*smooth(.013,.021,abs(x))*(1-smooth(.049,.057,abs(x)))*smooth(.035,.060,z)
    outer=.32*gauss(abs(x)-.045,.010)*gauss(y-.014,.007)*smooth(.040,.060,z)
-   inner_tint=rgb('8d6a59')
-   outer_tint=rgb('573d37')
+   inner_tint=rgb('80665a')
+   outer_tint=rgb('493832')
    brow_tint=[mix(inner_tint[k],outer_tint[k],smooth(.06,.60,bt)) for k in range(3)]
    for k in range(3):c[k]=mix(mix(c[k],rgb('a86a60')[k],outer),brow_tint[k],brow)
    if .019<abs(x)<.055 and -.010<y<.030 and z>.048:
@@ -708,25 +708,29 @@ for quality,level in [('high',1),('low',0)]:
    v.co.y-=mix(.00135,.00195,eye_band)*gauss(lateral-.002,.011)*gauss(d.y-.0048,.005)*smooth(.045,.060,v.co.z)
    v.co.y+=.00075*gauss(d.x,.008)*gauss(d.y+.005,.0038)*smooth(.046,.063,v.co.z)
    # Open the central curve of the lid and taper back toward both corners.
-   v.co.y+=.00115*eye_band*gauss(lateral+.001,.007)*gauss(d.y-.005,.0045)*smooth(.045,.060,v.co.z)
+   v.co.y+=.00080*eye_band*gauss(lateral+.001,.007)*gauss(d.y-.005,.0045)*smooth(.045,.060,v.co.z)
    v.co.y-=.00045*eye_band*gauss(lateral,.008)*gauss(d.y+.005,.0040)*smooth(.046,.063,v.co.z)
+   # Lengthen the outer corner and draw the two lids together toward its tip.
+   corner=eye_band*gauss(lateral-.009,.0058)*gauss(d.y,.0061)*smooth(.046,.060,v.co.z)
+   v.co.x+=math.copysign(.0022*corner,c.x)
+   v.co.y+=(.00125-.24*d.y)*corner
  head.data.update();bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
  groom=GroomMesh()
  for side in [-1,1]:
-  count=55 if quality=='high' else 29
+  count=70 if quality=='high' else 38
   for k in range(count):
-   t=(k+.5)/count;x=side*(.015+.037*t)
+   t=(k+.5)/count;x=side*(.014+.042*t)
    height,width=brow_profile(t)
-   y=height-width*(.47+.22*math.sin(k*2.4))
-   lean=mix(.0012,.0030,t)
-   rise=width*mix(1.00,.60,t)
+   y=height-width*(.42+.32*math.sin(k*2.4))
+   lean=mix(.0012,.0036,t)
+   rise=width*mix(1.02,.64,t)
    points=[]
    for u in (0,.5,1):
     px=x+side*lean*u
     py=y+rise*u
     points.append(Vector((px,py,sample(bvh,px,py)+.00032)))
-   radius=.00041*math.sin(math.pi*t)**.55
+   radius=.00029*math.sin(math.pi*t)**.55
    groom.fibre(points,radius,mix(1.55,.92,smooth(.04,.60,t))+.10*math.sin(k*1.7))
  brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('55413d'),.7));pigment(brow,True,'55413d')
  # Follow the actual upper globe/lid contact so eyeliner follows the face at each LOD.
@@ -738,7 +742,7 @@ for quality,level in [('high',1),('low',0)]:
   rim=[]
   lower_rim=[]
   for i in range(23 if quality=='high' else 13):
-   x=cx+side*mix(-.0085,.0115,i/(22 if quality=='high' else 12))
+   x=cx+side*mix(-.009,.013,i/(22 if quality=='high' else 12))
    upper=lower=None
    for j in range(57):
     y=cy-.009+j*.00035

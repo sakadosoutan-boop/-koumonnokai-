@@ -139,12 +139,13 @@
         var pupil = doublePupil ? Math.min(Math.hypot(dx - .11, dy), Math.hypot(dx + .11, dy)) < .29 : r < .37;
         var i = (y * w + x) * 4;
         if (warm) {
-          // Brown radial fibres under a soft, slightly off-axis catchlight.
-          var amber = Math.exp(-Math.pow((r - .60) / .22, 2)) * (.54 + .46 * strand);
-          var shine = .36 * Math.exp(-Math.pow((dx + .32) / .17, 2) - Math.pow((dy + .38) / .13, 2));
-          var ir = pupil ? 7 : 16 + edge * (34 + 52 * amber);
-          var ig = pupil ? 5 : 11 + edge * (20 + 29 * amber);
-          var ib = pupil ? 4 : 8 + edge * (12 + 17 * amber);
+          // Let the deep brown iris stay legible below the shadow of the upper lid.
+          var fibres = Math.exp(-Math.pow((r - .65) / .24, 2)) * (.46 + .54 * strand);
+          var lidShade = .82 + .18 * Math.max(0, Math.min(1, (dy + .75) / 1.25));
+          var shine = .29 * Math.exp(-Math.pow((dx + .30) / .15, 2) - Math.pow((dy + .36) / .11, 2));
+          var ir = pupil ? 7 : 13 + lidShade * edge * (33 + 39 * fibres);
+          var ig = pupil ? 5 : 9 + lidShade * edge * (21 + 25 * fibres);
+          var ib = pupil ? 4 : 7 + lidShade * edge * (16 + 17 * fibres);
           d[i] = ir + (246 - ir) * shine;
           d[i + 1] = ig + (232 - ig) * shine;
           d[i + 2] = ib + (211 - ib) * shine;
@@ -171,14 +172,14 @@
   function makeEyes(asset, params, quality) {
     var group = new T.Group(); group.name = 'anatomical-eyes'; group.userData.part = 'eyes';
     var female = asset.gender === 'female';
-    var white = new T.MeshStandardMaterial({color: new T.Color(female ? 0xd1c2ba : 0xc3b7a6).convertSRGBToLinear(),roughness: female ? .33 : .25,metalness: 0});
+    var white = new T.MeshStandardMaterial({color: new T.Color(female ? 0xcbbeb7 : 0xc3b7a6).convertSRGBToLinear(),roughness: female ? .36 : .25,metalness: 0});
     var iris = new T.MeshStandardMaterial({map: irisTexture(params.doublePupil, female),roughness: female ? .32 : .19,metalness: 0});
     asset.anchors.eyes.forEach(function (e) {
       var eg = new T.Group(); eg.position.fromArray(e.center); eg.rotation.set(params.gazePitch || 0,params.gazeYaw || 0,0);
       if(e.scale)eg.scale.fromArray(e.scale);
       var globe = new T.Mesh(new T.SphereGeometry(e.radius,quality === 'low' ? 24 : 40,quality === 'low' ? 16 : 24),white);
       globe.userData.part = 'eyes'; eg.add(globe);
-      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (female ? .57 : .48),quality),iris);
+      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (female ? .55 : .48),quality),iris);
       // Gu's irises converge on the same near point while the globes keep their lid fit.
       if (female) im.rotation.y = -Math.atan2(e.center[0], .95 * (e.scale ? e.scale[0] : 1));
       im.userData.part = 'eyes'; eg.add(im);
