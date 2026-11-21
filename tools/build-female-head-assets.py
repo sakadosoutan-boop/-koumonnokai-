@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-almond-eyes';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-green-portrait';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -59,6 +59,16 @@ def female_canon(v):
  z-=.0022*gauss(x,.018)*gauss(y+.040,.012)*smooth(.042,.068,z)
  z+=.0008*gauss(x,.011)*gauss(y+.045,.0045)*smooth(.037,.056,z)
  y+=.0014*gauss(abs(x)-.016,.010)*gauss(y+.041,.010)*smooth(.030,.052,z)
+ # Bring the dorsum forward in a narrow, gradual curve that blends above the tip.
+ bridge=gauss(x,.010)*gauss(y-.006,.027)*smooth(-.012,-.002,y)*smooth(.056,.073,z)
+ z+=.0022*bridge
+ # Build the upper bow and lower cushion in the same connected lip surface.
+ lip_mask=(1-smooth(.010,.017,abs(x)))*smooth(.069,.081,z)
+ upper=lip_mask*gauss(y+.034,.0038)
+ lower=lip_mask*gauss(y+.042,.0045)
+ bow=.55+.45*gauss(abs(x)-.005,.0036)
+ z+=.0012*upper*bow+.0014*lower
+ y+=.0011*upper*bow-.0012*lower
  return Vector((x,y,z))
 
 def retain_anatomical_neck(ob):
@@ -112,12 +122,18 @@ def pigment(ob,hair=False,tint=None,lids=()):
    tone=grain.data[i].value if grain else 0
    c=[value*(tone or 1) for value in base]
   else:
-   lip_center=-.0375+.0015*gauss(abs(x)-.006,.003)+.0010*gauss(abs(x)-.016,.008)
-   lip=gauss(x,.017)*gauss(y-lip_center,.006)*smooth(.020,.043,z)
+   seam=-.0385+.0016*gauss(abs(x)-.016,.007)
+   cupid=gauss(abs(x)-.0055,.0038)
+   fullness=1-smooth(.005,.018,abs(x))
+   upper=gauss(y-seam-.0017-.0020*cupid*fullness,.0035)
+   lower=gauss(y-seam+.0037*fullness,.0041)
+   lower_mix=smooth(.001,-.002,y-seam)
+   lip=(1-smooth(.009,.019,abs(x)))*mix(upper,lower,lower_mix)*smooth(.069,.079,z)
    blush=.34*gauss(abs(x)-.041,.020)*gauss(y+.010,.018)*smooth(.029,.066,z)
    shadow=.37*gauss(abs(x)-.038,.016)*gauss(y-.019,.006)*smooth(.045,.064,z)
-   lip_tint=rgb('a34c48' if y>lip_center else 'bb6255')
-   c=[mix(mix(mix(base[k],rgb('d27d76')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],min(1,lip*1.16)) for k in range(3)]
+   lip_top=rgb('964b4a');lip_bottom=rgb('b96058')
+   lip_tint=[mix(lip_top[k],lip_bottom[k],lower_mix) for k in range(3)]
+   c=[mix(mix(mix(base[k],rgb('d27d76')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],min(.94,lip*1.07)) for k in range(3)]
    # A soft continuous brow tint sits in the skin itself; fine strands add
    # detail without leaving a row of disconnected dots at mobile resolution.
    bt=max(0,min(1,(abs(x)-.014)/.042))
@@ -128,25 +144,25 @@ def pigment(ob,hair=False,tint=None,lids=()):
    outer_tint=rgb('493832')
    brow_tint=[mix(inner_tint[k],outer_tint[k],smooth(.06,.60,bt)) for k in range(3)]
    for k in range(3):c[k]=mix(mix(c[k],rgb('a86a60')[k],outer),brow_tint[k],brow)
-   if .019<abs(x)<.055 and -.010<y<.030 and z>.048:
+   if .017<abs(x)<.055 and -.012<y<.030 and z>.048:
     upper_weight=upper_shadow=lower_weight=0
     for upper,lower in lids:
      if upper:
       distance=min((x-p.x)**2+(y-p.y)**2 for p in upper)
       upper_weight=max(upper_weight,math.exp(-distance/.0027**2))
-      crease_distance=min((x-p.x)**2+(y-p.y-.0016)**2 for p in upper)
-      upper_shadow=max(upper_shadow,math.exp(-crease_distance/.0051**2))
+      crease_distance=min((x-p.x)**2+(y-p.y-.0024)**2 for p in upper)
+      upper_shadow=max(upper_shadow,math.exp(-crease_distance/.0050**2))
      if lower:
       distance=min((x-p.x)**2+(y-p.y)**2 for p in lower)
       lower_weight=max(lower_weight,math.exp(-distance/.0034**2))
-    face_mask=smooth(.019,.024,abs(x))*smooth(.048,.061,z)
+    face_mask=smooth(.017,.023,abs(x))*smooth(.048,.061,z)
     outer_lid=smooth(.031,.046,abs(x))
     upper_weight*=face_mask*mix(.63,.88,outer_lid)
-    upper_shadow*=face_mask*mix(.25,.57,outer_lid)
-    lower_weight*=face_mask*.47
-    upper_tint=rgb('68403a')
-    shadow_tint=rgb('a5665f')
-    lower_tint=rgb('bd7d79')
+    upper_shadow*=face_mask*mix(.31,.61,outer_lid)
+    lower_weight*=face_mask*mix(.37,.64,outer_lid)
+    upper_tint=rgb('5d3936')
+    shadow_tint=rgb('a26961')
+    lower_tint=rgb('b47774')
     c=[mix(mix(mix(c[k],lower_tint[k],lower_weight),shadow_tint[k],upper_shadow),upper_tint[k],upper_weight)
        for k in range(3)]
    mark=gauss(x,.0021)*gauss(y-.048,.0030)*smooth(.040,.064,z)
@@ -708,8 +724,8 @@ for quality,level in [('high',1),('low',0)]:
    v.co.y-=mix(.00135,.00195,eye_band)*gauss(lateral-.002,.011)*gauss(d.y-.0048,.005)*smooth(.045,.060,v.co.z)
    v.co.y+=.00075*gauss(d.x,.008)*gauss(d.y+.005,.0038)*smooth(.046,.063,v.co.z)
    # Open the central curve of the lid and taper back toward both corners.
-   v.co.y+=.00080*eye_band*gauss(lateral+.001,.007)*gauss(d.y-.005,.0045)*smooth(.045,.060,v.co.z)
-   v.co.y-=.00045*eye_band*gauss(lateral,.008)*gauss(d.y+.005,.0040)*smooth(.046,.063,v.co.z)
+   v.co.y+=.00204*eye_band*gauss(lateral+.001,.0085)*gauss(d.y-.005,.005)*smooth(.045,.060,v.co.z)
+   v.co.y-=.00089*eye_band*gauss(lateral,.0085)*gauss(d.y+.005,.0045)*smooth(.046,.063,v.co.z)
    # Lengthen the outer corner and draw the two lids together toward its tip.
    corner=eye_band*gauss(lateral-.009,.0058)*gauss(d.y,.0061)*smooth(.046,.060,v.co.z)
    v.co.x+=math.copysign(.0022*corner,c.x)
@@ -758,9 +774,9 @@ for quality,level in [('high',1),('low',0)]:
    # Small lashes grow from the fitted lid rather than floating over the iris.
    for fraction in ((.56,.64,.72,.80,.88) if quality=='high' else (.63,.75,.86)):
     root=rim[round(fraction*(len(rim)-1))]
-    length=mix(.0012,.0023,fraction)
-    liner.fibre([root,root+Vector((side*length*.36,length*.32,.0007)),
-                 root+Vector((side*length*.75,length*.63,.0012))],.00031,.96,sides=5)
+    length=mix(.0012,.0026,fraction)
+    liner.fibre([root,root+Vector((side*length*.28,length*.26,.0006)),
+                 root+Vector((side*length*.70,length*.72,.0010))],.00027,.96,sides=5)
    end=rim[-1]
    for i in range(1,3):
     x=end.x+side*.0013*i;y=end.y+.00025*i

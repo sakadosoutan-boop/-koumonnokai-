@@ -101,20 +101,22 @@ test('every principal character uses an anatomical head in both quality levels',
     assert.ok(size.x>.10&&size.x<.26&&size.y>.20&&size.y<.45,id+' has a plausible head and neck scale');
   }
 });
-test('Gu eyelid styling preserves the reference nose and lip contours in both LODs',()=>{
-  // Landmark positions from the accepted November 18 head, in exported metres.
+test('Gu has the revised bridge and fuller lips without moving the tip, wings or corners in either LOD',()=>{
+  // In exported metres. Bridge and lip body follow the new sculpt; tip, wings
+  // and mouth corners retain the accepted November 18 landmarks.
   const reference={
     high:[
-      [-.01082,.01178,.07452],
+      [.00467,.01168,.08486],[-.01082,.01178,.07491],
       [.00007,-.01451,.09876],
       [-.01251,-.01870,.08631],[.01265,-.01871,.08640],
-      [-.00010,-.03670,.08580],
+      [-.00010,-.03239,.08564],[.00001,-.04319,.08578],
       [-.01713,-.03684,.07942],[.01703,-.03694,.07940]
     ],
     low:[
+      [.00212,.01450,.08680],[-.01185,.01236,.07418],
       [.00004,-.01214,.09959],
       [-.01304,-.01898,.08436],[.01309,-.01898,.08446],
-      [-.00010,-.03839,.08685],
+      [-.00010,-.03430,.08611],[.00001,-.04319,.08578],
       [-.01772,-.03693,.07878],[.01762,-.03702,.07875]
     ]
   };
@@ -127,6 +129,25 @@ test('Gu eyelid styling preserves the reference nose and lip contours in both LO
         nearest=Math.min(nearest,squared);
       }
       assert.ok(nearest<=(.00002)**2,quality+' nose/lip landmark '+point.join(','));
+    }
+  }
+});
+test('Gu has a comparable central eye opening in both quality levels',()=>{
+  const {Raycaster,Vector3}=C.THREE;
+  const forward=new Vector3(0,0,-1);
+  for(const quality of ['high','low']){
+    const {surface,anchors}=C.KM_HEADS.build('gu',C.KM_CAST3D.CAST.gu.head,quality);
+    for(const {center:[x,y,z],radius,scale:[,sy,sz]} of anchors.eyes){
+      const visible=[];
+      for(let step=-28;step<=28;step++){
+        const dy=step*.00025;
+        const ray=new Raycaster(new Vector3(x,y+dy,.2),forward);
+        const face=ray.intersectObject(surface,false)[0];
+        const globeZ=z+sz*Math.sqrt(radius**2-(dy/sy)**2);
+        if(face&&face.point.z<globeZ)visible.push(step);
+      }
+      const opening=(visible.at(-1)-visible[0])*.00025;
+      assert.ok(opening>=.0095&&opening<=.011,quality+' central eye opening '+opening);
     }
   }
 });
