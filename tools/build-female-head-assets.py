@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-green-portrait';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-soft-cheek';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -98,6 +98,19 @@ def relax_face_planes(head):
   if offset.length>.00048:offset.length=.00048
   v.co=point+offset
 
+def shape_cheek_transition(head):
+ # Restore volume below the cheekbone and carry it into the lower cheek.
+ # Keep the front lip contours, orbital rim, ear and neck out of the sculpt.
+ for vertex in head.data.vertices:
+  x,y,z=vertex.co
+  side=abs(x)
+  cheek_mask=smooth(.018,.033,side)*smooth(.004,-.020,y)*smooth(-.092,-.064,y)
+  hollow=gauss(side-.038,.024)*gauss(y+.052+.20*(side-.040),.025)*smooth(.004,.050,z)
+  vertex.co.z+=.0053*cheek_mask*hollow
+  # Round the outer jaw in profile without hollowing the front of the cheek.
+  jaw=gauss(y+.061,.019)*smooth(-.088,-.070,y)*smooth(.033,.053,side)*smooth(-.022,.018,z)
+  vertex.co.x-=math.copysign(.0035*jaw,x)
+
 eyes=[]
 for name in names[1:]:
  o=bpy.data.objects[name];local=female.matrix_world.inverted()@o.matrix_world.translation
@@ -108,7 +121,7 @@ low_parts=[]
 
 def brow_profile(t):
  # Carry the fuller brow along a shallow arch before dropping into the tail.
- height=.0279+.0047*smooth(0,.65,t)-.0030*smooth(.64,1,t)
+ height=.0293+.0035*smooth(0,.65,t)-.0034*smooth(.64,1,t)
  width=mix(.0041,.00105,smooth(.48,1,t))
  return height,width
 
@@ -129,19 +142,19 @@ def pigment(ob,hair=False,tint=None,lids=()):
    lower=gauss(y-seam+.0037*fullness,.0041)
    lower_mix=smooth(.001,-.002,y-seam)
    lip=(1-smooth(.009,.019,abs(x)))*mix(upper,lower,lower_mix)*smooth(.069,.079,z)
-   blush=.34*gauss(abs(x)-.041,.020)*gauss(y+.010,.018)*smooth(.029,.066,z)
+   blush=.32*gauss(abs(x)-.038,.023)*gauss(y+.015,.021)*smooth(.029,.066,z)
    shadow=.37*gauss(abs(x)-.038,.016)*gauss(y-.019,.006)*smooth(.045,.064,z)
    lip_top=rgb('964b4a');lip_bottom=rgb('b96058')
    lip_tint=[mix(lip_top[k],lip_bottom[k],lower_mix) for k in range(3)]
-   c=[mix(mix(mix(base[k],rgb('d27d76')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],min(.94,lip*1.07)) for k in range(3)]
+   c=[mix(mix(mix(base[k],rgb('db8b88')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],min(.94,lip*1.07)) for k in range(3)]
    # A soft continuous brow tint sits in the skin itself; fine strands add
    # detail without leaving a row of disconnected dots at mobile resolution.
    bt=max(0,min(1,(abs(x)-.014)/.042))
    by,bw=brow_profile(bt)
    brow=.96*gauss(y-by,bw)*smooth(.013,.021,abs(x))*(1-smooth(.049,.057,abs(x)))*smooth(.035,.060,z)
    outer=.32*gauss(abs(x)-.045,.010)*gauss(y-.014,.007)*smooth(.040,.060,z)
-   inner_tint=rgb('80665a')
-   outer_tint=rgb('493832')
+   inner_tint=rgb('8c7269')
+   outer_tint=rgb('604943')
    brow_tint=[mix(inner_tint[k],outer_tint[k],smooth(.06,.60,bt)) for k in range(3)]
    for k in range(3):c[k]=mix(mix(c[k],rgb('a86a60')[k],outer),brow_tint[k],brow)
    if .017<abs(x)<.055 and -.012<y<.030 and z>.048:
@@ -157,7 +170,7 @@ def pigment(ob,hair=False,tint=None,lids=()):
       lower_weight=max(lower_weight,math.exp(-distance/.0034**2))
     face_mask=smooth(.017,.023,abs(x))*smooth(.048,.061,z)
     outer_lid=smooth(.031,.046,abs(x))
-    upper_weight*=face_mask*mix(.63,.88,outer_lid)
+    upper_weight*=face_mask*mix(.59,.84,outer_lid)
     upper_shadow*=face_mask*mix(.31,.61,outer_lid)
     lower_weight*=face_mask*mix(.37,.64,outer_lid)
     upper_tint=rgb('5d3936')
@@ -724,12 +737,13 @@ for quality,level in [('high',1),('low',0)]:
    v.co.y-=mix(.00135,.00195,eye_band)*gauss(lateral-.002,.011)*gauss(d.y-.0048,.005)*smooth(.045,.060,v.co.z)
    v.co.y+=.00075*gauss(d.x,.008)*gauss(d.y+.005,.0038)*smooth(.046,.063,v.co.z)
    # Open the central curve of the lid and taper back toward both corners.
-   v.co.y+=.00204*eye_band*gauss(lateral+.001,.0085)*gauss(d.y-.005,.005)*smooth(.045,.060,v.co.z)
+   v.co.y+=.00174*eye_band*gauss(lateral+.001,.0085)*gauss(d.y-.005,.005)*smooth(.045,.060,v.co.z)
    v.co.y-=.00089*eye_band*gauss(lateral,.0085)*gauss(d.y+.005,.0045)*smooth(.046,.063,v.co.z)
    # Lengthen the outer corner and draw the two lids together toward its tip.
    corner=eye_band*gauss(lateral-.009,.0058)*gauss(d.y,.0061)*smooth(.046,.060,v.co.z)
    v.co.x+=math.copysign(.0022*corner,c.x)
    v.co.y+=(.00125-.24*d.y)*corner
+ shape_cheek_transition(head)
  head.data.update();bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
  groom=GroomMesh()
@@ -739,16 +753,16 @@ for quality,level in [('high',1),('low',0)]:
    t=(k+.5)/count;x=side*(.014+.042*t)
    height,width=brow_profile(t)
    y=height-width*(.42+.32*math.sin(k*2.4))
-   lean=mix(.0012,.0036,t)
+   lean=mix(.0012,.0030,t)
    rise=width*mix(1.02,.64,t)
    points=[]
    for u in (0,.5,1):
     px=x+side*lean*u
     py=y+rise*u
     points.append(Vector((px,py,sample(bvh,px,py)+.00032)))
-   radius=.00029*math.sin(math.pi*t)**.55
+   radius=.00025*math.sin(math.pi*t)**.55
    groom.fibre(points,radius,mix(1.55,.92,smooth(.04,.60,t))+.10*math.sin(k*1.7))
- brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('55413d'),.7));pigment(brow,True,'55413d')
+ brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('604b45'),.7));pigment(brow,True,'604b45')
  # Follow the actual upper globe/lid contact so eyeliner follows the face at each LOD.
  liner=GroomMesh()
  lids=[]
