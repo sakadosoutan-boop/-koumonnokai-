@@ -871,14 +871,16 @@ def pack_indices(indices):
         packed.append(value)
     return base64.b64encode(packed).decode()
 
-def export_mesh(ob):
+def export_mesh(ob,vertex_normals=None):
     me=ob.data;me.calc_loop_triangles()
     if len(me.vertices)>65535:raise ValueError(f'{ob.name}: uint16 vertex limit exceeded: {len(me.vertices)}')
-    if any(not math.isfinite(c) for v in me.vertices for c in (*v.co,*v.normal)):raise ValueError(f'{ob.name}: non-finite geometry')
     pos=[c for v in me.vertices for c in v.co]
+    if vertex_normals is None:vertex_normals=[v.normal for v in me.vertices]
+    if not all(math.isfinite(c) for c in pos) or not all(math.isfinite(c) for n in vertex_normals for c in n):
+        raise ValueError(f'{ob.name}: non-finite geometry')
     # 1/100000m quantization is finer than a rendered portrait pixel.
     encoded=base64.b64encode(struct.pack('<'+'h'*len(pos),*[round(x*100000) for x in pos])).decode()
-    normals=base64.b64encode(struct.pack('b'*(len(me.vertices)*3),*[round(max(-1,min(1,c))*127) for v in me.vertices for c in v.normal])).decode()
+    normals=base64.b64encode(struct.pack('b'*(len(me.vertices)*3),*[round(max(-1,min(1,c))*127) for n in vertex_normals for c in n])).decode()
     idx=[i for tri in me.loop_triangles for i in tri.vertices]
     idata=pack_indices(idx)
     key=next((k for k,v in INDEX_POOL.items() if v==idata),None)
