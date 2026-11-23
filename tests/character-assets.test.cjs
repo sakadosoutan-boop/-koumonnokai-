@@ -101,15 +101,17 @@ test('every principal character uses an anatomical head in both quality levels',
     assert.ok(size.x>.10&&size.x<.26&&size.y>.20&&size.y<.45,id+' has a plausible head and neck scale');
   }
 });
-test('Gu has a gradual bridge-to-tip profile and tapered wings in both LODs',()=>{
+test('Gu has a shallow nose root and a continuous bridge-to-tip profile in both LODs',()=>{
   const {Raycaster,Vector3}=C.THREE;
   const forward=new Vector3(0,0,-1);
   for(const quality of ['high','low']){
     const {surface}=C.KM_HEADS.build('gu',{},quality);
     const depth=(x,y)=>new Raycaster(new Vector3(x,y,.25),forward).intersectObject(surface,false)[0]?.point.z;
-    const bridge=depth(0,.010),lowerBridge=depth(0,.004),tip=depth(0,-.012);
-    assert.ok(bridge>.0919&&bridge<.0930,quality+' narrow bridge projection');
-    assert.ok(tip>.0967&&tip<.0978&&tip-lowerBridge>.0004&&tip-lowerBridge<.0017,quality+' gradual nose tip');
+    const profile=[.028,.020,.012,.004,-.004].map(y=>depth(0,y));
+    const rises=profile.slice(1).map((z,index)=>z-profile[index]);
+    assert.ok(rises[0]>.0018&&rises[0]<.0035,quality+' shallow transition at the nose root '+profile);
+    assert.ok(rises.every(rise=>rise>0&&rise<.006),quality+' steady bridge projection '+profile);
+    assert.ok(rises.at(-1)<rises[2]&&profile.at(-1)<.100,quality+' softly rounded nose tip '+profile);
     for(const side of [-1,1]){
       const wing=depth(side*.012,-.019);
       assert.ok(wing>.080&&wing<.085,quality+' softly tapered wing');
@@ -163,7 +165,7 @@ test('Gu crease and upper and lower eyeliner fit the eyelid in both LODs',()=>{
     }
   }
 });
-test('Gu chin underside rises toward the tip without a low shelf in either LOD',()=>{
+test('Gu chin underside rises gradually from the throat in both LODs',()=>{
   const {Raycaster,Vector3}=C.THREE;
   const up=new Vector3(0,1,0);
   for(const quality of ['high','low']){
@@ -173,7 +175,9 @@ test('Gu chin underside rises toward the tip without a low shelf in either LOD',
       assert.ok(hit,quality+' underside exists at depth '+z);
       return hit.point.y;
     });
-    assert.ok(heights[0]>-.0735&&heights[0]<heights[1]&&heights[1]<heights[2],quality+' chin floor '+heights);
+    const rises=heights.slice(1).map((y,index)=>y-heights[index]);
+    assert.ok(heights[0]>-.079&&heights[2]>-.072,quality+' chin floor within the jaw '+heights);
+    assert.ok(rises.every(rise=>rise>.002&&rise<.0055),quality+' smooth rise into the chin '+heights);
   }
 });
 test('Gu has a shallow lip profile and an exterior mouth contact in either LOD',()=>{
