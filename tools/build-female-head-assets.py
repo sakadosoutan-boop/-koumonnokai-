@@ -10,7 +10,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-browser-annotation-retouch';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-natural-chin-and-nose';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -28,17 +28,9 @@ def female_canon(v):
  # Keep the proportional shortening gradual from orbit to upper neck.
  lower_face=smooth(.010,-.077,y)*smooth(-.163,-.092,y)
  y+=.006*lower_face
- # Taper below the mouth only, then blend the adjustment out under the jaw.
- jaw=smooth(-.042,-.065,y)*smooth(-.135,-.095,y)
- x*=1-.035*jaw
- # Soften only the lateral mandibular angle. The central nose/lips and the
- # cheek volume above the mouth are outside this mask.
- angle=smooth(-.026,-.060,y)*smooth(-.105,-.078,y)*smooth(.029,.047,abs(x))
- x-=math.copysign(.0030*angle,x)
- chin=smooth(-.039,-.072,y)*smooth(-.114,-.086,y)
- y+=.0035*chin
- z-=.0014*gauss(x,.023)*gauss(y+.064,.017)*smooth(.020,.046,z)
- z+=.0009*gauss(abs(x)-.038,.013)*gauss(y+.051,.017)*smooth(.023,.060,z)
+ # Taper the existing mandible with a single falloff across the lower face.
+ jaw=smooth(-.031,-.067,y)*smooth(-.133,-.092,y)*smooth(.017,.047,abs(x))
+ x*=1-.072*jaw
  # Shape the neck below the jaw, where the skin meets the costume collar.
  x*=1-.12*smooth(-.085,-.161,y)
  # Preserve the source neck/clavicle topology, placing its widening below the
@@ -112,26 +104,15 @@ def shape_cheek_transition(head):
   cheek_side=gauss(side-.050,.015)*gauss(y+.027,.023)*smooth(.032,.047,side)
   cheek_side*=smooth(.002,-.012,y)*smooth(-.055,-.040,y)*smooth(.011,.040,z)
   vertex.co.x-=math.copysign(.00105*cheek_side,x)
-  # Round the outer jaw in profile without hollowing the front of the cheek.
-  jaw=gauss(y+.066,.023)*smooth(-.098,-.076,y)*smooth(.026,.049,side)*smooth(-.025,.018,z)
-  vertex.co.x-=math.copysign(.00355*jaw,x)
 
 def shape_chin_profile(head):
- # Lift the surface underneath the chin into the jaw instead of leaving a
- # horizontal shelf. Blend back into the existing neck above the collar.
+ # Lift the jaw as a single volume and carry its curvature into the neck.
+ # A wide falloff leaves the lower lip and the middle of the throat seated.
  for vertex in head.data.vertices:
   x,y,z=vertex.co
-  side=abs(x)
-  under=smooth(-.052,-.069,y)*smooth(-.115,-.089,y)*smooth(.024,.043,z)*smooth(.090,.078,z)
-  under*=gauss(z-.052,.027)*smooth(.044,.016,side)
-  tip=smooth(-.049,-.061,y)*smooth(-.088,-.073,y)*smooth(.057,.079,z)*gauss(x,.025)
-  throat=gauss(y+.090,.018)*smooth(-.060,-.077,y)*smooth(-.123,-.106,y)*smooth(.018,.033,z)
-  throat*=smooth(.077,.057,z)*smooth(.047,.020,side)
-  flank=gauss(y+.063,.014)*smooth(-.047,-.057,y)*smooth(-.086,-.073,y)
-  flank*=smooth(.016,.030,side)*smooth(.050,.075,z)
-  vertex.co.y+=.0065*under+.0021*tip
-  vertex.co.z-=.0019*tip+.0046*throat
-  vertex.co.x-=math.copysign(.0016*flank,x)
+  lower=smooth(-.045,-.075,y)*smooth(-.133,-.095,y)*gauss(x,.054)
+  vertex.co.y+=.0092*lower*smooth(.011,.066,z)
+  vertex.co.z-=.0018*lower*smooth(.037,.079,z)
 
 def mouth_line(side):
  seam=-.0395+.00145*gauss(side-.0145,.009)
@@ -157,50 +138,16 @@ def shape_mouth(head):
   chin_crease=gauss(x,.013)*gauss(y+.050,.0055)
   vertex.co.z+=smooth(.067,.081,z)*(.0013*cheek_crease+.0007*chin_crease)
 
-def smooth_jaw_transition(head,neighbors,quality):
- # Fair the connected cheek and jaw after sculpting their major volumes.
- # Leave the mouth, bone under the central chin, ear and neck outside this mask.
- original=[v.co.copy() for v in head.data.vertices]
- weights=[]
- for x,y,z in original:
-  side=abs(x)
-  mandible=smooth(.025,.039,side)*smooth(.069,.056,side)
-  mandible*=smooth(-.027,-.040,y)*smooth(-.092,-.074,y)*smooth(.008,.034,z)
-  lower_cheek=smooth(.007,.019,side)*smooth(.050,.035,side)
-  lower_cheek*=smooth(-.043,-.051,y)*smooth(-.087,-.068,y)*smooth(.047,.068,z)
-  weights.append(.65*max(mandible,lower_cheek))
- for _ in range(12 if quality=='high' else 3):
-  positions=[v.co.copy() for v in head.data.vertices]
-  for v,point,start,weight,adjacent in zip(head.data.vertices,positions,original,weights,neighbors):
-   if weight<.003 or not adjacent:continue
-   average=sum((positions[i] for i in adjacent),Vector((0,0,0)))/len(adjacent)
-   offset=point.lerp(average,weight)-start
-   if offset.length>.0026:offset.length=.0026
-   v.co=start+offset
-
-def shape_jaw_underside(head):
- # Lift the two low shoulders beside the chin over a broad, continuous area.
- # This follows the jaw in depth and leaves the middle of the throat seated.
- for vertex in head.data.vertices:
-  x,y,z=vertex.co
-  side=abs(x)
-  lateral=gauss(side-.029,.0155)*smooth(.009,.021,side)
-  height=gauss(y+.063,.016)*smooth(-.041,-.052,y)*smooth(-.091,-.077,y)
-  depth=gauss(z-.056,.026)*smooth(.030,.048,z)
-  transition=lateral*height*depth
-  vertex.co.y+=.00160*transition
-  vertex.co.x-=math.copysign(.00055*transition,x)
-
 def fair_lower_cheek_depth(head):
- # Even out the shallow folds from the mouth corners into either side of the
- # chin. Use a fixed neighbourhood in the face plane at both mesh resolutions.
+ # Even out the shallow folds below the mouth corners and across the chin.
+ # Sample at fixed distances in the face plane to match both mesh resolutions.
  guide=surface_bvh(head)
  offsets=((-1,0),(1,0),(0,-1),(0,1),(-.71,-.71),(.71,-.71),(-.71,.71),(.71,.71))
  for vertex in head.data.vertices:
   x,y,z=vertex.co
   side=abs(x)
-  mask=gauss(side-.023,.014)*smooth(.009,.018,side)*smooth(.048,.036,side)
-  mask*=smooth(-.042,-.050,y)*smooth(-.079,-.064,y)*smooth(.050,.067,z)
+  mask=gauss(side-.018,.025)*smooth(-.042,-.052,y)
+  mask*=smooth(-.082,-.067,y)*smooth(.044,.064,z)
   if mask<.01 or abs(z-sample(guide,x,y))>.0007:continue
   depths=[sample(guide,x+dx*.007,y+dy*.007,z) for dx,dy in offsets]
   weights=[gauss(depth-z,.011) for depth in depths]
@@ -208,15 +155,18 @@ def fair_lower_cheek_depth(head):
   vertex.co.z+=mask*max(-.0026,min(.0026,change))
 
 def refine_nose_profile(head):
- # Blend the narrow bridge into a softer tip and a gently tapered alar base.
+ # Join the upper bridge to the tip with a shallow curve in profile. Blend
+ # the depth change across the bridge and keep it clear of the nostril rims.
  for vertex in head.data.vertices:
   x,y,z=vertex.co
   side=abs(x)
-  bridge=gauss(x,.010)*gauss(y-.007,.025)*smooth(-.015,-.004,y)*smooth(.062,.080,z)
-  tip=gauss(x,.012)*gauss(y+.014,.011)*smooth(.080,.095,z)
+  root=gauss(x,.015)*gauss(y-.017,.015)*smooth(.064,.079,z)
+  bridge=gauss(x,.012)*gauss(y-.007,.019)*smooth(.064,.084,z)
+  tip=gauss(x,.013)*gauss(y+.008,.010)*smooth(.078,.095,z)
+  base=gauss(x,.011)*gauss(y+.022,.007)*smooth(.077,.087,z)
   wings=gauss(side-.012,.0085)*gauss(y+.019,.009)*smooth(.071,.082,z)
-  vertex.co.z+=.00115*bridge-.00265*tip-.00055*wings
-  vertex.co.x-=math.copysign((.00075*bridge+.00115*wings)*smooth(0,.007,side),x)
+  vertex.co.z+=.00235*root+.00111*bridge-.00310*tip+.00105*base-.00045*wings
+  vertex.co.x-=math.copysign(.00115*wings*smooth(0,.007,side),x)
 
 eyes=[]
 for name in names[1:]:
@@ -995,8 +945,6 @@ for quality,level in [('high',1),('low',0)]:
  shape_cheek_transition(head)
  shape_chin_profile(head)
  shape_mouth(head)
- shape_jaw_underside(head)
- smooth_jaw_transition(head,neighbors,quality)
  fair_lower_cheek_depth(head)
  refine_nose_profile(head)
  lids,creases=fit_lid_guides(surface_bvh(head),quality)
