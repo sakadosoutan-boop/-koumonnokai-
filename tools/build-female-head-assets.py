@@ -10,7 +10,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-eyelids-and-chin';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-soft-profile-and-lids';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -96,17 +96,22 @@ def relax_face_planes(head,neighbors):
   v.co=point+offset
 
 def shape_cheek_transition(head):
- # Restore volume below the cheekbone and carry it into the lower cheek.
+ # Carry the soft cheekbone volume into the lower cheek with a broad falloff.
  # Keep the front lip contours, orbital rim, ear and neck out of the sculpt.
  for vertex in head.data.vertices:
   x,y,z=vertex.co
   side=abs(x)
   cheek_mask=smooth(.018,.033,side)*smooth(.004,-.020,y)*smooth(-.092,-.064,y)
-  hollow=gauss(side-.038,.024)*gauss(y+.052+.20*(side-.040),.025)*smooth(.004,.050,z)
-  vertex.co.z+=.0053*cheek_mask*hollow
+  fullness=gauss(side-.038,.024)*gauss(y+.048+.20*(side-.040),.028)*smooth(.004,.050,z)
+  vertex.co.z+=.0032*cheek_mask*fullness
+  # Ease the forward crest of the cheekbone with a broad depth adjustment.
+  # The soft pad below it still carries volume into the jaw.
+  crest=gauss(side-.043,.021)*gauss(y+.022,.019)*smooth(.023,.038,side)
+  crest*=smooth(.004,-.012,y)*smooth(-.056,-.035,y)*smooth(.030,.063,z)
+  vertex.co.z-=.00155*crest
   # Round the outer jaw in profile without hollowing the front of the cheek.
   jaw=gauss(y+.066,.023)*smooth(-.098,-.076,y)*smooth(.026,.049,side)*smooth(-.025,.018,z)
-  vertex.co.x-=math.copysign(.0040*jaw,x)
+  vertex.co.x-=math.copysign(.00355*jaw,x)
 
 def shape_chin_profile(head):
  # Lift the surface underneath the chin into the jaw instead of leaving a
@@ -173,12 +178,12 @@ def shape_jaw_underside(head):
  for vertex in head.data.vertices:
   x,y,z=vertex.co
   side=abs(x)
-  lateral=gauss(side-.029,.014)*smooth(.009,.021,side)
+  lateral=gauss(side-.029,.0155)*smooth(.009,.021,side)
   height=gauss(y+.063,.016)*smooth(-.041,-.052,y)*smooth(-.091,-.077,y)
   depth=gauss(z-.056,.026)*smooth(.030,.048,z)
   transition=lateral*height*depth
-  vertex.co.y+=.0029*transition
-  vertex.co.x-=math.copysign(.00115*transition,x)
+  vertex.co.y+=.00160*transition
+  vertex.co.x-=math.copysign(.00055*transition,x)
 
 eyes=[]
 for name in names[1:]:
@@ -283,11 +288,17 @@ def fit_lid_guides(bvh,quality):
     lower.append(Vector((x,opening[0]-.00035,0)))
   if len(upper)<6:raise ValueError('Gu eyelid guide does not span the globe')
   lids.append((upper,lower))
+  # The crease sits inside the corner-to-corner rim. Smooth over the small
+  # sampling steps at the lash line so the fold follows the lid's own arch.
+  span=upper[1:-2]
   crease=[]
-  for i,point in enumerate(upper):
-   t=i/max(1,len(upper)-1)
-   gap=.00165+.00222*math.sin(math.pi*t)**.8
-   crease.append(Vector((point.x,point.y+gap,0)))
+  for i,point in enumerate(span):
+   t=i/(len(span)-1)
+   weights=[gauss(point.x-other.x,.00215) for other in upper]
+   average=sum(other.y*w for other,w in zip(upper,weights))/sum(weights)
+   gap=.00124+.00179*math.sin(math.pi*t**.91)**.82
+   height=max(point.y+.00130,mix(point.y,average,.78)+gap)
+   crease.append(Vector((point.x,height,0)))
   creases.append(crease)
  return lids,creases
 
@@ -297,9 +308,9 @@ def sculpt_lid_creases(head,creases):
   x,y,z=vertex.co
   if not (.019<abs(x)<.054 and .004<y<.029 and z>.051):continue
   crease=creases[0] if x*creases[0][0].x>0 else creases[1]
-  depth=max((gauss(x-p.x,.0022)*gauss(y-p.y,.00125)*math.sin(math.pi*i/(len(crease)-1))
+  depth=max((gauss(x-p.x,.0022)*gauss(y-p.y,.00152)*math.sin(math.pi*i/(len(crease)-1))
              for i,p in enumerate(crease)),default=0)
-  vertex.co.z-=.00062*depth
+  vertex.co.z-=.00037*depth
 
 def lid_makeup(head,lids,creases,quality):
  # Fitted ribbons let both LODs show the eyeliner and crease. Their edges
@@ -317,13 +328,13 @@ def lid_makeup(head,lids,creases,quality):
   for i,point in enumerate(path):
    t=i/(len(path)-1)
    if fold:
-    feather=math.sin(math.pi*t)**.72
-    width=.00024+.00078*feather
-    strength=.83*feather
+    feather=smooth(0,.23,t)*smooth(1,.74,t)
+    width=.00018+.00066*feather
+    strength=.62*feather
    else:
     along=i/(body_length-1)
     feather=smooth(0,.13,along)*smooth(1,.91,t)
-    width=.00010+mix(.00057,.00137,smooth(.14,.88,along))*feather
+    width=.00010+mix(.00057,.00127,smooth(.14,.88,along))*feather
     strength=.95*feather
    for q in offsets:
     # Keep the eyeliner's lower edge on skin just above the eye aperture.
@@ -335,7 +346,7 @@ def lid_makeup(head,lids,creases,quality):
     weights=(1-uv.x-uv.y,uv.x,uv.y)
     base=[sum(skin[j].color[k]*weight for j,weight in zip(ids,weights)) for k in range(3)]
     w=strength*(1-smooth(.18,1,abs(q)))
-    coords.append((x,y,hit.z+.00031))
+    coords.append((x,y,hit.z+(.00026 if fold else .00031)))
     colors.append(tuple(mix(base[k],tint[k],w) for k in range(3)))
    if i:
     row=len(offsets)
@@ -348,7 +359,7 @@ def lid_makeup(head,lids,creases,quality):
   end=upper[-1]
   wing=[end+Vector((side*dx,dy,0)) for dx,dy in ((.00125,.00016),(.00255,.00062),(.00405,.00147))]
   ribbon(upper+wing,rgb('38262a'),False,len(upper))
-  ribbon(crease,rgb('74524d'),True,len(crease))
+  ribbon(crease,rgb('87635b'),True,len(crease))
  ob=mesh_object('gu_'+quality+'_lid_makeup',coords,faces,mat('gu_lid_makeup',rgb('74504a'),.75))
  attr=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT')
  for v,color in zip(attr.data,colors):v.color=(*color,1)
