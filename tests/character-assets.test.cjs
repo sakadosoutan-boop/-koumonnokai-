@@ -146,6 +146,28 @@ test('Gu has a comparable central eye opening in both quality levels',()=>{
     }
   }
 });
+test('Gu upper eyeliner and eyelid crease are distinct fitted lines in both LODs',()=>{
+  const {Raycaster,Vector3}=C.THREE;
+  const forward=new Vector3(0,0,-1);
+  for(const quality of ['high','low']){
+    const {group,surface,anchors}=C.KM_HEADS.build('gu',{},quality);
+    const makeup=group.getObjectByName('gu-brow');
+    for(const {center:[x,cy]} of anchors.eyes){
+      const runs=[];
+      for(let step=12;step<54;step++){
+        const ray=new Raycaster(new Vector3(x,cy+step*.0002,.2),forward);
+        const hit=ray.intersectObject(makeup,false)[0];
+        if(!hit)continue;
+        const skin=ray.intersectObject(surface,false)[0];
+        assert.ok(skin&&Math.abs(hit.point.z-skin.point.z)<.001,quality+' makeup follows the eyelid skin');
+        if(runs.at(-1)?.at(-1)!==step-1)runs.push([]);
+        runs.at(-1).push(step);
+      }
+      assert.equal(runs.length,2,quality+' eyeliner and crease are both visible');
+      assert.ok(runs[1][0]-runs[0].at(-1)>=6,quality+' the two curves have a visible gap');
+    }
+  }
+});
 test('Gu chin underside rises toward the tip without a low shelf in either LOD',()=>{
   const {Raycaster,Vector3}=C.THREE;
   const up=new Vector3(0,1,0);
