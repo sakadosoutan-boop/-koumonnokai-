@@ -307,11 +307,11 @@ def pigment(ob,hair=False,tint=None,lids=()):
    bt=max(0,min(1,(abs(x)-.014)/.042))
    by,bw=brow_profile(bt)
    brow=.90*gauss(y-by,bw*1.08)*smooth(.011,.022,abs(x))*smooth(.057,.049,abs(x))*smooth(.035,.060,z)
-   outer=.28*gauss(abs(x)-.044,.013)*gauss(y-.023,.0063)*smooth(.040,.060,z)
+   outer=.19*gauss(abs(x)-.044,.013)*gauss(y-.023,.0063)*smooth(.040,.060,z)
    inner_tint=rgb('8f6e5f')
    outer_tint=rgb('46312d')
    brow_tint=[mix(inner_tint[k],outer_tint[k],smooth(.06,.60,bt)) for k in range(3)]
-   for k in range(3):c[k]=mix(mix(c[k],rgb('906756')[k],outer),brow_tint[k],brow)
+   for k in range(3):c[k]=mix(mix(c[k],rgb('8d7e73')[k],outer),brow_tint[k],brow)
    if .016<abs(x)<.061 and -.012<y<.033 and z>.048:
     upper_weight=upper_shadow=lower_weight=lid_glint=0
     for upper,lower in lids:
@@ -325,17 +325,17 @@ def pigment(ob,hair=False,tint=None,lids=()):
       glint_distance=min((x-p.x)**2+(y-p.y-.0022)**2 for p in upper)
       lid_glint=max(lid_glint,math.exp(-glint_distance/.0022**2))
      if lower:
-      distance=min((x-p.x)**2+(y-p.y)**2 for p in lower)
-      lower_weight=max(lower_weight,math.exp(-distance/.0029**2))
+      shade=max(gauss(x-p.x,.0042)*gauss(y-p.y+.00074,.0019) for p in lower)
+      lower_weight=max(lower_weight,shade)
     face_mask=smooth(.016,.022,abs(x))*smooth(.061,.052,abs(x))*smooth(.048,.061,z)
     outer_lid=smooth(.027,.047,abs(x))
-    upper_weight*=face_mask*mix(.61,.90,outer_lid)
-    upper_shadow*=face_mask*mix(.55,.94,outer_lid)
-    lower_weight*=face_mask*mix(.12,.43,outer_lid)
-    lid_glint*=.60*face_mask*gauss(abs(x)-.025,.008)
-    upper_tint=rgb('3f2c28')
-    inner_shadow=rgb('b69372');outer_shadow=rgb('785049')
-    lower_tint=rgb('a38272');glint_tint=rgb('efd0a0')
+    upper_weight*=face_mask*mix(.61,.89,outer_lid)
+    upper_shadow*=face_mask*mix(.45,.79,outer_lid)
+    lower_weight*=face_mask*mix(.13,.49,outer_lid)
+    lid_glint*=.34*face_mask*gauss(abs(x)-.025,.008)
+    upper_tint=rgb('3d302c')
+    inner_shadow=rgb('b8a79a');outer_shadow=rgb('766559')
+    lower_tint=rgb('a39487');glint_tint=rgb('ded1bb')
     for k in range(3):
      shadow_tint=mix(inner_shadow[k],outer_shadow[k],outer_lid)
      c[k]=mix(mix(mix(mix(c[k],lower_tint[k],lower_weight),shadow_tint,upper_shadow),
@@ -411,12 +411,12 @@ def lid_makeup(head,lids,creases,quality):
     strength=.95*feather
    elif kind=='crease':
     feather=smooth(0,.23,t)*smooth(1,.74,t)
-    width=.00016+.00065*feather
-    strength=.88*feather
-   elif kind=='lower':
-    feather=smooth(.03,.43,t)*smooth(1,.85,t)
-    width=.00010+mix(.00040,.00116,smooth(.19,.82,t))*feather
+    width=.00016+.00069*feather
     strength=.96*feather
+   elif kind=='lower':
+    feather=smooth(.13,.52,t)*smooth(1,.88,t)
+    width=.00010+mix(.00034,.00118,smooth(.24,.85,t))*feather
+    strength=.93*feather
    else:
     along=i/(body_length-1)
     feather=smooth(0,.13,along)*smooth(1,.91,t)
@@ -446,8 +446,8 @@ def lid_makeup(head,lids,creases,quality):
   end=upper[-1]
   wing=[end+Vector((side*dx,dy,0)) for dx,dy in ((.00150,.00024),(.00305,.00091),(.00505,.00210))]
   ribbon(upper+wing,rgb('23131c'),'upper',len(upper))
-  ribbon(crease,rgb('694638'),'crease',len(crease))
-  ribbon(lower,rgb('4b352d'),'lower',len(lower))
+  ribbon(crease,rgb('4a3a33'),'crease',len(crease))
+  ribbon(lower,rgb('5b4c44'),'lower',len(lower))
   stations=24 if quality=='high' else 14
   brow=[Vector((side*(.014+.042*t),brow_profile(t)[0],0)) for t in (i/stations for i in range(stations+1))]
   ribbon(brow,rgb('3e2a26'),'brow',len(brow))
