@@ -107,10 +107,11 @@ test('Gu has a gradual bridge-to-tip profile and tapered wings in both LODs',()=
   for(const quality of ['high','low']){
     const {surface}=C.KM_HEADS.build('gu',{},quality);
     const depth=(x,y)=>new Raycaster(new Vector3(x,y,.25),forward).intersectObject(surface,false)[0]?.point.z;
-    const bridge=depth(0,.010),lowerBridge=depth(0,.004),tip=depth(0,-.012),peak=depth(0,-.005);
+    const bridge=depth(0,.010),tip=depth(0,-.003),belowTip=depth(0,-.012);
     assert.ok(bridge>.0919&&bridge<.0930,quality+' narrow bridge projection');
-    assert.ok(tip>.0967&&tip<.0978&&tip-lowerBridge>.0004&&tip-lowerBridge<.0017,quality+' gradual nose tip');
-    assert.ok(peak>.0983&&peak<.0993,quality+' rounded nose-tip crest '+peak);
+    assert.ok(tip>.0978&&tip<.0990,quality+' defined nose tip '+tip);
+    const roll=tip-belowTip;
+    assert.ok(roll>.0028&&roll<.0045,quality+' compact contour below the nose tip '+roll);
     for(const side of [-1,1]){
       const wing=depth(side*.012,-.019);
       assert.ok(wing>.080&&wing<.085,quality+' softly tapered wing');
@@ -157,9 +158,10 @@ test('Gu crease and upper and lower eyeliner fit the eyelid in both LODs',()=>{
         if(runs.at(-1)?.at(-1)!==step-1)runs.push([]);
         runs.at(-1).push(step);
       }
-      assert.equal(runs.length,2,quality+' eyeliner and crease are both visible');
+      assert.equal(runs.length,3,quality+' eyeliner, crease and brow are distinct '+JSON.stringify(runs));
       const gap=runs[1][0]-runs[0].at(-1);
       assert.ok(gap>=3&&gap<=7,quality+' the crease stays close to the upper line');
+      assert.ok(runs[2][0]-runs[1].at(-1)>=3,quality+' bare skin separates the eyebrow and fold');
       assert.ok(fittedLineAt(x+Math.sign(x)*.004,cy-.005),quality+' a thin lower line follows the outer lid');
     }
   }
