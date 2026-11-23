@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-balanced-expression';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-portrait-face-and-fringe';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -73,13 +73,16 @@ def retain_anatomical_neck(ob):
  bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
  bm.to_mesh(ob.data);bm.free();ob.data.update()
 
-def relax_face_planes(head):
+def mesh_neighbors(head):
+ neighbors=[[] for _ in head.data.vertices]
+ for edge in head.data.edges:
+  a,b=edge.vertices;neighbors[a].append(b);neighbors[b].append(a)
+ return neighbors
+
+def relax_face_planes(head,neighbors):
  # Ease short ridges on the cheek-to-jaw and upper alar surfaces.
  # Keep the lip seam, nostril rims and lids outside the smoothing masks.
  positions=[v.co.copy() for v in head.data.vertices]
- neighbors=[[] for _ in positions]
- for edge in head.data.edges:
-  a,b=edge.vertices;neighbors[a].append(b);neighbors[b].append(a)
  for v,point,adjacent in zip(head.data.vertices,positions,neighbors):
   x,y,z=point
   cheek=gauss(abs(x)-.041,.014)*gauss(y+.051,.021)*smooth(.022,.039,abs(x))*smooth(.022,.050,z)
@@ -101,8 +104,8 @@ def shape_cheek_transition(head):
   hollow=gauss(side-.038,.024)*gauss(y+.052+.20*(side-.040),.025)*smooth(.004,.050,z)
   vertex.co.z+=.0053*cheek_mask*hollow
   # Round the outer jaw in profile without hollowing the front of the cheek.
-  jaw=gauss(y+.061,.019)*smooth(-.088,-.070,y)*smooth(.033,.053,side)*smooth(-.022,.018,z)
-  vertex.co.x-=math.copysign(.0035*jaw,x)
+  jaw=gauss(y+.066,.023)*smooth(-.098,-.076,y)*smooth(.026,.049,side)*smooth(-.025,.018,z)
+  vertex.co.x-=math.copysign(.0040*jaw,x)
 
 def shape_chin_profile(head):
  # Lift the surface underneath the chin into the jaw instead of leaving a
@@ -141,6 +144,27 @@ def shape_mouth(head):
   cheek_crease=gauss(side-.023,.010)*gauss(y+.042,.0085)*smooth(.014,.021,side)
   chin_crease=gauss(x,.013)*gauss(y+.050,.0055)
   vertex.co.z+=smooth(.067,.081,z)*(.0013*cheek_crease+.0007*chin_crease)
+
+def smooth_jaw_transition(head,neighbors,quality):
+ # Fair the connected cheek and jaw after sculpting their major volumes.
+ # Leave the mouth, bone under the central chin, ear and neck outside this mask.
+ original=[v.co.copy() for v in head.data.vertices]
+ weights=[]
+ for x,y,z in original:
+  side=abs(x)
+  mandible=smooth(.025,.039,side)*smooth(.069,.056,side)
+  mandible*=smooth(-.027,-.040,y)*smooth(-.092,-.074,y)*smooth(.008,.034,z)
+  lower_cheek=smooth(.007,.019,side)*smooth(.050,.035,side)
+  lower_cheek*=smooth(-.043,-.051,y)*smooth(-.087,-.068,y)*smooth(.047,.068,z)
+  weights.append(.65*max(mandible,lower_cheek))
+ for _ in range(12 if quality=='high' else 3):
+  positions=[v.co.copy() for v in head.data.vertices]
+  for v,point,start,weight,adjacent in zip(head.data.vertices,positions,original,weights,neighbors):
+   if weight<.003 or not adjacent:continue
+   average=sum((positions[i] for i in adjacent),Vector((0,0,0)))/len(adjacent)
+   offset=point.lerp(average,weight)-start
+   if offset.length>.0026:offset.length=.0026
+   v.co=start+offset
 
 eyes=[]
 for name in names[1:]:
@@ -193,10 +217,10 @@ def pigment(ob,hair=False,tint=None,lids=()):
    # detail without leaving a row of disconnected dots at mobile resolution.
    bt=max(0,min(1,(abs(x)-.014)/.042))
    by,bw=brow_profile(bt)
-   brow=.96*gauss(y-by,bw)*smooth(.013,.021,abs(x))*(1-smooth(.049,.057,abs(x)))*smooth(.035,.060,z)
+   brow=.79*gauss(y-by,bw*1.19)*smooth(.011,.025,abs(x))*smooth(.057,.047,abs(x))*smooth(.035,.060,z)
    outer=.32*gauss(abs(x)-.045,.010)*gauss(y-.014,.007)*smooth(.040,.060,z)
-   inner_tint=rgb('8c7269')
-   outer_tint=rgb('604943')
+   inner_tint=rgb('a38a7f')
+   outer_tint=rgb('715952')
    brow_tint=[mix(inner_tint[k],outer_tint[k],smooth(.06,.60,bt)) for k in range(3)]
    for k in range(3):c[k]=mix(mix(c[k],rgb('a86a60')[k],outer),brow_tint[k],brow)
    if .017<abs(x)<.055 and -.012<y<.030 and z>.048:
@@ -205,19 +229,19 @@ def pigment(ob,hair=False,tint=None,lids=()):
      if upper:
       distance=min((x-p.x)**2+(y-p.y)**2 for p in upper)
       upper_weight=max(upper_weight,math.exp(-distance/.0027**2))
-      crease_distance=min((x-p.x)**2+(y-p.y-.0024)**2 for p in upper)
-      upper_shadow=max(upper_shadow,math.exp(-crease_distance/.0050**2))
+      crease_distance=min((x-p.x)**2+(y-p.y-.0034)**2 for p in upper)
+      upper_shadow=max(upper_shadow,math.exp(-crease_distance/.0056**2))
      if lower:
       distance=min((x-p.x)**2+(y-p.y)**2 for p in lower)
-      lower_weight=max(lower_weight,math.exp(-distance/.0034**2))
+      lower_weight=max(lower_weight,math.exp(-distance/.0042**2))
     face_mask=smooth(.017,.023,abs(x))*smooth(.048,.061,z)
     outer_lid=smooth(.031,.046,abs(x))
-    upper_weight*=face_mask*mix(.59,.84,outer_lid)
-    upper_shadow*=face_mask*mix(.31,.61,outer_lid)
-    lower_weight*=face_mask*mix(.37,.64,outer_lid)
-    upper_tint=rgb('5d3936')
-    shadow_tint=rgb('a26961')
-    lower_tint=rgb('b47774')
+    upper_weight*=face_mask*mix(.64,.91,outer_lid)
+    upper_shadow*=face_mask*mix(.35,.69,outer_lid)
+    lower_weight*=face_mask*mix(.38,.60,outer_lid)
+    upper_tint=rgb('543637')
+    shadow_tint=rgb('96655f')
+    lower_tint=rgb('b88380')
     c=[mix(mix(mix(c[k],lower_tint[k],lower_weight),shadow_tint[k],upper_shadow),upper_tint[k],upper_weight)
        for k in range(3)]
    mark=gauss(x,.0021)*gauss(y-.048,.0030)*smooth(.040,.064,z)
@@ -241,7 +265,7 @@ def hair_surface(head, material, quality):
   # Draw the underlayer closer to the back of the ear before it meets the fall.
   nape+=.012*gauss(z+.043,.018)*smooth(.040,.064,abs(x))
   ear=.014*gauss(z+.008,.012)*smooth(.057,.077,abs(x))
-  bridge=.008*gauss(x+.055,.018)*smooth(.026,.056,z)
+  bridge=(.008*gauss(x+.055,.018)+.009*gauss(x+.034,.018))*smooth(.026,.056,z)
   return y-(.080-.067*smooth(.40,1.62,angle)-.060*smooth(1.60,3.14,angle)-sweep+part
             -.004*gauss(x-.008,.046)*smooth(.025,.055,z)-nape+ear-bridge)
  def comb(v):
@@ -340,16 +364,28 @@ def hair_surface(head, material, quality):
   if (b-a).cross(c-a).z<0:faces=[tuple(reversed(face)) for face in faces]
   ob=mesh_object(name,verts,faces,material)
   set_hair_grain(ob,tones);parts.append(ob)
- # Paired lifted temple waves expose the forehead and meet at the central part.
+ # The swept locks share an offset part. The longer sweep crosses more of
+ # the forehead before feeding into the same temple hair.
+ part_x=-.005
  for side in (-1,1):
-  fitted_fringe('gu_open_wave',[(side*.002,.085,.0005,.002),
-   (side*.017,.083,.010,.008),(side*.038,.074,.015,.012),
-   (side*.057,.057,.014,.011),(side*.065,.039,.009,.007),
-   (side*.066,.024,.003,.004),(side*.064,.015,.0002,.001)],.98)
-  fitted_fringe('gu_wave_edge',[(side*.005,.082,.0003,.003),
-   (side*.026,.075,.005,.010),(side*.046,.060,.007,.013),
-   (side*.060,.042,.006,.009),(side*.065,.025,.003,.005),
+  fall=.0055 if side>0 else .0015
+  fitted_fringe('gu_open_wave',[(part_x+side*.001,.085,.0005,.002),
+   (part_x+side*.017,.082-fall*.32,.009,.0065),(side*.036,.074-fall,.014,.0090),
+   (side*.056,.056-fall,.013,.0084),(side*.064,.038,.008,.0060),
+   (side*.066,.024,.003,.0035),(side*.064,.015,.0002,.001)],.98)
+  fitted_fringe('gu_wave_edge',[(part_x+side*.003,.081,.0003,.0018),
+   (side*.024,.074-fall,.0043,.0070),(side*.046,.059-fall,.006,.0090),
+   (side*.060,.042-fall*.45,.005,.0068),(side*.065,.025,.0025,.0040),
    (side*.064,.014,.0002,.001)],1.07,True)
+ # Thin, individually curved locks show the direction of the sweep at the
+ # edge of the forehead. The temple mass remains seated beneath them.
+ fitted_fringe('gu_long_fringe_wisp',[(.002,.084,.00010,.001),(.011,.071,.00045,.0016),
+   (.020,.055,.00056,.0018),(.029,.043,.00046,.0010),(.039,.035,.00008,.0003)],1.08,True)
+ fitted_fringe('gu_left_fringe_wisp',[(-.009,.084,.00012,.001),(-.018,.073,.00047,.0017),
+   (-.028,.059,.00053,.0014),(-.038,.046,.00038,.0009),(-.050,.035,.00008,.0003)],1.04,True)
+ if quality=='high':
+  fitted_fringe('gu_fine_fringe_wisp',[(.006,.084,.00009,.0008),(.018,.071,.00031,.0011),
+   (.026,.057,.00034,.0013),(.034,.047,.00023,.0008),(.044,.041,.00007,.0002)],1.15,True)
  # Follow the upper scalp from the part to the bun with overlapping locks.
  # Fitting to the scalp keeps their roots and fine edges seated in the hair.
  crown_guide=surface_bvh(scalp)
@@ -758,7 +794,8 @@ for quality,level in [('high',1),('low',0)]:
  ev=female.evaluated_get(bpy.context.evaluated_depsgraph_get());me=ev.to_mesh()
  head=mesh_object('gu_'+quality+'_skin',[female_canon(v.co) for v in me.vertices],[tuple(f.vertices) for f in me.polygons],mat('gu_'+quality+'_skin',rgb(record['skin']),.5));ev.to_mesh_clear()
  retain_anatomical_neck(head)
- relax_face_planes(head)
+ neighbors=mesh_neighbors(head)
+ relax_face_planes(head,neighbors)
  for v in head.data.vertices:
   for e in eyes:
    c=Vector(e['center']);d=v.co-c;w=gauss(d.x,.022)*gauss(d.y,.017)*smooth(.025,.050,v.co.z)
@@ -784,15 +821,16 @@ for quality,level in [('high',1),('low',0)]:
    # Lengthen the outer corner and draw the two lids together toward its tip.
    corner=eye_band*gauss(lateral-.009,.0058)*gauss(d.y,.0061)*smooth(.046,.060,v.co.z)
    v.co.x+=math.copysign(.0022*corner,c.x)
-   v.co.y+=(.00125-.24*d.y)*corner
+   v.co.y+=(.00078-.24*d.y)*corner
  shape_cheek_transition(head)
  shape_chin_profile(head)
  shape_mouth(head)
+ smooth_jaw_transition(head,neighbors,quality)
  head.data.update();bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
  groom=GroomMesh()
  for side in [-1,1]:
-  count=70 if quality=='high' else 38
+  count=54 if quality=='high' else 28
   for k in range(count):
    t=(k+.5)/count;x=side*(.014+.042*t)
    height,width=brow_profile(t)
@@ -804,9 +842,9 @@ for quality,level in [('high',1),('low',0)]:
     px=x+side*lean*u
     py=y+rise*u
     points.append(Vector((px,py,sample(bvh,px,py)+.00032)))
-   radius=.00025*math.sin(math.pi*t)**.55
-   groom.fibre(points,radius,mix(1.55,.92,smooth(.04,.60,t))+.10*math.sin(k*1.7))
- brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('604b45'),.7));pigment(brow,True,'604b45')
+   radius=.00019*math.sin(math.pi*t)**.55
+   groom.fibre(points,radius,mix(1.38,1.0,smooth(.04,.60,t))+.06*math.sin(k*1.7))
+ brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('79605a'),.7));pigment(brow,True,'79605a')
  # Follow the actual upper globe/lid contact so eyeliner follows the face at each LOD.
  liner=GroomMesh()
  lids=[]

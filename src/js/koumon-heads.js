@@ -182,7 +182,7 @@
       if(e.scale)eg.scale.fromArray(e.scale);
       var globe = new T.Mesh(new T.SphereGeometry(e.radius,quality === 'low' ? 24 : 40,quality === 'low' ? 16 : 24),white);
       globe.userData.part = 'eyes'; eg.add(globe);
-      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (female ? .595 : .48),quality),iris);
+      var im = new T.Mesh(irisGeometry(e.radius,e.radius * (female ? .607 : .48),quality),iris);
       // Gu's irises converge on the same near point while the globes keep their lid fit.
       if (female) im.rotation.y = -Math.atan2(e.center[0], .95 * (e.scale ? e.scale[0] : 1));
       im.userData.part = 'eyes'; eg.add(im);
