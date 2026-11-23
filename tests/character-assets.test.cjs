@@ -138,18 +138,20 @@ test('Gu has a comparable central eye opening in both quality levels',()=>{
   }
 });
 test('Gu crease and upper and lower eyeliner fit the eyelid in both LODs',()=>{
-  const {Raycaster,Vector3}=C.THREE;
+  const {Raycaster,Triangle,Vector3}=C.THREE;
   const forward=new Vector3(0,0,-1);
   for(const quality of ['high','low']){
     const {group,surface,anchors}=C.KM_HEADS.build('gu',{},quality);
     const makeup=group.getObjectByName('gu-brow');
+    const {position,color}=makeup.geometry.attributes;
+    const vertex=index=>new Vector3().fromBufferAttribute(position,index);
     function fittedLineAt(x,y){
       const ray=new Raycaster(new Vector3(x,y,.2),forward);
       const hit=ray.intersectObject(makeup,false)[0];
       if(!hit)return false;
       const skin=ray.intersectObject(surface,false)[0];
-      assert.ok(skin&&Math.abs(hit.point.z-skin.point.z)<.001,quality+' makeup follows the eyelid skin');
-      return true;
+      assert.ok(skin&&Math.abs(hit.point.z-skin.point.z)<.001,quality+' makeup follows the eyelid skin at '+[x,y,hit.point.z,skin?.point.z]);
+      return hit;
     }
     for(const {center:[x,cy]} of anchors.eyes){
       const runs=[];
@@ -162,7 +164,17 @@ test('Gu crease and upper and lower eyeliner fit the eyelid in both LODs',()=>{
       const gap=runs[1][0]-runs[0].at(-1);
       assert.ok(gap>=3&&gap<=7,quality+' the crease stays close to the upper line');
       assert.ok(runs[2][0]-runs[1].at(-1)>=3,quality+' bare skin separates the eyebrow and fold');
-      assert.ok(fittedLineAt(x+Math.sign(x)*.004,cy-.005),quality+' a thin lower line follows the outer lid');
+      const outer=x+Math.sign(x)*.004;
+      let darkest=255;
+      for(let step=20;step<=34;step++){
+        const hit=fittedLineAt(outer,cy-step*.0002);
+        if(!hit)continue;
+        const {a,b,c}=hit.face;
+        const weights=Triangle.getBarycoord(hit.point,vertex(a),vertex(b),vertex(c),new Vector3());
+        const green=weights.x*color.array[a*3+1]+weights.y*color.array[b*3+1]+weights.z*color.array[c*3+1];
+        darkest=Math.min(darkest,green);
+      }
+      assert.ok(darkest<26,quality+' dark lower line follows the outer lid '+darkest);
     }
   }
 });
