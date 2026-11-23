@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-rose-eye-makeup';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-eyelid-position';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -307,39 +307,32 @@ def pigment(ob,hair=False,tint=None,lids=()):
    bt=max(0,min(1,(abs(x)-.014)/.042))
    by,bw=brow_profile(bt)
    brow=.90*gauss(y-by,bw*1.08)*smooth(.011,.022,abs(x))*smooth(.057,.049,abs(x))*smooth(.035,.060,z)
-   outer=.19*gauss(abs(x)-.044,.013)*gauss(y-.023,.0063)*smooth(.040,.060,z)
+   outer=.40*gauss(abs(x)-.044,.012)*gauss(y-.014,.0078)*smooth(.040,.060,z)
    inner_tint=rgb('8f6e5f')
    outer_tint=rgb('46312d')
    brow_tint=[mix(inner_tint[k],outer_tint[k],smooth(.06,.60,bt)) for k in range(3)]
-   for k in range(3):c[k]=mix(mix(c[k],rgb('8d7e73')[k],outer),brow_tint[k],brow)
-   if .016<abs(x)<.061 and -.012<y<.033 and z>.048:
-    upper_weight=upper_shadow=lower_weight=lid_glint=0
+   for k in range(3):c[k]=mix(mix(c[k],rgb('a86a60')[k],outer),brow_tint[k],brow)
+   if .017<abs(x)<.055 and -.012<y<.030 and z>.048:
+    upper_weight=upper_shadow=lower_weight=0
     for upper,lower in lids:
      if upper:
       distance=min((x-p.x)**2+(y-p.y)**2 for p in upper)
       upper_weight=max(upper_weight,math.exp(-distance/.0027**2))
-      # Stop the coloured shadow at the upper lash line. Keep definition
-      # on the lower lid as a narrow, muted border around the outer corner.
-      shade=max(gauss(x-p.x,.0055)*gauss(y-p.y-.0037,.0044)*smooth(-.0007,.0014,y-p.y) for p in upper)
-      upper_shadow=max(upper_shadow,shade)
-      glint_distance=min((x-p.x)**2+(y-p.y-.0022)**2 for p in upper)
-      lid_glint=max(lid_glint,math.exp(-glint_distance/.0022**2))
+      crease_distance=min((x-p.x)**2+(y-p.y-.0034)**2 for p in upper)
+      upper_shadow=max(upper_shadow,math.exp(-crease_distance/.0065**2))
      if lower:
-      shade=max(gauss(x-p.x,.0042)*gauss(y-p.y+.00074,.0019) for p in lower)
-      lower_weight=max(lower_weight,shade)
-    face_mask=smooth(.016,.022,abs(x))*smooth(.061,.052,abs(x))*smooth(.048,.061,z)
-    outer_lid=smooth(.027,.047,abs(x))
-    upper_weight*=face_mask*mix(.61,.89,outer_lid)
-    upper_shadow*=face_mask*mix(.45,.79,outer_lid)
-    lower_weight*=face_mask*mix(.13,.49,outer_lid)
-    lid_glint*=.34*face_mask*gauss(abs(x)-.025,.008)
-    upper_tint=rgb('3d302c')
-    inner_shadow=rgb('b8a79a');outer_shadow=rgb('766559')
-    lower_tint=rgb('a39487');glint_tint=rgb('ded1bb')
-    for k in range(3):
-     shadow_tint=mix(inner_shadow[k],outer_shadow[k],outer_lid)
-     c[k]=mix(mix(mix(mix(c[k],lower_tint[k],lower_weight),shadow_tint,upper_shadow),
-                  upper_tint[k],upper_weight),glint_tint[k],lid_glint)
+      distance=min((x-p.x)**2+(y-p.y)**2 for p in lower)
+      lower_weight=max(lower_weight,math.exp(-distance/.0042**2))
+    face_mask=smooth(.017,.023,abs(x))*smooth(.048,.061,z)
+    outer_lid=smooth(.031,.046,abs(x))
+    upper_weight*=face_mask*mix(.64,.91,outer_lid)
+    upper_shadow*=face_mask*mix(.43,.76,outer_lid)
+    lower_weight*=face_mask*mix(.39,.66,outer_lid)
+    upper_tint=rgb('4b3130')
+    shadow_tint=rgb('895550')
+    lower_tint=rgb('ae7673')
+    c=[mix(mix(mix(c[k],lower_tint[k],lower_weight),shadow_tint[k],upper_shadow),upper_tint[k],upper_weight)
+       for k in range(3)]
    mark=gauss(x,.0021)*gauss(y-.048,.0030)*smooth(.040,.064,z)
    for k in range(3):c[k]=mix(c[k],rgb('a84a50')[k],.65*mark)
 
@@ -362,19 +355,19 @@ def fit_lid_guides(bvh,quality):
     if radial>0 and cz+math.sqrt(radial)>sample(bvh,x,y):opening.append(y)
    if opening:
     upper.append(Vector((x,opening[-1]+.00060,0)))
-    lower.append(Vector((x,opening[0]-.00035,0)))
+    lower.append(Vector((x,opening[0]-.00048,0)))
   if len(upper)<6:raise ValueError('Gu eyelid guide does not span the globe')
   lids.append((upper,lower))
-  # The crease sits inside the corner-to-corner rim. Smooth over the small
-  # sampling steps at the lash line so the fold follows the lid's own arch.
+  # Follow the upper lid, with more separation over the iris and a close,
+  # tapered fold at both corners. Average out steps in the sampled rim.
   span=upper[1:-2]
   crease=[]
   for i,point in enumerate(span):
    t=i/(len(span)-1)
    weights=[gauss(point.x-other.x,.00215) for other in upper]
    average=sum(other.y*w for other,w in zip(upper,weights))/sum(weights)
-   gap=.00103+.00152*math.sin(math.pi*t**.91)**.82
-   height=max(point.y+.00110,mix(point.y,average,.78)+gap)
+   gap=.00082+.00128*math.sin(math.pi*t**.90)**.84
+   height=max(point.y+.00112,mix(point.y,average,.84)+gap)
    crease.append(Vector((point.x,height,0)))
   creases.append(crease)
  return lids,creases
@@ -387,7 +380,7 @@ def sculpt_lid_creases(head,creases):
   crease=creases[0] if x*creases[0][0].x>0 else creases[1]
   depth=max((gauss(x-p.x,.0022)*gauss(y-p.y,.00152)*math.sin(math.pi*i/(len(crease)-1))
              for i,p in enumerate(crease)),default=0)
-  vertex.co.z-=.00037*depth
+  vertex.co.z-=.00028*depth
 
 def lid_makeup(head,lids,creases,quality):
  # Fitted ribbons let both LODs show the eyeliner and crease. Their edges
@@ -410,13 +403,13 @@ def lid_makeup(head,lids,creases,quality):
     width*=.93
     strength=.95*feather
    elif kind=='crease':
-    feather=smooth(0,.23,t)*smooth(1,.74,t)
-    width=.00016+.00069*feather
-    strength=.96*feather
+    feather=smooth(0,.26,t)*smooth(1,.72,t)
+    width=.00011+.00048*feather
+    strength=.91*feather
    elif kind=='lower':
-    feather=smooth(.13,.52,t)*smooth(1,.88,t)
-    width=.00010+mix(.00034,.00118,smooth(.24,.85,t))*feather
-    strength=.93*feather
+    feather=smooth(.08,.42,t)*smooth(1,.88,t)
+    width=.00010+mix(.00046,.00135,smooth(.17,.82,t))*feather
+    strength=.99*feather
    else:
     along=i/(body_length-1)
     feather=smooth(0,.13,along)*smooth(1,.91,t)
@@ -425,7 +418,8 @@ def lid_makeup(head,lids,creases,quality):
    for q in offsets:
     # Limit the side of each liner ribbon nearest the aperture.
     facing_aperture=(kind=='upper' and q<0) or (kind=='lower' and q>0)
-    x=point.x;y=point.y+q*width*(.31 if facing_aperture else 1)
+    inner_width=.12 if kind=='lower' else .31
+    x=point.x;y=point.y+q*width*(inner_width if facing_aperture else 1)
     hit,_,index,_=bvh.ray_cast(Vector((x,y,.25)),forward)
     if hit is None:raise ValueError(f'Gu lid makeup outside face at {x:.4f}, {y:.4f}')
     ids=triangles[index]
@@ -446,8 +440,8 @@ def lid_makeup(head,lids,creases,quality):
   end=upper[-1]
   wing=[end+Vector((side*dx,dy,0)) for dx,dy in ((.00150,.00024),(.00305,.00091),(.00505,.00210))]
   ribbon(upper+wing,rgb('23131c'),'upper',len(upper))
-  ribbon(crease,rgb('4a3a33'),'crease',len(crease))
-  ribbon(lower,rgb('5b4c44'),'lower',len(lower))
+  ribbon(crease,rgb('604039'),'crease',len(crease))
+  ribbon(lower,rgb('352129'),'lower',len(lower))
   stations=24 if quality=='high' else 14
   brow=[Vector((side*(.014+.042*t),brow_profile(t)[0],0)) for t in (i/stations for i in range(stations+1))]
   ribbon(brow,rgb('3e2a26'),'brow',len(brow))
