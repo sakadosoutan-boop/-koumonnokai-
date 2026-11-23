@@ -101,29 +101,18 @@ test('every principal character uses an anatomical head in both quality levels',
     assert.ok(size.x>.10&&size.x<.26&&size.y>.20&&size.y<.45,id+' has a plausible head and neck scale');
   }
 });
-test('Gu keeps the sculpted bridge, nose tip and wings in both LODs',()=>{
-  // Nose landmarks in exported metres. These are independent of mouth posing.
-  const reference={
-    high:[
-      [.00467,.01168,.08486],[-.01082,.01178,.07491],
-      [.00007,-.01451,.09876],
-      [-.01251,-.01870,.08631],[.01265,-.01871,.08640]
-    ],
-    low:[
-      [.00212,.01450,.08680],[-.01185,.01236,.07418],
-      [.00004,-.01214,.09959],
-      [-.01304,-.01898,.08436],[.01309,-.01898,.08446]
-    ]
-  };
-  for(const [quality,landmarks] of Object.entries(reference)){
-    const positions=C.KM_HEADS.build('gu',C.KM_CAST3D.CAST.gu.head,quality).surface.geometry.attributes.position.array;
-    for(const point of landmarks){
-      let nearest=Infinity;
-      for(let i=0;i<positions.length;i+=3){
-        const squared=(positions[i]-point[0])**2+(positions[i+1]-point[1])**2+(positions[i+2]-point[2])**2;
-        nearest=Math.min(nearest,squared);
-      }
-      assert.ok(nearest<=(.00002)**2,quality+' nose landmark '+point.join(','));
+test('Gu has a gradual bridge-to-tip profile and tapered wings in both LODs',()=>{
+  const {Raycaster,Vector3}=C.THREE;
+  const forward=new Vector3(0,0,-1);
+  for(const quality of ['high','low']){
+    const {surface}=C.KM_HEADS.build('gu',{},quality);
+    const depth=(x,y)=>new Raycaster(new Vector3(x,y,.25),forward).intersectObject(surface,false)[0]?.point.z;
+    const bridge=depth(0,.010),lowerBridge=depth(0,.004),tip=depth(0,-.012);
+    assert.ok(bridge>.0919&&bridge<.0930,quality+' narrow bridge projection');
+    assert.ok(tip>.0967&&tip<.0978&&tip-lowerBridge>.0004&&tip-lowerBridge<.0017,quality+' gradual nose tip');
+    for(const side of [-1,1]){
+      const wing=depth(side*.012,-.019);
+      assert.ok(wing>.080&&wing<.085,quality+' softly tapered wing');
     }
   }
 });
@@ -146,25 +135,31 @@ test('Gu has a comparable central eye opening in both quality levels',()=>{
     }
   }
 });
-test('Gu upper eyeliner and eyelid crease are distinct fitted lines in both LODs',()=>{
+test('Gu crease and upper and lower eyeliner fit the eyelid in both LODs',()=>{
   const {Raycaster,Vector3}=C.THREE;
   const forward=new Vector3(0,0,-1);
   for(const quality of ['high','low']){
     const {group,surface,anchors}=C.KM_HEADS.build('gu',{},quality);
     const makeup=group.getObjectByName('gu-brow');
+    function fittedLineAt(x,y){
+      const ray=new Raycaster(new Vector3(x,y,.2),forward);
+      const hit=ray.intersectObject(makeup,false)[0];
+      if(!hit)return false;
+      const skin=ray.intersectObject(surface,false)[0];
+      assert.ok(skin&&Math.abs(hit.point.z-skin.point.z)<.001,quality+' makeup follows the eyelid skin');
+      return true;
+    }
     for(const {center:[x,cy]} of anchors.eyes){
       const runs=[];
       for(let step=12;step<54;step++){
-        const ray=new Raycaster(new Vector3(x,cy+step*.0002,.2),forward);
-        const hit=ray.intersectObject(makeup,false)[0];
-        if(!hit)continue;
-        const skin=ray.intersectObject(surface,false)[0];
-        assert.ok(skin&&Math.abs(hit.point.z-skin.point.z)<.001,quality+' makeup follows the eyelid skin');
+        if(!fittedLineAt(x,cy+step*.0002))continue;
         if(runs.at(-1)?.at(-1)!==step-1)runs.push([]);
         runs.at(-1).push(step);
       }
       assert.equal(runs.length,2,quality+' eyeliner and crease are both visible');
-      assert.ok(runs[1][0]-runs[0].at(-1)>=6,quality+' the two curves have a visible gap');
+      const gap=runs[1][0]-runs[0].at(-1);
+      assert.ok(gap>=3&&gap<=7,quality+' the crease stays close to the upper line');
+      assert.ok(fittedLineAt(x+Math.sign(x)*.004,cy-.005),quality+' a thin lower line follows the outer lid');
     }
   }
 });
@@ -186,10 +181,10 @@ test('Gu has a shallow lip profile and an exterior mouth contact in either LOD',
   const forward=new Vector3(0,0,-1);
   for(const quality of ['high','low']){
     const {surface,anchors}=C.KM_HEADS.build('gu',{},quality);
-    for(const y of [-.034,-.042]){
-      const hit=new Raycaster(new Vector3(0,y,.2),forward).intersectObject(surface,false)[0];
-      assert.ok(hit&&hit.point.z>.089&&hit.point.z<.0915,quality+' relaxed lip at '+y);
-    }
+    const depth=y=>new Raycaster(new Vector3(0,y,.2),forward).intersectObject(surface,false)[0]?.point.z;
+    const upper=depth(-.034),lower=depth(-.042);
+    assert.ok(upper>.089&&upper<.0915&&lower>.0869&&lower<.0891,quality+' relaxed lip depth');
+    assert.ok(upper-lower>.0014,quality+' lower lip sits behind the upper lip in profile');
     assert.ok(anchors.mouth[2]>.082,quality+' mouth contact remains on the outer lips');
   }
 });

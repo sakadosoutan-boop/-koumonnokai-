@@ -10,7 +10,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-soft-profile-and-lids';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-browser-annotation-retouch';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -108,7 +108,10 @@ def shape_cheek_transition(head):
   # The soft pad below it still carries volume into the jaw.
   crest=gauss(side-.043,.021)*gauss(y+.022,.019)*smooth(.023,.038,side)
   crest*=smooth(.004,-.012,y)*smooth(-.056,-.035,y)*smooth(.030,.063,z)
-  vertex.co.z-=.00155*crest
+  vertex.co.z-=.00260*crest
+  cheek_side=gauss(side-.050,.015)*gauss(y+.027,.023)*smooth(.032,.047,side)
+  cheek_side*=smooth(.002,-.012,y)*smooth(-.055,-.040,y)*smooth(.011,.040,z)
+  vertex.co.x-=math.copysign(.00105*cheek_side,x)
   # Round the outer jaw in profile without hollowing the front of the cheek.
   jaw=gauss(y+.066,.023)*smooth(-.098,-.076,y)*smooth(.026,.049,side)*smooth(-.025,.018,z)
   vertex.co.x-=math.copysign(.00355*jaw,x)
@@ -146,6 +149,9 @@ def shape_mouth(head):
   mask=smooth(.071,.081,z)*smooth(.029,.021,side)*smooth(.017,.008,abs(height))
   vertex.co.y+=mask*(lift-.18*height)
   vertex.co.z-=.00255*mask*gauss(x,.018)*gauss(height,.0095)
+  lower_lip=gauss(vertex.co.y+.042,.0055)*gauss(x,.017)*smooth(.076,.085,z)
+  lower_lip*=smooth(seam+lift+.0004,seam+lift-.0032,vertex.co.y)
+  vertex.co.z-=.00265*lower_lip
   # Ease the crease where the corners meet the cheeks and below the lower lip.
   cheek_crease=gauss(side-.023,.010)*gauss(y+.042,.0085)*smooth(.014,.021,side)
   chin_crease=gauss(x,.013)*gauss(y+.050,.0055)
@@ -184,6 +190,33 @@ def shape_jaw_underside(head):
   transition=lateral*height*depth
   vertex.co.y+=.00160*transition
   vertex.co.x-=math.copysign(.00055*transition,x)
+
+def fair_lower_cheek_depth(head):
+ # Even out the shallow folds from the mouth corners into either side of the
+ # chin. Use a fixed neighbourhood in the face plane at both mesh resolutions.
+ guide=surface_bvh(head)
+ offsets=((-1,0),(1,0),(0,-1),(0,1),(-.71,-.71),(.71,-.71),(-.71,.71),(.71,.71))
+ for vertex in head.data.vertices:
+  x,y,z=vertex.co
+  side=abs(x)
+  mask=gauss(side-.023,.014)*smooth(.009,.018,side)*smooth(.048,.036,side)
+  mask*=smooth(-.042,-.050,y)*smooth(-.079,-.064,y)*smooth(.050,.067,z)
+  if mask<.01 or abs(z-sample(guide,x,y))>.0007:continue
+  depths=[sample(guide,x+dx*.007,y+dy*.007,z) for dx,dy in offsets]
+  weights=[gauss(depth-z,.011) for depth in depths]
+  change=sum((depth-z)*w for depth,w in zip(depths,weights))/(1+sum(weights))
+  vertex.co.z+=mask*max(-.0026,min(.0026,change))
+
+def refine_nose_profile(head):
+ # Blend the narrow bridge into a softer tip and a gently tapered alar base.
+ for vertex in head.data.vertices:
+  x,y,z=vertex.co
+  side=abs(x)
+  bridge=gauss(x,.010)*gauss(y-.007,.025)*smooth(-.015,-.004,y)*smooth(.062,.080,z)
+  tip=gauss(x,.012)*gauss(y+.014,.011)*smooth(.080,.095,z)
+  wings=gauss(side-.012,.0085)*gauss(y+.019,.009)*smooth(.071,.082,z)
+  vertex.co.z+=.00115*bridge-.00265*tip-.00055*wings
+  vertex.co.x-=math.copysign((.00075*bridge+.00115*wings)*smooth(0,.007,side),x)
 
 eyes=[]
 for name in names[1:]:
@@ -296,8 +329,8 @@ def fit_lid_guides(bvh,quality):
    t=i/(len(span)-1)
    weights=[gauss(point.x-other.x,.00215) for other in upper]
    average=sum(other.y*w for other,w in zip(upper,weights))/sum(weights)
-   gap=.00124+.00179*math.sin(math.pi*t**.91)**.82
-   height=max(point.y+.00130,mix(point.y,average,.78)+gap)
+   gap=.00103+.00152*math.sin(math.pi*t**.91)**.82
+   height=max(point.y+.00110,mix(point.y,average,.78)+gap)
    crease.append(Vector((point.x,height,0)))
   creases.append(crease)
  return lids,creases
@@ -323,22 +356,27 @@ def lid_makeup(head,lids,creases,quality):
  origin,u_axis,v_axis=Vector((0,0,0)),Vector((1,0,0)),Vector((0,1,0))
  forward=Vector((0,0,-1));coords=[];colors=[];faces=[]
  offsets=(-1,-.52,0,.52,1)
- def ribbon(path,tint,fold,body_length):
+ def ribbon(path,tint,kind,body_length):
   start=len(coords)
   for i,point in enumerate(path):
    t=i/(len(path)-1)
-   if fold:
+   if kind=='crease':
     feather=smooth(0,.23,t)*smooth(1,.74,t)
-    width=.00018+.00066*feather
-    strength=.62*feather
+    width=.00016+.00057*feather
+    strength=.64*feather
+   elif kind=='lower':
+    feather=smooth(.03,.43,t)*smooth(1,.85,t)
+    width=.00010+mix(.00033,.00084,smooth(.19,.82,t))*feather
+    strength=.88*feather
    else:
     along=i/(body_length-1)
     feather=smooth(0,.13,along)*smooth(1,.91,t)
     width=.00010+mix(.00057,.00127,smooth(.14,.88,along))*feather
     strength=.95*feather
    for q in offsets:
-    # Keep the eyeliner's lower edge on skin just above the eye aperture.
-    x=point.x;y=point.y+q*width*(.31 if q<0 and not fold else 1)
+    # Limit the side of each liner ribbon nearest the aperture.
+    facing_aperture=(kind=='upper' and q<0) or (kind=='lower' and q>0)
+    x=point.x;y=point.y+q*width*(.31 if facing_aperture else 1)
     hit,_,index,_=bvh.ray_cast(Vector((x,y,.25)),forward)
     if hit is None:raise ValueError(f'Gu lid makeup outside face at {x:.4f}, {y:.4f}')
     ids=triangles[index]
@@ -346,7 +384,7 @@ def lid_makeup(head,lids,creases,quality):
     weights=(1-uv.x-uv.y,uv.x,uv.y)
     base=[sum(skin[j].color[k]*weight for j,weight in zip(ids,weights)) for k in range(3)]
     w=strength*(1-smooth(.18,1,abs(q)))
-    coords.append((x,y,hit.z+(.00026 if fold else .00031)))
+    coords.append((x,y,hit.z+(.00026 if kind=='crease' else .00031)))
     colors.append(tuple(mix(base[k],tint[k],w) for k in range(3)))
    if i:
     row=len(offsets)
@@ -354,12 +392,13 @@ def lid_makeup(head,lids,creases,quality):
      a=start+(i-1)*row+j;b=a+row
      face=(a,b,b+1,a+1)
      faces.append(face if path[-1].x>path[0].x else face[::-1])
- for (upper,_),crease in zip(lids,creases):
+ for (upper,lower),crease in zip(lids,creases):
   side=1 if upper[-1].x>0 else -1
   end=upper[-1]
   wing=[end+Vector((side*dx,dy,0)) for dx,dy in ((.00125,.00016),(.00255,.00062),(.00405,.00147))]
-  ribbon(upper+wing,rgb('38262a'),False,len(upper))
-  ribbon(crease,rgb('87635b'),True,len(crease))
+  ribbon(upper+wing,rgb('38262a'),'upper',len(upper))
+  ribbon(crease,rgb('87635b'),'crease',len(crease))
+  ribbon(lower,rgb('5c3a43'),'lower',len(lower))
  ob=mesh_object('gu_'+quality+'_lid_makeup',coords,faces,mat('gu_lid_makeup',rgb('74504a'),.75))
  attr=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT')
  for v,color in zip(attr.data,colors):v.color=(*color,1)
@@ -496,15 +535,22 @@ def hair_surface(head, material, quality):
  # Tapered, overlapping locks lead from the part to the temples. Vary the
  # spacing and the curl at the ends so the thin strands follow the main flow.
  fitted_fringe('gu_right_face_lock',[(.001,.085,.00014,.0007),(.012,.074,.00110,.0012),
-   (.023,.061,.00163,.0020),(.035,.047,.00141,.0015),(.046,.033,.00102,.0010),
-   (.051,.021,.00052,.0007),(.051,.014,.00007,.0003)],1.04,True)
+   (.023,.061,.00190,.0020),(.036,.046,.00162,.0016),(.047,.032,.00116,.0011),
+   (.052,.017,.00082,.0008),(.053,.003,.00045,.0005),(.058,-.013,.00008,.0002)],1.04,True)
  fitted_fringe('gu_left_face_lock',[(-.009,.084,.00015,.0009),(-.020,.073,.00105,.0019),
-   (-.032,.058,.00142,.0017),(-.043,.046,.00100,.0013),(-.049,.034,.00077,.0008),
-   (-.054,.024,.00042,.0006),(-.061,.016,.00007,.0002)],1.03,True)
+   (-.032,.058,.00174,.0017),(-.043,.045,.00137,.0013),(-.051,.031,.00099,.0009),
+   (-.055,.014,.00065,.0006),(-.055,-.004,.00033,.0004),(-.059,-.022,.00008,.0002)],1.03,True)
  fitted_fringe('gu_right_loose_wisp',[(.005,.084,.00007,.0010),(.013,.071,.00037,.0010),
    (.022,.056,.00044,.0013),(.029,.041,.00038,.0009),(.039,.033,.00007,.0001)],1.12,True)
  fitted_fringe('gu_left_loose_wisp',[(-.010,.083,.00008,.0009),(-.018,.070,.00038,.0015),
-   (-.026,.056,.00043,.0013),(-.033,.043,.00033,.0007),(-.042,.036,.00007,.0001)],1.09,True)
+   (-.026,.056,.00043,.0013),(-.036,.040,.00042,.0008),(-.046,.027,.00034,.0006),
+   (-.050,.013,.00008,.0002)],1.11,True)
+ fitted_fringe('gu_right_temple_wisp',[(.018,.077,.00008,.0008),(.035,.059,.00047,.0016),
+   (.046,.042,.00054,.0012),(.053,.023,.00043,.0007),(.056,.004,.00034,.0005),
+   (.060,-.019,.00007,.0002)],1.12,True)
+ fitted_fringe('gu_left_temple_wisp',[(-.019,.078,.00010,.0012),(-.034,.065,.00043,.0015),
+   (-.046,.049,.00053,.0014),(-.054,.030,.00048,.0008),(-.059,.012,.00031,.0005),
+   (-.062,-.012,.00009,.0002)],1.08,True)
  if quality=='high':
   fitted_fringe('gu_right_fringe_filament',[(.006,.083,.00007,.0008),(.018,.073,.00031,.0012),
    (.027,.059,.00033,.0012),(.038,.048,.00023,.0009),(.049,.039,.00007,.0001)],1.18,True)
@@ -951,6 +997,8 @@ for quality,level in [('high',1),('low',0)]:
  shape_mouth(head)
  shape_jaw_underside(head)
  smooth_jaw_transition(head,neighbors,quality)
+ fair_lower_cheek_depth(head)
+ refine_nose_profile(head)
  lids,creases=fit_lid_guides(surface_bvh(head),quality)
  sculpt_lid_creases(head,creases)
  head.data.update();bvh=surface_bvh(head)
