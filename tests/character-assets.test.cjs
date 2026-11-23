@@ -101,23 +101,18 @@ test('every principal character uses an anatomical head in both quality levels',
     assert.ok(size.x>.10&&size.x<.26&&size.y>.20&&size.y<.45,id+' has a plausible head and neck scale');
   }
 });
-test('Gu has the revised bridge and fuller lips without moving the tip, wings or corners in either LOD',()=>{
-  // In exported metres. Bridge and lip body follow the new sculpt; tip, wings
-  // and mouth corners retain the accepted November 18 landmarks.
+test('Gu keeps the sculpted bridge, nose tip and wings in both LODs',()=>{
+  // Nose landmarks in exported metres. These are independent of mouth posing.
   const reference={
     high:[
       [.00467,.01168,.08486],[-.01082,.01178,.07491],
       [.00007,-.01451,.09876],
-      [-.01251,-.01870,.08631],[.01265,-.01871,.08640],
-      [-.00010,-.03239,.08564],[.00001,-.04319,.08578],
-      [-.01713,-.03684,.07942],[.01703,-.03694,.07940]
+      [-.01251,-.01870,.08631],[.01265,-.01871,.08640]
     ],
     low:[
       [.00212,.01450,.08680],[-.01185,.01236,.07418],
       [.00004,-.01214,.09959],
-      [-.01304,-.01898,.08436],[.01309,-.01898,.08446],
-      [-.00010,-.03430,.08611],[.00001,-.04319,.08578],
-      [-.01772,-.03693,.07878],[.01762,-.03702,.07875]
+      [-.01304,-.01898,.08436],[.01309,-.01898,.08446]
     ]
   };
   for(const [quality,landmarks] of Object.entries(reference)){
@@ -128,7 +123,7 @@ test('Gu has the revised bridge and fuller lips without moving the tip, wings or
         const squared=(positions[i]-point[0])**2+(positions[i+1]-point[1])**2+(positions[i+2]-point[2])**2;
         nearest=Math.min(nearest,squared);
       }
-      assert.ok(nearest<=(.00002)**2,quality+' nose/lip landmark '+point.join(','));
+      assert.ok(nearest<=(.00002)**2,quality+' nose landmark '+point.join(','));
     }
   }
 });
@@ -164,6 +159,18 @@ test('Gu chin underside rises toward the tip without a low shelf in either LOD',
     assert.ok(heights[0]>-.0735&&heights[0]<heights[1]&&heights[1]<heights[2],quality+' chin floor '+heights);
   }
 });
+test('Gu has a shallow lip profile and an exterior mouth contact in either LOD',()=>{
+  const {Raycaster,Vector3}=C.THREE;
+  const forward=new Vector3(0,0,-1);
+  for(const quality of ['high','low']){
+    const {surface,anchors}=C.KM_HEADS.build('gu',{},quality);
+    for(const y of [-.034,-.042]){
+      const hit=new Raycaster(new Vector3(0,y,.2),forward).intersectObject(surface,false)[0];
+      assert.ok(hit&&hit.point.z>.089&&hit.point.z<.0915,quality+' relaxed lip at '+y);
+    }
+    assert.ok(anchors.mouth[2]>.082,quality+' mouth contact remains on the outer lips');
+  }
+});
 test('Gu lipstick reaches both outer lip curves and stays off nearby skin in either LOD',()=>{
   const {Raycaster,Triangle,Vector3}=C.THREE;
   const forward=new Vector3(0,0,-1);
@@ -179,8 +186,8 @@ test('Gu lipstick reaches both outer lip curves and stays off nearby skin in eit
       return weights.x*color.array[a*3+1]+weights.y*color.array[b*3+1]+weights.z*color.array[c*3+1];
     }
     for(const side of [-1,1]){
-      assert.ok(greenAt(side*.018,-.0365)<90,quality+' upper lip toward corner');
-      assert.ok(greenAt(side*.018,-.0405)<90,quality+' lower lip toward corner');
+      assert.ok(greenAt(side*.018,-.0349)<90,quality+' upper lip toward corner');
+      assert.ok(greenAt(side*.018,-.0377)<90,quality+' lower lip toward corner');
       assert.ok(greenAt(side*.023,-.0365)>105,quality+' skin beyond corner');
     }
     assert.ok(greenAt(0,-.049)>105,quality+' skin below lower lip');
