@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-chin-and-lips';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-balanced-expression';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -62,13 +62,6 @@ def female_canon(v):
  # Bring the dorsum forward in a narrow, gradual curve that blends above the tip.
  bridge=gauss(x,.010)*gauss(y-.006,.027)*smooth(-.012,-.002,y)*smooth(.056,.073,z)
  z+=.0022*bridge
- # Build the upper bow and lower cushion in the same connected lip surface.
- lip_mask=(1-smooth(.010,.017,abs(x)))*smooth(.069,.081,z)
- upper=lip_mask*gauss(y+.034,.0038)
- lower=lip_mask*gauss(y+.042,.0045)
- bow=.55+.45*gauss(abs(x)-.005,.0036)
- z+=.0012*upper*bow+.0014*lower
- y+=.0011*upper*bow-.0012*lower
  return Vector((x,y,z))
 
 def retain_anatomical_neck(ob):
@@ -128,6 +121,27 @@ def shape_chin_profile(head):
   vertex.co.z-=.0019*tip+.0046*throat
   vertex.co.x-=math.copysign(.0016*flank,x)
 
+def mouth_line(side):
+ seam=-.0395+.00145*gauss(side-.0145,.009)
+ lift=.00125+.00165*gauss(side-.019,.0065)
+ return seam,lift
+
+def shape_mouth(head):
+ # Fit the relaxed mouth between the nose and chin. Compact the central lip
+ # volume, then bring the corners up gently into the cheek.
+ for vertex in head.data.vertices:
+  x,y,z=vertex.co
+  side=abs(x)
+  seam,lift=mouth_line(side)
+  height=y-seam
+  mask=smooth(.071,.081,z)*smooth(.029,.021,side)*smooth(.017,.008,abs(height))
+  vertex.co.y+=mask*(lift-.18*height)
+  vertex.co.z-=.00255*mask*gauss(x,.018)*gauss(height,.0095)
+  # Ease the crease where the corners meet the cheeks and below the lower lip.
+  cheek_crease=gauss(side-.023,.010)*gauss(y+.042,.0085)*smooth(.014,.021,side)
+  chin_crease=gauss(x,.013)*gauss(y+.050,.0055)
+  vertex.co.z+=smooth(.067,.081,z)*(.0013*cheek_crease+.0007*chin_crease)
+
 eyes=[]
 for name in names[1:]:
  o=bpy.data.objects[name];local=female.matrix_world.inverted()@o.matrix_world.translation
@@ -138,7 +152,7 @@ low_parts=[]
 
 def brow_profile(t):
  # Carry the fuller brow along a shallow arch before dropping into the tail.
- height=.0293+.0035*smooth(0,.65,t)-.0034*smooth(.64,1,t)
+ height=.0301+.0031*smooth(0,.65,t)-.0034*smooth(.64,1,t)
  width=mix(.0041,.00105,smooth(.48,1,t))
  return height,width
 
@@ -147,12 +161,13 @@ def lip_pigment(x,y,z):
  # Its upper and lower curves meet at the corners around the actual lip seam.
  side=abs(x)
  span=max(0,1-(side/.0225)**2)
- seam=-.0395+.00145*gauss(side-.0145,.009)
- cupid=.00155*gauss(side-.005,.0038)
- top=seam+(.0077+cupid)*span**.79
- bottom=seam-.0083*span**.88
+ seam,lift=mouth_line(side)
+ seam+=lift
+ cupid=.00125*gauss(side-.005,.0038)
+ top=seam+(.0061+cupid)*span**.79
+ bottom=seam-.00655*span**.88
  edge=min(top-y,y-bottom)
- coverage=smooth(-.0007,.00095,edge)*smooth(.069,.077,z)*smooth(.0228,.0210,side)
+ coverage=smooth(-.00105,.0013,edge)*smooth(.069,.077,z)*smooth(.0228,.0210,side)
  # The lighter interior can show through the narrow seam of the coarser mesh.
  cavity=gauss(y-seam,.0045)*smooth(.003,.010,z)*smooth(.076,.063,z)*smooth(.022,.015,side)
  return coverage,smooth(.0012,-.0018,y-seam),cavity
@@ -170,9 +185,9 @@ def pigment(ob,hair=False,tint=None,lids=()):
    lip,lower_mix,cavity=lip_pigment(x,y,z)
    blush=.32*gauss(abs(x)-.038,.023)*gauss(y+.015,.021)*smooth(.029,.066,z)
    shadow=.37*gauss(abs(x)-.038,.016)*gauss(y-.019,.006)*smooth(.045,.064,z)
-   lip_top=rgb('a25955');lip_bottom=rgb('b76d63')
+   lip_top=rgb('a65d59');lip_bottom=rgb('b56c66')
    lip_tint=[mix(lip_top[k],lip_bottom[k],lower_mix) for k in range(3)]
-   c=[mix(mix(mix(base[k],rgb('db8b88')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],.93*lip) for k in range(3)]
+   c=[mix(mix(mix(base[k],rgb('db8b88')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],.88*lip) for k in range(3)]
    c=[mix(c[k],rgb('774346')[k],.88*cavity) for k in range(3)]
    # A soft continuous brow tint sits in the skin itself; fine strands add
    # detail without leaving a row of disconnected dots at mobile resolution.
@@ -772,6 +787,7 @@ for quality,level in [('high',1),('low',0)]:
    v.co.y+=(.00125-.24*d.y)*corner
  shape_cheek_transition(head)
  shape_chin_profile(head)
+ shape_mouth(head)
  head.data.update();bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
  groom=GroomMesh()
