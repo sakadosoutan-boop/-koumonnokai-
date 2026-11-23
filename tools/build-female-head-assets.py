@@ -296,44 +296,46 @@ def pigment(ob,hair=False,tint=None,lids=()):
    c=[mix(value*tone,hair_glint[k],glint) for k,value in enumerate(base)]
   else:
    lip,lower_mix,cavity=lip_pigment(x,y,z)
-   blush=.32*gauss(abs(x)-.038,.023)*gauss(y+.015,.021)*smooth(.029,.066,z)
+   blush=.36*gauss(abs(x)-.040,.023)*gauss(y+.017,.016)*smooth(.029,.066,z)
    shadow=.37*gauss(abs(x)-.038,.016)*gauss(y-.019,.006)*smooth(.045,.064,z)
    lip_top=rgb('a05756');lip_bottom=rgb('b96e67')
    lip_tint=[mix(lip_top[k],lip_bottom[k],lower_mix) for k in range(3)]
-   c=[mix(mix(mix(base[k],rgb('db8b88')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],.88*lip) for k in range(3)]
+   c=[mix(mix(mix(base[k],rgb('de9287')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],.88*lip) for k in range(3)]
    c=[mix(c[k],rgb('774346')[k],.88*cavity) for k in range(3)]
    # A soft continuous brow tint sits in the skin itself; fine strands add
    # detail without leaving a row of disconnected dots at mobile resolution.
    bt=max(0,min(1,(abs(x)-.014)/.042))
    by,bw=brow_profile(bt)
    brow=.90*gauss(y-by,bw*1.08)*smooth(.011,.022,abs(x))*smooth(.057,.049,abs(x))*smooth(.035,.060,z)
-   outer=.56*gauss(abs(x)-.044,.013)*gauss(y-.016,.0086)*smooth(.040,.060,z)
+   outer=.28*gauss(abs(x)-.044,.013)*gauss(y-.023,.0063)*smooth(.040,.060,z)
    inner_tint=rgb('8f6e5f')
    outer_tint=rgb('46312d')
    brow_tint=[mix(inner_tint[k],outer_tint[k],smooth(.06,.60,bt)) for k in range(3)]
-   for k in range(3):c[k]=mix(mix(c[k],rgb('a75656')[k],outer),brow_tint[k],brow)
+   for k in range(3):c[k]=mix(mix(c[k],rgb('906756')[k],outer),brow_tint[k],brow)
    if .016<abs(x)<.061 and -.012<y<.033 and z>.048:
     upper_weight=upper_shadow=lower_weight=lid_glint=0
     for upper,lower in lids:
      if upper:
       distance=min((x-p.x)**2+(y-p.y)**2 for p in upper)
       upper_weight=max(upper_weight,math.exp(-distance/.0027**2))
-      crease_distance=min((x-p.x)**2+(y-p.y-.0039)**2 for p in upper)
-      upper_shadow=max(upper_shadow,math.exp(-crease_distance/.0076**2))
-      glint_distance=min((x-p.x)**2+(y-p.y-.0018)**2 for p in upper)
-      lid_glint=max(lid_glint,math.exp(-glint_distance/.0025**2))
+      # Stop the coloured shadow at the upper lash line. Keep definition
+      # on the lower lid as a narrow, muted border around the outer corner.
+      shade=max(gauss(x-p.x,.0055)*gauss(y-p.y-.0037,.0044)*smooth(-.0007,.0014,y-p.y) for p in upper)
+      upper_shadow=max(upper_shadow,shade)
+      glint_distance=min((x-p.x)**2+(y-p.y-.0022)**2 for p in upper)
+      lid_glint=max(lid_glint,math.exp(-glint_distance/.0022**2))
      if lower:
       distance=min((x-p.x)**2+(y-p.y)**2 for p in lower)
-      lower_weight=max(lower_weight,math.exp(-distance/.0042**2))
+      lower_weight=max(lower_weight,math.exp(-distance/.0029**2))
     face_mask=smooth(.016,.022,abs(x))*smooth(.061,.052,abs(x))*smooth(.048,.061,z)
     outer_lid=smooth(.027,.047,abs(x))
-    upper_weight*=face_mask*mix(.67,.93,outer_lid)
-    upper_shadow*=face_mask*mix(.58,.94,outer_lid)
-    lower_weight*=face_mask*mix(.35,.83,outer_lid)
-    lid_glint*=.46*face_mask*gauss(abs(x)-.024,.008)
-    upper_tint=rgb('402028')
-    inner_shadow=rgb('c17b70');outer_shadow=rgb('843e50')
-    lower_tint=rgb('a65d63');glint_tint=rgb('ebbd99')
+    upper_weight*=face_mask*mix(.61,.90,outer_lid)
+    upper_shadow*=face_mask*mix(.55,.94,outer_lid)
+    lower_weight*=face_mask*mix(.12,.43,outer_lid)
+    lid_glint*=.60*face_mask*gauss(abs(x)-.025,.008)
+    upper_tint=rgb('3f2c28')
+    inner_shadow=rgb('b69372');outer_shadow=rgb('785049')
+    lower_tint=rgb('a38272');glint_tint=rgb('efd0a0')
     for k in range(3):
      shadow_tint=mix(inner_shadow[k],outer_shadow[k],outer_lid)
      c[k]=mix(mix(mix(mix(c[k],lower_tint[k],lower_weight),shadow_tint,upper_shadow),
@@ -409,8 +411,8 @@ def lid_makeup(head,lids,creases,quality):
     strength=.95*feather
    elif kind=='crease':
     feather=smooth(0,.23,t)*smooth(1,.74,t)
-    width=.00016+.00057*feather
-    strength=.77*feather
+    width=.00016+.00065*feather
+    strength=.88*feather
    elif kind=='lower':
     feather=smooth(.03,.43,t)*smooth(1,.85,t)
     width=.00010+mix(.00040,.00116,smooth(.19,.82,t))*feather
@@ -418,7 +420,7 @@ def lid_makeup(head,lids,creases,quality):
    else:
     along=i/(body_length-1)
     feather=smooth(0,.13,along)*smooth(1,.91,t)
-    width=.00010+mix(.00059,.00178,smooth(.29,.88,along))*feather
+    width=.00010+mix(.00067,.00178,smooth(.29,.88,along))*feather
     strength=.99*feather
    for q in offsets:
     # Limit the side of each liner ribbon nearest the aperture.
@@ -444,8 +446,8 @@ def lid_makeup(head,lids,creases,quality):
   end=upper[-1]
   wing=[end+Vector((side*dx,dy,0)) for dx,dy in ((.00150,.00024),(.00305,.00091),(.00505,.00210))]
   ribbon(upper+wing,rgb('23131c'),'upper',len(upper))
-  ribbon(crease,rgb('74374a'),'crease',len(crease))
-  ribbon(lower,rgb('4f2636'),'lower',len(lower))
+  ribbon(crease,rgb('694638'),'crease',len(crease))
+  ribbon(lower,rgb('4b352d'),'lower',len(lower))
   stations=24 if quality=='high' else 14
   brow=[Vector((side*(.014+.042*t),brow_profile(t)[0],0)) for t in (i/stations for i in range(stations+1))]
   ribbon(brow,rgb('3e2a26'),'brow',len(brow))
@@ -1086,9 +1088,9 @@ for quality,level in [('high',1),('low',0)]:
   for fraction in ((.48,.55,.62,.69,.76,.83,.90,.95) if quality=='high' else (.54,.66,.78,.90)):
    p=rim[round(fraction*(len(rim)-1))]
    root=Vector((p.x,p.y,sample(bvh,p.x,p.y)+.00033))
-   length=mix(.00120,.00322,fraction)*(.92+.12*math.sin(fraction*34))
-   liner.fibre([root,root+Vector((side*length*.23,length*.27,.00048)),
-                root+Vector((side*length*.72,length*.78,.00088))],.00019,.96,sides=5)
+   length=mix(.00130,.00355,fraction)*(.92+.12*math.sin(fraction*34))
+   liner.fibre([root,root+Vector((side*length*.24,length*.27,.00052)),
+                root+Vector((side*length*.74,length*.79,.00098))],.00019,.96,sides=5)
  eye_line=liner.object('gu_'+quality+'_upper_lashes',mat('gu_lashes',rgb('2a1920'),.68))
  pigment(eye_line,True,'2a1920')
  pigment(head,lids=lids)
