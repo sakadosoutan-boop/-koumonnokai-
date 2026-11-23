@@ -9,7 +9,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-soft-cheek';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-chin-and-lips';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -111,6 +111,23 @@ def shape_cheek_transition(head):
   jaw=gauss(y+.061,.019)*smooth(-.088,-.070,y)*smooth(.033,.053,side)*smooth(-.022,.018,z)
   vertex.co.x-=math.copysign(.0035*jaw,x)
 
+def shape_chin_profile(head):
+ # Lift the surface underneath the chin into the jaw instead of leaving a
+ # horizontal shelf. Blend back into the existing neck above the collar.
+ for vertex in head.data.vertices:
+  x,y,z=vertex.co
+  side=abs(x)
+  under=smooth(-.052,-.069,y)*smooth(-.115,-.089,y)*smooth(.024,.043,z)*smooth(.090,.078,z)
+  under*=gauss(z-.052,.027)*smooth(.044,.016,side)
+  tip=smooth(-.049,-.061,y)*smooth(-.088,-.073,y)*smooth(.057,.079,z)*gauss(x,.025)
+  throat=gauss(y+.090,.018)*smooth(-.060,-.077,y)*smooth(-.123,-.106,y)*smooth(.018,.033,z)
+  throat*=smooth(.077,.057,z)*smooth(.047,.020,side)
+  flank=gauss(y+.063,.014)*smooth(-.047,-.057,y)*smooth(-.086,-.073,y)
+  flank*=smooth(.016,.030,side)*smooth(.050,.075,z)
+  vertex.co.y+=.0065*under+.0021*tip
+  vertex.co.z-=.0019*tip+.0046*throat
+  vertex.co.x-=math.copysign(.0016*flank,x)
+
 eyes=[]
 for name in names[1:]:
  o=bpy.data.objects[name];local=female.matrix_world.inverted()@o.matrix_world.translation
@@ -125,6 +142,21 @@ def brow_profile(t):
  width=mix(.0041,.00105,smooth(.48,1,t))
  return height,width
 
+def lip_pigment(x,y,z):
+ # Match the vermilion outline in frontal projection at the two mesh LODs.
+ # Its upper and lower curves meet at the corners around the actual lip seam.
+ side=abs(x)
+ span=max(0,1-(side/.0225)**2)
+ seam=-.0395+.00145*gauss(side-.0145,.009)
+ cupid=.00155*gauss(side-.005,.0038)
+ top=seam+(.0077+cupid)*span**.79
+ bottom=seam-.0083*span**.88
+ edge=min(top-y,y-bottom)
+ coverage=smooth(-.0007,.00095,edge)*smooth(.069,.077,z)*smooth(.0228,.0210,side)
+ # The lighter interior can show through the narrow seam of the coarser mesh.
+ cavity=gauss(y-seam,.0045)*smooth(.003,.010,z)*smooth(.076,.063,z)*smooth(.022,.015,side)
+ return coverage,smooth(.0012,-.0018,y-seam),cavity
+
 def pigment(ob,hair=False,tint=None,lids=()):
  for old in list(ob.data.color_attributes):ob.data.color_attributes.remove(old)
  a=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT');base=rgb(tint or record['hair' if hair else 'skin'])
@@ -135,18 +167,13 @@ def pigment(ob,hair=False,tint=None,lids=()):
    tone=grain.data[i].value if grain else 0
    c=[value*(tone or 1) for value in base]
   else:
-   seam=-.0385+.0016*gauss(abs(x)-.016,.007)
-   cupid=gauss(abs(x)-.0055,.0038)
-   fullness=1-smooth(.005,.018,abs(x))
-   upper=gauss(y-seam-.0017-.0020*cupid*fullness,.0035)
-   lower=gauss(y-seam+.0037*fullness,.0041)
-   lower_mix=smooth(.001,-.002,y-seam)
-   lip=(1-smooth(.009,.019,abs(x)))*mix(upper,lower,lower_mix)*smooth(.069,.079,z)
+   lip,lower_mix,cavity=lip_pigment(x,y,z)
    blush=.32*gauss(abs(x)-.038,.023)*gauss(y+.015,.021)*smooth(.029,.066,z)
    shadow=.37*gauss(abs(x)-.038,.016)*gauss(y-.019,.006)*smooth(.045,.064,z)
-   lip_top=rgb('964b4a');lip_bottom=rgb('b96058')
+   lip_top=rgb('a25955');lip_bottom=rgb('b76d63')
    lip_tint=[mix(lip_top[k],lip_bottom[k],lower_mix) for k in range(3)]
-   c=[mix(mix(mix(base[k],rgb('db8b88')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],min(.94,lip*1.07)) for k in range(3)]
+   c=[mix(mix(mix(base[k],rgb('db8b88')[k],blush),rgb('ac7060')[k],shadow),lip_tint[k],.93*lip) for k in range(3)]
+   c=[mix(c[k],rgb('774346')[k],.88*cavity) for k in range(3)]
    # A soft continuous brow tint sits in the skin itself; fine strands add
    # detail without leaving a row of disconnected dots at mobile resolution.
    bt=max(0,min(1,(abs(x)-.014)/.042))
@@ -744,6 +771,7 @@ for quality,level in [('high',1),('low',0)]:
    v.co.x+=math.copysign(.0022*corner,c.x)
    v.co.y+=(.00125-.24*d.y)*corner
  shape_cheek_transition(head)
+ shape_chin_profile(head)
  head.data.update();bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
  groom=GroomMesh()
