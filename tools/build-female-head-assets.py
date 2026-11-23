@@ -4,12 +4,13 @@ Source input can be overridden with --source PATH. Existing assets are retained 
 """
 from pathlib import Path
 import sys
+from mathutils.geometry import barycentric_transform
 ROOT=Path(__file__).resolve().parents[1]
 # Reuse the established canonical exporter, mesh helpers and render rig only.
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-portrait-face-and-fringe';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-eyelids-and-chin';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -166,6 +167,19 @@ def smooth_jaw_transition(head,neighbors,quality):
    if offset.length>.0026:offset.length=.0026
    v.co=start+offset
 
+def shape_jaw_underside(head):
+ # Lift the two low shoulders beside the chin over a broad, continuous area.
+ # This follows the jaw in depth and leaves the middle of the throat seated.
+ for vertex in head.data.vertices:
+  x,y,z=vertex.co
+  side=abs(x)
+  lateral=gauss(side-.029,.014)*smooth(.009,.021,side)
+  height=gauss(y+.063,.016)*smooth(-.041,-.052,y)*smooth(-.091,-.077,y)
+  depth=gauss(z-.056,.026)*smooth(.030,.048,z)
+  transition=lateral*height*depth
+  vertex.co.y+=.0029*transition
+  vertex.co.x-=math.copysign(.00115*transition,x)
+
 eyes=[]
 for name in names[1:]:
  o=bpy.data.objects[name];local=female.matrix_world.inverted()@o.matrix_world.translation
@@ -249,6 +263,97 @@ def pigment(ob,hair=False,tint=None,lids=()):
 
   a.data[i].color=(*c,1)
  n=ob.data.materials[0].node_tree.nodes;l=ob.data.materials[0].node_tree.links;node=n.new('ShaderNodeVertexColor');node.layer_name='Complexion';l.new(node.outputs['Color'],n.get('Principled BSDF').inputs['Base Color'])
+
+def fit_lid_guides(bvh,quality):
+ lids=[];creases=[]
+ columns=29 if quality=='high' else 18
+ for eye in eyes:
+  cx,cy,cz=eye['center'];r=eye['radius'];sx,sy,_=eye['scale']
+  side=1 if cx>0 else -1
+  upper=[];lower=[]
+  for i in range(columns):
+   x=cx+side*mix(-.0103,.0131,i/(columns-1))
+   opening=[]
+   for j in range(76):
+    y=cy-.010+j*.00028
+    radial=r*r-((x-cx)/sx)**2-((y-cy)/sy)**2
+    if radial>0 and cz+math.sqrt(radial)>sample(bvh,x,y):opening.append(y)
+   if opening:
+    upper.append(Vector((x,opening[-1]+.00060,0)))
+    lower.append(Vector((x,opening[0]-.00035,0)))
+  if len(upper)<6:raise ValueError('Gu eyelid guide does not span the globe')
+  lids.append((upper,lower))
+  crease=[]
+  for i,point in enumerate(upper):
+   t=i/max(1,len(upper)-1)
+   gap=.00165+.00222*math.sin(math.pi*t)**.8
+   crease.append(Vector((point.x,point.y+gap,0)))
+  creases.append(crease)
+ return lids,creases
+
+def sculpt_lid_creases(head,creases):
+ # Recess the skin along the fold with soft shoulders above the lash line.
+ for vertex in head.data.vertices:
+  x,y,z=vertex.co
+  if not (.019<abs(x)<.054 and .004<y<.029 and z>.051):continue
+  crease=creases[0] if x*creases[0][0].x>0 else creases[1]
+  depth=max((gauss(x-p.x,.0022)*gauss(y-p.y,.00125)*math.sin(math.pi*i/(len(crease)-1))
+             for i,p in enumerate(crease)),default=0)
+  vertex.co.z-=.00062*depth
+
+def lid_makeup(head,lids,creases,quality):
+ # Fitted ribbons let both LODs show the eyeliner and crease. Their edges
+ # pick up the actual skin colour at each point, so they feather into it.
+ mesh=head.data;mesh.calc_loop_triangles()
+ vertices=[v.co for v in mesh.vertices]
+ triangles=[tuple(t.vertices) for t in mesh.loop_triangles]
+ skin=mesh.color_attributes['Complexion'].data
+ bvh=BVHTree.FromPolygons(vertices,triangles,all_triangles=True)
+ origin,u_axis,v_axis=Vector((0,0,0)),Vector((1,0,0)),Vector((0,1,0))
+ forward=Vector((0,0,-1));coords=[];colors=[];faces=[]
+ offsets=(-1,-.52,0,.52,1)
+ def ribbon(path,tint,fold,body_length):
+  start=len(coords)
+  for i,point in enumerate(path):
+   t=i/(len(path)-1)
+   if fold:
+    feather=math.sin(math.pi*t)**.72
+    width=.00024+.00078*feather
+    strength=.83*feather
+   else:
+    along=i/(body_length-1)
+    feather=smooth(0,.13,along)*smooth(1,.91,t)
+    width=.00010+mix(.00057,.00137,smooth(.14,.88,along))*feather
+    strength=.95*feather
+   for q in offsets:
+    # Keep the eyeliner's lower edge on skin just above the eye aperture.
+    x=point.x;y=point.y+q*width*(.31 if q<0 and not fold else 1)
+    hit,_,index,_=bvh.ray_cast(Vector((x,y,.25)),forward)
+    if hit is None:raise ValueError(f'Gu lid makeup outside face at {x:.4f}, {y:.4f}')
+    ids=triangles[index]
+    uv=barycentric_transform(hit,*(vertices[j] for j in ids),origin,u_axis,v_axis)
+    weights=(1-uv.x-uv.y,uv.x,uv.y)
+    base=[sum(skin[j].color[k]*weight for j,weight in zip(ids,weights)) for k in range(3)]
+    w=strength*(1-smooth(.18,1,abs(q)))
+    coords.append((x,y,hit.z+.00031))
+    colors.append(tuple(mix(base[k],tint[k],w) for k in range(3)))
+   if i:
+    row=len(offsets)
+    for j in range(row-1):
+     a=start+(i-1)*row+j;b=a+row
+     face=(a,b,b+1,a+1)
+     faces.append(face if path[-1].x>path[0].x else face[::-1])
+ for (upper,_),crease in zip(lids,creases):
+  side=1 if upper[-1].x>0 else -1
+  end=upper[-1]
+  wing=[end+Vector((side*dx,dy,0)) for dx,dy in ((.00125,.00016),(.00255,.00062),(.00405,.00147))]
+  ribbon(upper+wing,rgb('38262a'),False,len(upper))
+  ribbon(crease,rgb('74524d'),True,len(crease))
+ ob=mesh_object('gu_'+quality+'_lid_makeup',coords,faces,mat('gu_lid_makeup',rgb('74504a'),.75))
+ attr=ob.data.color_attributes.new(name='Complexion',type='BYTE_COLOR',domain='POINT')
+ for v,color in zip(attr.data,colors):v.color=(*color,1)
+ return ob
+
 def set_hair_grain(ob, tones):
  attr=ob.data.attributes.new(name='HairGrain',type='FLOAT',domain='POINT')
  attr.data.foreach_set('value',tones)
@@ -377,15 +482,23 @@ def hair_surface(head, material, quality):
    (side*.024,.074-fall,.0043,.0070),(side*.046,.059-fall,.006,.0090),
    (side*.060,.042-fall*.45,.005,.0068),(side*.065,.025,.0025,.0040),
    (side*.064,.014,.0002,.001)],1.07,True)
- # Thin, individually curved locks show the direction of the sweep at the
- # edge of the forehead. The temple mass remains seated beneath them.
- fitted_fringe('gu_long_fringe_wisp',[(.002,.084,.00010,.001),(.011,.071,.00045,.0016),
-   (.020,.055,.00056,.0018),(.029,.043,.00046,.0010),(.039,.035,.00008,.0003)],1.08,True)
- fitted_fringe('gu_left_fringe_wisp',[(-.009,.084,.00012,.001),(-.018,.073,.00047,.0017),
-   (-.028,.059,.00053,.0014),(-.038,.046,.00038,.0009),(-.050,.035,.00008,.0003)],1.04,True)
+ # Tapered, overlapping locks lead from the part to the temples. Vary the
+ # spacing and the curl at the ends so the thin strands follow the main flow.
+ fitted_fringe('gu_right_face_lock',[(.001,.085,.00014,.0007),(.012,.074,.00110,.0012),
+   (.023,.061,.00163,.0020),(.035,.047,.00141,.0015),(.046,.033,.00102,.0010),
+   (.051,.021,.00052,.0007),(.051,.014,.00007,.0003)],1.04,True)
+ fitted_fringe('gu_left_face_lock',[(-.009,.084,.00015,.0009),(-.020,.073,.00105,.0019),
+   (-.032,.058,.00142,.0017),(-.043,.046,.00100,.0013),(-.049,.034,.00077,.0008),
+   (-.054,.024,.00042,.0006),(-.061,.016,.00007,.0002)],1.03,True)
+ fitted_fringe('gu_right_loose_wisp',[(.005,.084,.00007,.0010),(.013,.071,.00037,.0010),
+   (.022,.056,.00044,.0013),(.029,.041,.00038,.0009),(.039,.033,.00007,.0001)],1.12,True)
+ fitted_fringe('gu_left_loose_wisp',[(-.010,.083,.00008,.0009),(-.018,.070,.00038,.0015),
+   (-.026,.056,.00043,.0013),(-.033,.043,.00033,.0007),(-.042,.036,.00007,.0001)],1.09,True)
  if quality=='high':
-  fitted_fringe('gu_fine_fringe_wisp',[(.006,.084,.00009,.0008),(.018,.071,.00031,.0011),
-   (.026,.057,.00034,.0013),(.034,.047,.00023,.0008),(.044,.041,.00007,.0002)],1.15,True)
+  fitted_fringe('gu_right_fringe_filament',[(.006,.083,.00007,.0008),(.018,.073,.00031,.0012),
+   (.027,.059,.00033,.0012),(.038,.048,.00023,.0009),(.049,.039,.00007,.0001)],1.18,True)
+  fitted_fringe('gu_left_fringe_filament',[(-.013,.084,.00007,.0008),(-.024,.075,.00031,.0012),
+   (-.037,.062,.00029,.0011),(-.047,.051,.00023,.0008),(-.053,.039,.00007,.0001)],1.14,True)
  # Follow the upper scalp from the part to the bun with overlapping locks.
  # Fitting to the scalp keeps their roots and fine edges seated in the hair.
  crown_guide=surface_bvh(scalp)
@@ -825,7 +938,10 @@ for quality,level in [('high',1),('low',0)]:
  shape_cheek_transition(head)
  shape_chin_profile(head)
  shape_mouth(head)
+ shape_jaw_underside(head)
  smooth_jaw_transition(head,neighbors,quality)
+ lids,creases=fit_lid_guides(surface_bvh(head),quality)
+ sculpt_lid_creases(head,creases)
  head.data.update();bvh=surface_bvh(head)
  hair=hair_surface(head,mat('gu_'+quality+'_hair',rgb(record['hair']),.82),quality);pigment(hair,True)
  groom=GroomMesh()
@@ -845,43 +961,20 @@ for quality,level in [('high',1),('low',0)]:
    radius=.00019*math.sin(math.pi*t)**.55
    groom.fibre(points,radius,mix(1.38,1.0,smooth(.04,.60,t))+.06*math.sin(k*1.7))
  brow=groom.object('gu_'+quality+'_brow',mat('gu_'+quality+'_brow',rgb('79605a'),.7));pigment(brow,True,'79605a')
- # Follow the actual upper globe/lid contact so eyeliner follows the face at each LOD.
+ # Short lashes grow along the eyeliner toward the outside of the eye.
  liner=GroomMesh()
- lids=[]
- for e in eyes:
-  cx,cy,cz=e['center'];r=e['radius'];sx,sy,_=e['scale']
-  side=1 if cx>0 else -1
-  rim=[]
-  lower_rim=[]
-  for i in range(23 if quality=='high' else 13):
-   x=cx+side*mix(-.009,.013,i/(22 if quality=='high' else 12))
-   upper=lower=None
-   for j in range(57):
-    y=cy-.009+j*.00035
-    radial=r*r-((x-cx)/sx)**2-((y-cy)/sy)**2
-    if radial>0 and cz+math.sqrt(radial)>sample(bvh,x,y):
-     if lower is None:lower=y
-     upper=y
-   if upper is not None:
-    rim.append(Vector((x,upper+.00055,sample(bvh,x,upper+.00055)+.00054)))
-    lower_rim.append(Vector((x,lower-.00035,0)))
-  lids.append((rim[:],lower_rim))
-  if len(rim)>5:
-   # Small lashes grow from the fitted lid rather than floating over the iris.
-   for fraction in ((.56,.64,.72,.80,.88) if quality=='high' else (.63,.75,.86)):
-    root=rim[round(fraction*(len(rim)-1))]
-    length=mix(.0012,.0026,fraction)
-    liner.fibre([root,root+Vector((side*length*.28,length*.26,.0006)),
-                 root+Vector((side*length*.70,length*.72,.0010))],.00027,.96,sides=5)
-   end=rim[-1]
-   for i in range(1,3):
-    x=end.x+side*.0013*i;y=end.y+.00025*i
-    rim.append(Vector((x,y,sample(bvh,x,y)+.00054)))
-   liner.fibre(rim,.00070,.95,sides=5)
+ for rim,_ in lids:
+  side=1 if rim[-1].x>0 else -1
+  for fraction in ((.57,.66,.75,.83,.91) if quality=='high' else (.65,.79,.90)):
+   p=rim[round(fraction*(len(rim)-1))]
+   root=Vector((p.x,p.y,sample(bvh,p.x,p.y)+.00033))
+   length=mix(.00125,.00275,fraction)
+   liner.fibre([root,root+Vector((side*length*.28,length*.26,.0006)),
+                root+Vector((side*length*.70,length*.72,.0010))],.00024,.96,sides=5)
  eye_line=liner.object('gu_'+quality+'_upper_lashes',mat('gu_lashes',rgb('493334'),.68))
  pigment(eye_line,True,'493334')
- brow=join_parts([brow,eye_line],'gu_'+quality+'_brow')
  pigment(head,lids=lids)
+ brow=join_parts([brow,eye_line,lid_makeup(head,lids,creases,quality)],'gu_'+quality+'_brow')
  parts=dict(skin=head,hair=hair,brow=brow,ornament=hair_ornament(quality,head,hair));record['lod'][quality]={k:export_mesh(o) for k,o in parts.items()}
  for o in parts.values():o.hide_set(True);o.hide_render=True
  if quality=='high':render_parts=list(parts.values())
