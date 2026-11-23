@@ -122,11 +122,12 @@
   function material(kind, asset, id) {
     var skin = kind === 'skin';
     var guSkin = skin && id === 'gu';
+    var guHair = kind === 'hair' && id === 'gu';
     if (kind === 'ornament') return new T.MeshStandardMaterial({vertexColors:true,roughness:.38,metalness:.48});
     var hairTint=!skin&&id!=='zo'&&id!=='gu'?new T.Color(0xb8b4b0).convertSRGBToLinear():0xffffff;
     return new T.MeshStandardMaterial({color: hairTint, vertexColors: true,
-      roughness: skin ? (guSkin ? .64 : asset.age > .5 ? .63 : .53) : kind === 'hair' ? (id === 'gu' ? .82 : .87) : .83,
-      metalness: 0, bumpMap: detail(!skin), bumpScale: skin ? (guSkin ? .00005 : .00016) : kind === 'hair' ? .000075 : .000045});
+      roughness: skin ? (guSkin ? .64 : asset.age > .5 ? .63 : .53) : kind === 'hair' ? (guHair ? .73 : .87) : .83,
+      metalness: 0, bumpMap: detail(!skin), bumpScale: skin ? (guSkin ? .00005 : .00016) : kind === 'hair' && !guHair ? .000075 : .000045});
   }
   function irisTexture(doublePupil, warm) {
     var key = 'iris' + !!doublePupil + (warm ? '-warm' : ''); if (TEXTURES[key]) return TEXTURES[key];
@@ -142,10 +143,10 @@
           // Blend the pupil and limbic ring into the brown radial fibres.
           var irisWeight = Math.max(0, Math.min(1, (r - .34) / .085));
           var fibres = Math.exp(-Math.pow((r - .63) / .24, 2)) * (.40 + .60 * strand);
-          var lidShade = .73 + .27 * Math.max(0, Math.min(1, (dy + .65) / 1.10));
+          var lidShade = .62 + .38 * Math.max(0, Math.min(1, (dy + .63) / 1.13));
           var colour = irisWeight * lidShade * edge;
-          var shine = .26 * Math.exp(-Math.pow((dx + .28) / .14, 2) - Math.pow((dy + .31) / .08, 2))
-                    + .31 * Math.exp(-Math.pow((dx + .25) / .061, 2) - Math.pow((dy + .29) / .049, 2));
+          var shine = .17 * Math.exp(-Math.pow((dx + .28) / .13, 2) - Math.pow((dy + .31) / .079, 2))
+                    + .43 * Math.exp(-Math.pow((dx + .25) / .057, 2) - Math.pow((dy + .29) / .045, 2));
           var ir = 8 + 9 * irisWeight + colour * (31 + 53 * fibres);
           var ig = 6 + 6 * irisWeight + colour * (19 + 33 * fibres);
           var ib = 5 + 5 * irisWeight + colour * (12 + 20 * fibres);
