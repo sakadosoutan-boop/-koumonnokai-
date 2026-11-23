@@ -151,6 +151,42 @@ test('Gu has a comparable central eye opening in both quality levels',()=>{
     }
   }
 });
+test('Gu chin underside rises toward the tip without a low shelf in either LOD',()=>{
+  const {Raycaster,Vector3}=C.THREE;
+  const up=new Vector3(0,1,0);
+  for(const quality of ['high','low']){
+    const {surface}=C.KM_HEADS.build('gu',{},quality);
+    const heights=[.044,.054,.064].map(z=>{
+      const hit=new Raycaster(new Vector3(0,-.15,z),up).intersectObject(surface,false)[0];
+      assert.ok(hit,quality+' underside exists at depth '+z);
+      return hit.point.y;
+    });
+    assert.ok(heights[0]>-.0735&&heights[0]<heights[1]&&heights[1]<heights[2],quality+' chin floor '+heights);
+  }
+});
+test('Gu lipstick reaches both outer lip curves and stays off nearby skin in either LOD',()=>{
+  const {Raycaster,Triangle,Vector3}=C.THREE;
+  const forward=new Vector3(0,0,-1);
+  for(const quality of ['high','low']){
+    const {surface}=C.KM_HEADS.build('gu',{},quality);
+    const {position,color}=surface.geometry.attributes;
+    const point=index=>new Vector3().fromBufferAttribute(position,index);
+    function greenAt(x,y,allowMouthInterior=false){
+      const hit=new Raycaster(new Vector3(x,y,.2),forward).intersectObject(surface,false)[0];
+      assert.ok(hit&&(hit.point.z>.074||allowMouthInterior),quality+' lip surface at '+[x,y]);
+      const {a,b,c}=hit.face;
+      const weights=Triangle.getBarycoord(hit.point,point(a),point(b),point(c),new Vector3());
+      return weights.x*color.array[a*3+1]+weights.y*color.array[b*3+1]+weights.z*color.array[c*3+1];
+    }
+    for(const side of [-1,1]){
+      assert.ok(greenAt(side*.018,-.0365)<90,quality+' upper lip toward corner');
+      assert.ok(greenAt(side*.018,-.0405)<90,quality+' lower lip toward corner');
+      assert.ok(greenAt(side*.023,-.0365)>105,quality+' skin beyond corner');
+    }
+    assert.ok(greenAt(0,-.049)>105,quality+' skin below lower lip');
+    assert.ok(greenAt(0,-.039,true)<90,quality+' shaded lip seam');
+  }
+});
 test('character rig preserves imported facial geometry and survives representative poses',()=>{
   C.KM_CAST3D.setQuality('low');
   for(const id of ids){
