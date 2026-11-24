@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-face-framing-hair';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-open-cheek-framing';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -768,18 +768,18 @@ def hair_surface(head, material, quality):
   lock('gu_cheek_wisp',[(side*.064,.039,.047,.0005,.0005),
    (side*.070,.013,.043,.0012,.0006),(side*.072,-.012,.042,.0011,.0006),
    (side*.068,-.034,.047,.0007,.0005),(side*.059,-.048+stagger,.051,.0001,.0001)],(0,0,1),slender=True)
-  # The inner locks overlap the cheeks in front projection. Their roots sit
-  # under the temple sweep, then separate into unequal ends beside the jaw.
-  inset=.0013 if side>0 else 0
+  # Keep the locks close to the temples, with light overlap at the cheekbone
+  # and narrower ends that leave the jawline visible.
+  inset=.0009 if side>0 else 0
   lock('gu_face_frame',[(side*.058,.054,.047,.00045,.00035),
-   (side*.057,.036,.056,.00225,.00115),(side*.054,.015,.065,.00285,.00150),
-   (side*(.052-inset),-.004,.070,.00265,.00136),(side*(.049-inset),-.023,.068,.00205,.00097),
-   (side*(.046-inset),-.043,.060,.00116,.00060),(side*.045,-.062+stagger,.048,.00012,.00009)],
+   (side*.058,.036,.054,.00185,.00104),(side*.057,.015,.062,.00212,.00118),
+   (side*(.056-inset),-.004,.064,.00183,.00106),(side*(.0535-inset),-.023,.062,.00137,.00078),
+   (side*(.051-inset),-.041,.055,.00065,.00043),(side*.0495,-.058+stagger,.046,.00010,.00009)],
    (0,0,1),1.01,slender=True)
   lock('gu_face_frame_wisp',[(side*.061,.048,.039,.00042,.00035),
-   (side*.059,.032,.050,.00120,.00080),(side*.058,.011,.059,.00159,.00078),
-   (side*.056,-.012,.060,.00134,.00061),(side*.053,-.027,.058,.00072,.00042),
-   (side*.050,-.043-stagger,.053,.00008,.00008)],(0,0,1),.94,slender=True)
+   (side*.060,.032,.047,.00088,.00059),(side*.060,.011,.054,.00102,.00065),
+   (side*.060,-.010,.051,.00086,.00048),(side*.058,-.023,.047,.00048,.00035),
+   (side*.055,-.036-stagger,.045,.00008,.00008)],(0,0,1),.94,slender=True)
  # High folded loops and low lateral rolls give the coiffure its silhouette.
  for side in (-1,1):
   lock('royal_loop',[(side*.018,.090,-.056,.012,.008),
