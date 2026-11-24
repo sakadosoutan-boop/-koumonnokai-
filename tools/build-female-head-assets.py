@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[1]
 ns={'__file__':str(ROOT/'tools/build-head-assets.py')}
 exec((ROOT/'tools/build-head-assets.py').read_text(encoding='utf-8').split('assets={};render_objects={};base_coords={}')[0],ns)
 globals().update(ns)
-OUT=ROOT/'model-preview-output/gu-eyelid-position';OUT.mkdir(parents=True,exist_ok=True)
+OUT=ROOT/'model-preview-output/gu-face-framing-hair';OUT.mkdir(parents=True,exist_ok=True)
 source_path=ROOT.parent/'3d-runtime/human-base/human_base_meshes_bundle.blend'
 if '--source' in sys.argv:source_path=Path(sys.argv[sys.argv.index('--source')+1]).resolve()
 elif not source_path.exists():source_path=ROOT/'source-assets/gu-head.blend'
@@ -659,7 +659,7 @@ def hair_surface(head, material, quality):
   (.017,-.067,.006,.0019),(.009,-.075,.0003,.0005)],.99)
  # Groomed ribbon lofts have a continuous oval section, lengthwise ridges,
  # and width controls at the same knots that define their silhouette.
- def lock(name,knots,normal,shade=1):
+ def lock(name,knots,normal,shade=1,*,slender=False):
   points=[Vector(k[:3]) for k in knots]
   if name.endswith('fold'):
    for p in points:
@@ -670,8 +670,10 @@ def hair_surface(head, material, quality):
    return catmull(values[max(i-1,0)],values[i],values[i+1],values[min(i+2,len(values)-1)],t)
   radii=[Vector(k[3:]) for k in knots]
   preferred=Vector(normal)
-  steps=(len(knots)-1)*(7 if quality=='high' else 4)
-  sides=28 if quality=='high' else 16
+  segments=(5 if quality=='high' else 3) if slender else (7 if quality=='high' else 4)
+  steps=(len(knots)-1)*segments
+  sides=(10 if quality=='high' else 8) if slender else (28 if quality=='high' else 16)
+  minimum=.000075 if slender else .0002
   vertices=[];faces=[]
   for j in range(steps+1):
    u=j*(len(knots)-1)/steps;i=min(int(u),len(knots)-2);t=u-i
@@ -682,8 +684,8 @@ def hair_surface(head, material, quality):
    w,d=interpolate(radii,i,t)
    for k in range(sides):
     a=math.tau*k/sides
-    ripple=1+.018*math.cos(a*(27 if quality=='high' else 15)+u*.75)
-    pos=center+(width_axis*(max(w,.0002)*math.cos(a))+depth_axis*(max(d,.0002)*math.sin(a)))*ripple
+    ripple=1+.018*math.cos(a*(3 if slender else sides-1)+u*.75)
+    pos=center+(width_axis*(max(w,minimum)*math.cos(a))+depth_axis*(max(d,minimum)*math.sin(a)))*ripple
     vertices.append(pos)
     if j:
      start=(j-1)*sides;next_k=(k+1)%sides
@@ -692,8 +694,12 @@ def hair_surface(head, material, quality):
   ob=mesh_object('gu_'+name,vertices,faces,material)
   bm=bmesh.new();bm.from_mesh(ob.data);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
   bm.to_mesh(ob.data);bm.free()
-  set_hair_grain(ob,[shade+.24*math.sin(math.tau*(i%sides)*11/sides+(i//sides)*.026)
-                              +.11*math.sin(math.tau*(i%sides)*3/sides) for i in range(len(vertices))])
+  if slender:
+   tones=[shade+filament((i%sides)/sides,(i//sides)/steps) for i in range(len(vertices))]
+  else:
+   tones=[shade+.24*math.sin(math.tau*(i%sides)*11/sides+(i//sides)*.026)
+               +.11*math.sin(math.tau*(i%sides)*3/sides) for i in range(len(vertices))]
+  set_hair_grain(ob,tones)
   parts.append(ob)
  # Scalp-fitted side locks. The longitudinal axis runs from the swept
  # fringe to the nape. The lower edge skirts the upper rim of the ear.
@@ -761,7 +767,19 @@ def hair_surface(head, material, quality):
    (side*.058,-.064+stagger,.051,.0002,.0002)],(0,0,1))
   lock('gu_cheek_wisp',[(side*.064,.039,.047,.0005,.0005),
    (side*.070,.013,.043,.0012,.0006),(side*.072,-.012,.042,.0011,.0006),
-   (side*.068,-.034,.047,.0007,.0005),(side*.059,-.048+stagger,.051,.0001,.0001)],(0,0,1))
+   (side*.068,-.034,.047,.0007,.0005),(side*.059,-.048+stagger,.051,.0001,.0001)],(0,0,1),slender=True)
+  # The inner locks overlap the cheeks in front projection. Their roots sit
+  # under the temple sweep, then separate into unequal ends beside the jaw.
+  inset=.0013 if side>0 else 0
+  lock('gu_face_frame',[(side*.058,.054,.047,.00045,.00035),
+   (side*.057,.036,.056,.00225,.00115),(side*.054,.015,.065,.00285,.00150),
+   (side*(.052-inset),-.004,.070,.00265,.00136),(side*(.049-inset),-.023,.068,.00205,.00097),
+   (side*(.046-inset),-.043,.060,.00116,.00060),(side*.045,-.062+stagger,.048,.00012,.00009)],
+   (0,0,1),1.01,slender=True)
+  lock('gu_face_frame_wisp',[(side*.061,.048,.039,.00042,.00035),
+   (side*.059,.032,.050,.00120,.00080),(side*.058,.011,.059,.00159,.00078),
+   (side*.056,-.012,.060,.00134,.00061),(side*.053,-.027,.058,.00072,.00042),
+   (side*.050,-.043-stagger,.053,.00008,.00008)],(0,0,1),.94,slender=True)
  # High folded loops and low lateral rolls give the coiffure its silhouette.
  for side in (-1,1):
   lock('royal_loop',[(side*.018,.090,-.056,.012,.008),
